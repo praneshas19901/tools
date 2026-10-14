@@ -40,7 +40,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight">FitPulse</h1>
-                    <p class="text-xs text-slate-400">Workout & Exercise Tracker</p>
+                    <p class="text-xs text-slate-400">Workout & Exercise Tracker with Cloud-Safe Backups</p>
                 </div>
             </div>
             <!-- Tab Switcher -->
@@ -49,7 +49,7 @@
                     <i class="fa-solid fa-play mr-2"></i>Active Session
                 </button>
                 <button onclick="switchTab('history')" id="tab-history" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white">
-                    <i class="fa-solid fa-history mr-2"></i>History Log
+                    <i class="fa-solid fa-history mr-2"></i>History & Backup
                 </button>
             </div>
         </div>
@@ -203,22 +203,42 @@
 
         </section>
 
-        <!-- HISTORY LOG TAB -->
+        <!-- HISTORY & BACKUP TAB -->
         <section id="section-history" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h2 class="text-lg font-semibold flex items-center">
-                        <i class="fa-solid fa-calendar-days text-blue-500 mr-2"></i> Workout History Log
-                    </h2>
-                    <p class="text-xs text-slate-400">All completed sessions saved securely in your browser.</p>
+            
+            <!-- Data Management & Cloud Backup Card -->
+            <div class="bg-cardBg border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h2 class="text-lg font-semibold flex items-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-blue-500 mr-2"></i> Data Backup & Restore
+                        </h2>
+                        <p class="text-xs text-slate-400">Never lose your progress! Export your workout history to a JSON file or import a past backup.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button onclick="exportHistory()" class="flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
+                            <i class="fa-solid fa-download"></i> Export JSON Backup
+                        </button>
+                        <label class="flex-1 sm:flex-initial bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-700 cursor-pointer">
+                            <i class="fa-solid fa-upload"></i> Import Backup
+                            <input type="file" id="import-file" accept=".json" onchange="importHistory(event)" class="hidden">
+                        </label>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="exportHistory()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 border border-slate-700">
-                        <i class="fa-solid fa-download"></i> Export JSON
-                    </button>
-                    <button onclick="clearHistory()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 border border-red-500/20">
-                        <i class="fa-solid fa-trash-can"></i> Clear All
-                    </button>
+            </div>
+
+            <!-- Filters & Date Controls -->
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div>
+                    <h3 class="text-base font-semibold flex items-center">
+                        <i class="fa-solid fa-calendar-days text-emerald-400 mr-2"></i> Workout History Logs
+                    </h3>
+                    <p class="text-xs text-slate-400">Grouped and stamped by date & time.</p>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <span class="text-xs text-slate-400 whitespace-nowrap">Filter Date:</span>
+                    <input type="date" id="filter-date" onchange="renderHistory()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+                    <button onclick="clearDateFilter()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-xl transition-all">Clear</button>
                 </div>
             </div>
 
@@ -232,7 +252,7 @@
 
     <!-- Footer -->
     <footer class="mt-auto border-t border-slate-800 py-4 text-center text-xs text-slate-500">
-        FitPulse Exercise Tracker &bull; Data saved locally with localStorage
+        FitPulse Exercise Tracker &bull; Secure Local Storage & JSON Backup
     </footer>
 
     <!-- Custom Notification Toast Modal / Message Box -->
@@ -506,7 +526,6 @@
             if (set) {
                 set.completed = !set.completed;
                 if (set.completed) {
-                    // Trigger short rest timer automatically upon completion
                     setTimerPreset(45);
                     toggleTimer();
                 }
@@ -580,7 +599,7 @@
             }
         }
 
-        // --- Workout Logging & Persistence (LocalStorage) ---
+        // --- Workout Logging & Persistence (LocalStorage + Dates) ---
         function completeWorkout() {
             const name = document.getElementById('exercise-name').value.trim() || 'Custom Workout';
             const duration = stopwatchSeconds;
@@ -588,9 +607,13 @@
             const totalSets = setsData.length;
             const completedSetsCount = setsData.filter(s => s.completed).length;
 
+            const now = new Date();
             const workoutRecord = {
                 id: Date.now(),
-                date: new Date().toLocaleString(),
+                timestamp: now.toISOString(),
+                dateString: now.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+                timeString: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                rawDate: now.toISOString().slice(0, 10), // for filtering YYYY-MM-DD
                 name: name,
                 duration: duration,
                 steps: steps,
@@ -603,27 +626,30 @@
             history.unshift(workoutRecord);
             localStorage.setItem('fitpulse_history', JSON.stringify(history));
 
-            showToast('Workout Saved!', `Successfully logged "${name}" to history.`, 'success');
+            showToast('Workout Saved!', `Successfully logged "${name}" to history with date stamp.`, 'success');
             
-            // Reset active session state
             resetStopwatch();
             resetTimer();
             resetSteps();
             if (isSensorActive) deactivateMotionListener();
             
-            // Switch to history tab to review
             switchTab('history');
         }
 
         function renderHistory() {
             const container = document.getElementById('history-container');
-            const history = JSON.parse(localStorage.getItem('fitpulse_history') || '[]');
+            const filterDateVal = document.getElementById('filter-date').value;
+            let history = JSON.parse(localStorage.getItem('fitpulse_history') || '[]');
+
+            if (filterDateVal) {
+                history = history.filter(item => item.rawDate === filterDateVal);
+            }
 
             if (history.length === 0) {
                 container.innerHTML = `
                     <div class="bg-cardBg border border-slate-800 rounded-2xl p-10 text-center text-slate-500 space-y-3">
                         <i class="fa-solid fa-clipboard-list text-4xl text-slate-600"></i>
-                        <p class="text-sm">No workout sessions logged yet. Complete a workout to see history here!</p>
+                        <p class="text-sm">No workout sessions found for this filter or history. Complete a workout to start logging!</p>
                     </div>
                 `;
                 return;
@@ -650,8 +676,12 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-start">
                         <div>
-                            <span class="text-xs text-blue-400 font-medium">${item.date}</span>
-                            <h3 class="text-base font-bold text-slate-100 mt-0.5">${item.name}</h3>
+                            <div class="flex items-center gap-2 text-xs text-blue-400 font-medium">
+                                <i class="fa-regular fa-calendar"></i> ${item.dateString || 'Recent'} 
+                                <span class="text-slate-500">&bull;</span>
+                                <i class="fa-regular fa-clock"></i> ${item.timeString || ''}
+                            </div>
+                            <h3 class="text-base font-bold text-slate-100 mt-1">${item.name}</h3>
                         </div>
                         <button onclick="deleteHistoryItem(${item.id})" class="text-slate-500 hover:text-red-400 p-2 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
@@ -677,6 +707,11 @@
             });
         }
 
+        function clearDateFilter() {
+            document.getElementById('filter-date').value = '';
+            renderHistory();
+        }
+
         function deleteHistoryItem(id) {
             let history = JSON.parse(localStorage.getItem('fitpulse_history') || '[]');
             history = history.filter(item => item.id !== id);
@@ -685,24 +720,72 @@
             showToast('Deleted', 'Workout entry removed from history.', 'info');
         }
 
-        function clearHistory() {
-            if (confirm('Are you sure you want to delete all workout history?')) {
-                localStorage.removeItem('fitpulse_history');
-                renderHistory();
-                showToast('History Cleared', 'All past workout records have been deleted.', 'info');
-            }
-        }
-
+        // --- Export & Import JSON Backup Logic ---
         function exportHistory() {
-            const history = localStorage.getItem('fitpulse_history') || '[]';
-            const blob = new Blob([history], { type: 'application/json' });
+            const historyData = localStorage.getItem('fitpulse_history') || '[]';
+            const exportObject = {
+                app: "FitPulse Workout Tracker",
+                version: "1.1",
+                exportDate: new Date().toISOString(),
+                history: JSON.parse(historyData)
+            };
+
+            const blob = new Blob([JSON.stringify(exportObject, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `fitpulse_workout_history_${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `fitpulse_backup_${new Date().toISOString().slice(0,10)}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            showToast('Exported', 'History downloaded as JSON file.', 'success');
+            showToast('Backup Exported', 'Your workout history backup JSON was downloaded successfully.', 'success');
+        }
+
+        function importHistory(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    let importedWorkouts = [];
+
+                    if (Array.isArray(parsed)) {
+                        importedWorkouts = parsed;
+                    } else if (parsed && Array.isArray(parsed.history)) {
+                        importedWorkouts = parsed.history;
+                    } else {
+                        throw new Error('Invalid format');
+                    }
+
+                    // Merge with existing history or replace
+                    let existingHistory = JSON.parse(localStorage.getItem('fitpulse_history') || '[]');
+                    
+                    // Deduplicate based on ID
+                    const existingIds = new Set(existingHistory.map(item => item.id));
+                    let addedCount = 0;
+
+                    importedWorkouts.forEach(item => {
+                        if (!existingIds.has(item.id)) {
+                            existingHistory.push(item);
+                            addedCount++;
+                        }
+                    });
+
+                    // Sort newest first
+                    existingHistory.sort((a, b) => b.id - a.id);
+
+                    localStorage.setItem('fitpulse_history', JSON.stringify(existingHistory));
+                    renderHistory();
+                    showToast('Import Successful', `Added ${addedCount} past workout records from backup file.`, 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('Import Failed', 'Selected file is not a valid FitPulse JSON backup.', 'warning');
+                }
+                // Reset file input
+                event.target.value = '';
+            };
+            reader.readAsText(file);
         }
 
         // Initialize application sets render on load
