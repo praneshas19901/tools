@@ -13,7 +13,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
 
-  <!-- Header & Navigation (Solid Background, No Blur) -->
+  <!-- Header & Navigation -->
   <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-3">
@@ -60,7 +60,7 @@
         <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 flex items-center space-x-3">
           <div class="p-3 bg-indigo-500/10 rounded-xl text-indigo-400"><i class="fa-solid fa-stopwatch text-lg"></i></div>
           <div>
-            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Active Workout</p>
+            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Session Time</p>
             <p id="total-session-time" class="text-lg font-bold text-slate-100">00:00:00</p>
           </div>
         </div>
@@ -131,7 +131,7 @@
               <input type="number" id="ex-steps" value="0" min="0" step="50" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Duration (Mins)</label>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Default Duration (Mins)</label>
               <input type="number" id="ex-duration" value="5" min="1" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
           </div>
@@ -148,7 +148,7 @@
           <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700/80 relative overflow-hidden">
             <div class="flex justify-between items-center mb-4">
               <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
-                Workout Timer & Stopwatch
+                Master Stopwatch & Timer
               </span>
               <div class="flex items-center space-x-2">
                 <button onclick="toggleTimerMode('stopwatch')" id="mode-sw-btn" class="text-xs px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-medium">Stopwatch</button>
@@ -158,7 +158,7 @@
 
             <div class="text-center py-4">
               <div id="timer-display" class="text-5xl md:text-6xl font-extrabold tracking-tight font-mono text-slate-100">00:00</div>
-              <p id="timer-status-text" class="text-xs text-slate-400 mt-2">Ready to start</p>
+              <p id="timer-status-text" class="text-xs text-slate-400 mt-2">Master session timer</p>
             </div>
 
             <!-- Countdown Timer Preset Setup -->
@@ -260,10 +260,15 @@
     let savedLogs = JSON.parse(localStorage.getItem('fitpulse_logs') || '[]');
     let userWeight = parseFloat(localStorage.getItem('fitpulse_user_weight') || '70');
 
+    // Master Timer State with safe preservation variables
     let timerMode = 'stopwatch';
     let timerInterval = null;
-    let timerSeconds = 0;
-    let timerRunning = false;
+    let stopwatchSeconds = 0;
+    let countdownSeconds = 0;
+    let masterTimerRunning = false;
+
+    // Active individual exercise timers map (exerciseId -> interval)
+    let exerciseTimers = {};
 
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('user-weight').value = userWeight;
@@ -345,15 +350,24 @@
         steps,
         durationMins,
         burnRate: burnRate.toFixed(1),
-        caloriesBurned
+        caloriesBurned,
+        elapsedSeconds: 0,
+        isRunning: false
       };
 
       activeSession.push(exerciseItem);
       nameInput.value = '';
       renderActiveSession();
+      
+      // Automatically start timer on newly added item
+      toggleExerciseTimer(exerciseItem.id);
     }
 
     function removeExerciseItem(id) {
+      if (exerciseTimers[id]) {
+        clearInterval(exerciseTimers[id]);
+        delete exerciseTimers[id];
+      }
       activeSession = activeSession.filter(item => item.id !== id);
       renderActiveSession();
     }
@@ -375,15 +389,102 @@
     }
 
     function clearActiveSession() {
+      Object.values(exerciseTimers).forEach(clearInterval);
+      exerciseTimers = {};
       activeSession = [];
       renderActiveSession();
     }
 
-    function renderActiveSession() {
-      const container = document.getElementById('exercise-list');
+    // --- Individual Exercise Timer Functions ---
+    function toggleExerciseTimer(id) {
+      const item = activeSession.find(i => i.id === id);
+      if (!item) return;
+
+      if (item.isRunning) {
+        // Pause timer
+        clearInterval(exerciseTimers[id]);
+        delete exerciseTimers[id];
+        item.isRunning = false;
+      } else {
+        // Start timer
+        item.isRunning = true;
+        exerciseTimers[id] = setInterval(() => {
+          item.elapsedSeconds++;
+          // Recalculate duration & calories dynamically as time ticks
+          item.durationMins = parseFloat((item.elapsedSeconds / 60).toFixed(2));
+          item.caloriesBurned = Math.round((parseFloat(item.burnRate) * item.durationMins));
+          
+          updateExerciseCardUI(id);
+          updateSessionSummary();
+        }, 1000);
+      }
+      updateExerciseCardUI(id);
+    }
+
+    function resetExerciseTimer(id) {
+      const item = activeSession.find(i => i.id === id);
+      if (!item) return;
+
+      clearInterval(exerciseTimers[id]);
+      delete exerciseTimers[id];
+      item.isRunning = false;
+      item.elapsedSeconds = 0;
+      item.durationMins = 5; // default fallback
+      item.caloriesBurned = Math.round(parseFloat(item.burnRate) * item.durationMins);
       
+      updateExerciseCardUI(id);
+      updateSessionSummary();
+    }
+
+    function updateExerciseCardUI(id) {
+      const item = activeSession.find(i => i.id === id);
+      if (!item) return;
+
+      const card = document.getElementById(`ex-card-${id}`);
+      if (!card) return;
+
+      const hrs = Math.floor(item.elapsedSeconds / 3600);
+      const mins = Math.floor((item.elapsedSeconds % 3600) / 60);
+      const secs = item.elapsedSeconds % 60;
+      const timeStr = hrs > 0 
+        ? `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
+        : `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+      // Update specific DOM elements inside the card without full re-render
+      const timeEl = card.querySelector('.ex-time-display');
+      if (timeEl) timeEl.innerText = timeStr;
+
+      const btnEl = card.querySelector('.ex-toggle-btn');
+      if (btnEl) {
+        if (item.isRunning) {
+          btnEl.className = "ex-toggle-btn px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1";
+          btnEl.innerHTML = `<i class="fa-solid fa-pause"></i><span>Pause</span>`;
+        } else {
+          btnEl.className = "ex-toggle-btn px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1";
+          btnEl.innerHTML = `<i class="fa-solid fa-play"></i><span>Start</span>`;
+        }
+      }
+
+      const calEl = card.querySelector('.ex-cal-display');
+      if (calEl) calEl.innerText = `${item.caloriesBurned} kcal`;
+
+      updateSessionSummary();
+    }
+
+    function updateSessionSummary() {
       let totalCalories = 0;
       let totalSteps = 0;
+      activeSession.forEach(item => {
+        totalCalories += item.caloriesBurned;
+        totalSteps += item.steps;
+      });
+
+      document.getElementById('total-calories-burned').innerText = `${totalCalories} kcal`;
+      document.getElementById('total-session-steps').innerText = `${totalSteps.toLocaleString()} steps`;
+    }
+
+    function renderActiveSession() {
+      const container = document.getElementById('exercise-list');
 
       if (activeSession.length === 0) {
         container.innerHTML = `
@@ -393,54 +494,72 @@
           </div>`;
       } else {
         container.innerHTML = activeSession.map(item => {
-          totalCalories += item.caloriesBurned;
-          totalSteps += item.steps;
+          const hrs = Math.floor(item.elapsedSeconds / 3600);
+          const mins = Math.floor((item.elapsedSeconds % 3600) / 60);
+          const secs = item.elapsedSeconds % 60;
+          const timeStr = hrs > 0 
+            ? `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
+            : `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 
           return `
-            <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-              <div class="space-y-1">
-                <div class="flex items-center space-x-2">
-                  <span class="font-bold text-slate-100">${item.name}</span>
-                  <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-indigo-400 border border-indigo-500/20">${item.type}</span>
+            <div id="ex-card-${item.id}" class="bg-slate-900 border border-slate-700/80 rounded-xl p-4 space-y-3">
+              <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-100 text-base">${item.name}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-indigo-400 border border-indigo-500/20">${item.type}</span>
+                  </div>
+                  <div class="flex items-center space-x-4 text-xs text-slate-400">
+                    <span><i class="fa-solid fa-stopwatch text-indigo-400 mr-1"></i><strong class="ex-time-display font-mono text-slate-200">${timeStr}</strong></span>
+                    <span><i class="fa-solid fa-fire text-orange-400 mr-1"></i><strong class="ex-cal-display text-orange-400">${item.caloriesBurned} kcal</strong> (${item.burnRate}/m)</span>
+                    ${item.steps > 0 ? `<span><i class="fa-solid fa-shoe-prints text-emerald-400 mr-1"></i>${item.steps} steps</span>` : ''}
+                  </div>
                 </div>
-                <div class="flex items-center space-x-4 text-xs text-slate-400">
-                  <span><i class="fa-solid fa-clock text-slate-500 mr-1"></i>${item.durationMins}m</span>
-                  <span><i class="fa-solid fa-fire text-orange-400 mr-1"></i>${item.caloriesBurned} kcal (${item.burnRate}/m)</span>
-                  ${item.steps > 0 ? `<span><i class="fa-solid fa-shoe-prints text-emerald-400 mr-1"></i>${item.steps} steps</span>` : ''}
+
+                <!-- Individual Exercise Timer Controls -->
+                <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+                  <button onclick="toggleExerciseTimer(${item.id})" class="ex-toggle-btn px-3 py-1.5 ${item.isRunning ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500'} text-white rounded-lg text-xs font-semibold flex items-center space-x-1 transition">
+                    <i class="fa-solid ${item.isRunning ? 'fa-pause' : 'fa-play'}"></i><span>${item.isRunning ? 'Pause' : 'Start'}</span>
+                  </button>
+                  <button onclick="resetExerciseTimer(${item.id})" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition" title="Reset Timer">
+                    <i class="fa-solid fa-rotate-right"></i>
+                  </button>
+                  <button onclick="removeExerciseItem(${item.id})" class="text-slate-500 hover:text-rose-400 transition p-1.5" title="Remove">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
                 </div>
               </div>
 
-              <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
-                <div class="flex items-center space-x-2 bg-slate-800 rounded-lg p-1 border border-slate-700">
-                  <span class="text-xs text-slate-400 pl-1">Sets:</span>
-                  <button onclick="adjustSets(${item.id}, -1)" class="w-6 h-6 bg-slate-700 rounded text-xs hover:bg-slate-600 font-bold">-</button>
-                  <span class="text-xs font-bold w-5 text-center">${item.sets}</span>
-                  <button onclick="adjustSets(${item.id}, 1)" class="w-6 h-6 bg-slate-700 rounded text-xs hover:bg-slate-600 font-bold">+</button>
-                </div>
+              <!-- Sets & Reps Controls Bar -->
+              <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                <div class="flex items-center space-x-4">
+                  <div class="flex items-center space-x-2 bg-slate-800 rounded-lg px-2 py-1 border border-slate-700">
+                    <span class="text-slate-400">Sets:</span>
+                    <button onclick="adjustSets(${item.id}, -1)" class="w-5 h-5 bg-slate-700 rounded text-xs hover:bg-slate-600 font-bold">-</button>
+                    <span class="font-bold w-4 text-center">${item.sets}</span>
+                    <button onclick="adjustSets(${item.id}, 1)" class="w-5 h-5 bg-slate-700 rounded text-xs hover:bg-slate-600 font-bold">+</button>
+                  </div>
 
-                <div class="flex items-center space-x-2 bg-slate-800 rounded-lg p-1 border border-slate-700">
-                  <span class="text-xs text-slate-400 pl-1">Reps:</span>
-                  <button onclick="adjustReps(${item.id}, -1)" class="w-6 h-6 bg-slate-700 rounded text-xs hover:bg-slate-600 font-bold">-</button>
-                  <span class="text-xs font-bold w-6 text-center">${item.reps}</span>
-                  <button onclick="adjustReps(${item.id}, 1)" class="w-6 h-6 bg-slate-700 rounded text-xs hover:bg-slate-600 font-bold">+</button>
+                  <div class="flex items-center space-x-2 bg-slate-800 rounded-lg px-2 py-1 border border-slate-700">
+                    <span class="text-slate-400">Reps:</span>
+                    <button onclick="adjustReps(${item.id}, -1)" class="w-5 h-5 bg-slate-700 rounded text-xs hover:bg-slate-600 font-bold">-</button>
+                    <span class="font-bold w-5 text-center">${item.reps}</span>
+                    <button onclick="adjustReps(${item.id}, 1)" class="w-5 h-5 bg-slate-700 rounded text-xs hover:bg-slate-600 font-bold">+</button>
+                  </div>
                 </div>
-
-                <button onclick="removeExerciseItem(${item.id})" class="text-slate-500 hover:text-rose-400 transition p-1">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
               </div>
             </div>
           `;
         }).join('');
       }
-
-      document.getElementById('total-calories-burned').innerText = `${totalCalories} kcal`;
-      document.getElementById('total-session-steps').innerText = `${totalSteps.toLocaleString()} steps`;
+      updateSessionSummary();
     }
 
+    // --- Master Timer Panel Functions (Non-resetting on mode switch) ---
     function toggleTimerMode(mode) {
       timerMode = mode;
-      resetTimer();
+      updateMasterTimerDisplay();
+      
       const swBtn = document.getElementById('mode-sw-btn');
       const tmBtn = document.getElementById('mode-tm-btn');
       const setup = document.getElementById('countdown-setup');
@@ -459,8 +578,8 @@
     }
 
     function setCountdownMinutes(mins) {
-      timerSeconds = mins * 60;
-      updateTimerDisplay();
+      countdownSeconds = mins * 60;
+      updateMasterTimerDisplay();
     }
 
     function setCustomCountdown() {
@@ -469,31 +588,31 @@
     }
 
     function startTimer() {
-      if (timerRunning) return;
-      timerRunning = true;
+      if (masterTimerRunning) return;
+      masterTimerRunning = true;
 
       document.getElementById('timer-start-btn').classList.add('hidden');
       document.getElementById('timer-pause-btn').classList.remove('hidden');
 
       timerInterval = setInterval(() => {
         if (timerMode === 'stopwatch') {
-          timerSeconds++;
+          stopwatchSeconds++;
         } else {
-          if (timerSeconds > 0) {
-            timerSeconds--;
+          if (countdownSeconds > 0) {
+            countdownSeconds--;
           } else {
             pauseTimer();
             document.getElementById('timer-beep').play();
-            alert("Timer complete!");
+            alert("Master countdown complete!");
             return;
           }
         }
-        updateTimerDisplay();
+        updateMasterTimerDisplay();
       }, 1000);
     }
 
     function pauseTimer() {
-      timerRunning = false;
+      masterTimerRunning = false;
       clearInterval(timerInterval);
       document.getElementById('timer-start-btn').classList.remove('hidden');
       document.getElementById('timer-pause-btn').classList.add('hidden');
@@ -501,14 +620,19 @@
 
     function resetTimer() {
       pauseTimer();
-      timerSeconds = 0;
-      updateTimerDisplay();
+      if (timerMode === 'stopwatch') {
+        stopwatchSeconds = 0;
+      } else {
+        countdownSeconds = 0;
+      }
+      updateMasterTimerDisplay();
     }
 
-    function updateTimerDisplay() {
-      const hrs = Math.floor(timerSeconds / 3600);
-      const mins = Math.floor((timerSeconds % 3600) / 60);
-      const secs = timerSeconds % 60;
+    function updateMasterTimerDisplay() {
+      const activeSecs = (timerMode === 'stopwatch') ? stopwatchSeconds : countdownSeconds;
+      const hrs = Math.floor(activeSecs / 3600);
+      const mins = Math.floor((activeSecs % 3600) / 60);
+      const secs = activeSecs % 60;
 
       const formatted = hrs > 0 
         ? `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
@@ -526,13 +650,18 @@
         return;
       }
 
+      // Stop all running timers before saving
+      Object.values(exerciseTimers).forEach(clearInterval);
+      exerciseTimers = {};
+      pauseTimer();
+
       const now = new Date();
       const logEntry = {
         id: Date.now(),
         timestamp: now.toISOString(),
         dateFormatted: now.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }),
         timeFormatted: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        exercises: [...activeSession],
+        exercises: activeSession.map(item => ({...item, isRunning: false})),
         totalCalories: activeSession.reduce((acc, i) => acc + i.caloriesBurned, 0),
         totalSteps: activeSession.reduce((acc, i) => acc + i.steps, 0),
         userWeightKg: userWeight
