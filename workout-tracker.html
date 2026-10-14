@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitPulse - Workout & Exercise Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                        accent: '#3b82f6',
+                        accentHover: '#2563eb'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Header / Navigation -->
+    <header class="bg-cardBg border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-dumbbell text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">FitPulse</h1>
+                    <p class="text-xs text-slate-400">Workout & Exercise Tracker</p>
+                </div>
+            </div>
+            <!-- Tab Switcher -->
+            <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
+                <button onclick="switchTab('active')" id="tab-active" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white shadow">
+                    <i class="fa-solid fa-play mr-2"></i>Active Session
+                </button>
+                <button onclick="switchTab('history')" id="tab-history" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-history mr-2"></i>History Log
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6">
+
+        <!-- ACTIVE SESSION TAB -->
+        <section id="section-active" class="space-y-6">
+            
+            <!-- Exercise Configuration Card -->
+            <div class="bg-cardBg border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <h2 class="text-lg font-semibold mb-4 flex items-center">
+                    <i class="fa-solid fa-sliders text-blue-500 mr-2"></i> Exercise Configuration
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Exercise Name / Label</label>
+                        <input type="text" id="exercise-name" value="Pushups" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Quick Select Template</label>
+                        <select id="template-select" onchange="loadTemplate(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                            <option value="Pushups">Pushups</option>
+                            <option value="Squats">Squats</option>
+                            <option value="Pull-ups">Pull-ups</option>
+                            <option value="Plank">Plank / Core</option>
+                            <option value="Custom">Custom Exercise</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timers & Stopwatch Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Stopwatch Card -->
+                <div class="bg-cardBg border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-semibold text-slate-200 flex items-center text-sm">
+                                <i class="fa-solid fa-stopwatch text-emerald-400 mr-2"></i> Workout Stopwatch
+                            </h3>
+                            <span class="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-medium">Session Time</span>
+                        </div>
+                        <div id="stopwatch-display" class="text-4xl font-mono font-bold text-center my-4 tracking-wider text-emerald-400">00:00:00</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="toggleStopwatch()" id="stopwatch-toggle-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
+                            <i class="fa-solid fa-play"></i> Start
+                        </button>
+                        <button onclick="resetStopwatch()" class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 rounded-xl transition-all text-sm">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interval / Rest Timer Card -->
+                <div class="bg-cardBg border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-semibold text-slate-200 flex items-center text-sm">
+                                <i class="fa-solid fa-clock text-amber-400 mr-2"></i> Rest Timer
+                            </h3>
+                            <div class="flex gap-1">
+                                <button onclick="setTimerPreset(30)" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-slate-300">30s</button>
+                                <button onclick="setTimerPreset(60)" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-slate-300">60s</button>
+                                <button onclick="setTimerPreset(90)" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-slate-300">90s</button>
+                            </div>
+                        </div>
+                        <div id="timer-display" class="text-4xl font-mono font-bold text-center my-4 tracking-wider text-amber-400">01:00</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="toggleTimer()" id="timer-toggle-btn" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20">
+                            <i class="fa-solid fa-play"></i> Start Rest
+                        </button>
+                        <button onclick="resetTimer()" class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 rounded-xl transition-all text-sm">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Set & Rep Management Card -->
+            <div class="bg-cardBg border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-slate-200 flex items-center text-sm">
+                        <i class="fa-solid fa-list-check text-blue-500 mr-2"></i> Sets & Reps Management
+                    </h3>
+                    <button onclick="addSet()" class="text-xs bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg transition-all font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus"></i> Add Set
+                    </button>
+                </div>
+                
+                <!-- Sets Table Container -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-xs font-medium text-slate-400">
+                                <th class="py-2.5 px-3">Set</th>
+                                <th class="py-2.5 px-3">Reps</th>
+                                <th class="py-2.5 px-3">Weight / Note (Optional)</th>
+                                <th class="py-2.5 px-3 text-center">Status</th>
+                                <th class="py-2.5 px-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sets-container" class="divide-y divide-slate-800/60 text-sm">
+                            <!-- Dynamic rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Step Count Tracker Card -->
+            <div class="bg-cardBg border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-slate-200 flex items-center text-sm">
+                        <i class="fa-solid fa-shoe-prints text-indigo-400 mr-2"></i> Step Counter Tracker
+                    </h3>
+                    <div id="sensor-status" class="text-xs px-2.5 py-1 bg-slate-800 text-slate-400 rounded-full font-medium">Sensor: Manual</div>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-indigo-600/20 text-indigo-400 p-4 rounded-2xl border border-indigo-500/20">
+                            <i class="fa-solid fa-person-walking text-2xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Total Steps Recorded</span>
+                            <span id="step-display" class="text-3xl font-bold font-mono tracking-tight text-indigo-400">0</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                        <button onclick="adjustSteps(1)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-sm font-medium transition-all">+1 Step</button>
+                        <button onclick="adjustSteps(10)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-sm font-medium transition-all">+10 Steps</button>
+                        <button onclick="toggleStepSensor()" id="sensor-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-indigo-600/20">
+                            <i class="fa-solid fa-satellite-dish"></i> Live Sensor
+                        </button>
+                        <button onclick="resetSteps()" class="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 px-3 py-2 rounded-xl text-sm font-medium transition-all">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complete and Save Session Button -->
+            <button onclick="completeWorkout()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-4 rounded-2xl shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 text-base">
+                <i class="fa-solid fa-floppy-disk text-lg"></i> Complete & Save Workout to History
+            </button>
+
+        </section>
+
+        <!-- HISTORY LOG TAB -->
+        <section id="section-history" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-semibold flex items-center">
+                        <i class="fa-solid fa-calendar-days text-blue-500 mr-2"></i> Workout History Log
+                    </h2>
+                    <p class="text-xs text-slate-400">All completed sessions saved securely in your browser.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportHistory()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 border border-slate-700">
+                        <i class="fa-solid fa-download"></i> Export JSON
+                    </button>
+                    <button onclick="clearHistory()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 border border-red-500/20">
+                        <i class="fa-solid fa-trash-can"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- History List Container -->
+            <div id="history-container" class="space-y-4">
+                <!-- History logs injected dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        FitPulse Exercise Tracker &bull; Data saved locally with localStorage
+    </footer>
+
+    <!-- Custom Notification Toast Modal / Message Box -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-cardBg border border-slate-700 text-slate-100 px-4 py-3 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
+        <div id="toast-icon" class="text-blue-500 text-lg"></div>
+        <div>
+            <h4 id="toast-title" class="text-xs font-semibold uppercase tracking-wider text-slate-400">Notification</h4>
+            <p id="toast-msg" class="text-sm font-medium"></p>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- State Management ---
+        let stopwatchInterval = null;
+        let stopwatchSeconds = 0;
+        let isStopwatchRunning = false;
+
+        let timerInterval = null;
+        let timerRemaining = 60; // default 60s rest
+        let isTimerRunning = false;
+
+        let setsData = [
+            { id: 1, reps: 12, weight: 'Bodyweight', completed: false },
+            { id: 2, reps: 10, weight: 'Bodyweight', completed: false },
+            { id: 3, reps: 8, weight: 'Bodyweight', completed: false }
+        ];
+
+        let stepCount = 0;
+        let isSensorActive = false;
+        let lastMotionTime = 0;
+
+        // --- Audio Beep Generator using Web Audio API ---
+        function playBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } catch(e) {
+                console.log("Audio not supported or blocked", e);
+            }
+        }
+
+        // --- Toast Notification Helper ---
+        function showToast(title, message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toast-title');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastTitle.innerText = title;
+            toastMsg.innerText = message;
+
+            if (type === 'success') {
+                toastIcon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            } else if (type === 'warning') {
+                toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-400"></i>';
+            } else {
+                toastIcon.innerHTML = '<i class="fa-solid fa-circle-info text-blue-400"></i>';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // --- Tab Switcher ---
+        function switchTab(tab) {
+            const activeSec = document.getElementById('section-active');
+            const historySec = document.getElementById('section-history');
+            const tabActiveBtn = document.getElementById('tab-active');
+            const tabHistoryBtn = document.getElementById('tab-history');
+
+            if (tab === 'active') {
+                activeSec.classList.remove('hidden');
+                historySec.classList.add('hidden');
+                tabActiveBtn.className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white shadow";
+                tabHistoryBtn.className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white";
+            } else {
+                activeSec.classList.add('hidden');
+                historySec.classList.remove('hidden');
+                tabHistoryBtn.className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white shadow";
+                tabActiveBtn.className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white";
+                renderHistory();
+            }
+        }
+
+        // --- Template Loader ---
+        function loadTemplate(val) {
+            const nameInput = document.getElementById('exercise-name');
+            if (val !== 'Custom') {
+                nameInput.value = val;
+            }
+        }
+
+        // --- Stopwatch Logic ---
+        function toggleStopwatch() {
+            const btn = document.getElementById('stopwatch-toggle-btn');
+            if (isStopwatchRunning) {
+                clearInterval(stopwatchInterval);
+                isStopwatchRunning = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Start';
+                btn.className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20";
+            } else {
+                isStopwatchRunning = true;
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                btn.className = "flex-1 bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20";
+                stopwatchInterval = setInterval(() => {
+                    stopwatchSeconds++;
+                    updateStopwatchDisplay();
+                }, 1000);
+            }
+        }
+
+        function resetStopwatch() {
+            clearInterval(stopwatchInterval);
+            isStopwatchRunning = false;
+            stopwatchSeconds = 0;
+            updateStopwatchDisplay();
+            const btn = document.getElementById('stopwatch-toggle-btn');
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> Start';
+            btn.className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20";
+        }
+
+        function updateStopwatchDisplay() {
+            const hrs = Math.floor(stopwatchSeconds / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((stopwatchSeconds % 3600) / 60).toString().padStart(2, '0');
+            const secs = (stopwatchSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('stopwatch-display').innerText = `${hrs}:${mins}:${secs}`;
+        }
+
+        // --- Timer Logic ---
+        function setTimerPreset(sec) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerRemaining = sec;
+            updateTimerDisplay();
+            const btn = document.getElementById('timer-toggle-btn');
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> Start Rest';
+            btn.className = "flex-1 bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20";
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('timer-toggle-btn');
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Resume';
+                btn.className = "flex-1 bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20";
+            } else {
+                if (timerRemaining <= 0) timerRemaining = 60;
+                isTimerRunning = true;
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                btn.className = "flex-1 bg-rose-600 hover:bg-rose-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
+                
+                timerInterval = setInterval(() => {
+                    if (timerRemaining > 0) {
+                        timerRemaining--;
+                        updateTimerDisplay();
+                    }
+                    if (timerRemaining === 0) {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        playBeep();
+                        showToast('Rest Complete', 'Time to start your next set!', 'success');
+                        btn.innerHTML = '<i class="fa-solid fa-play"></i> Start Rest';
+                        btn.className = "flex-1 bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20";
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerRemaining = 60;
+            updateTimerDisplay();
+            const btn = document.getElementById('timer-toggle-btn');
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> Start Rest';
+            btn.className = "flex-1 bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20";
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerRemaining / 60).toString().padStart(2, '0');
+            const secs = (timerRemaining % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${mins}:${secs}`;
+        }
+
+        // --- Sets & Reps Management ---
+        function renderSets() {
+            const container = document.getElementById('sets-container');
+            container.innerHTML = '';
+            setsData.forEach((s, index) => {
+                const row = document.createElement('tr');
+                row.className = s.completed ? 'bg-blue-600/5 transition-colors' : 'hover:bg-slate-900/40 transition-colors';
+                row.innerHTML = `
+                    <td class="py-3 px-3 font-semibold text-slate-300">#${index + 1}</td>
+                    <td class="py-3 px-3">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="updateReps(${s.id}, -1)" class="w-7 h-7 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 flex items-center justify-center text-xs">-</button>
+                            <input type="number" value="${s.reps}" onchange="setReps(${s.id}, this.value)" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center text-sm font-mono focus:outline-none focus:border-blue-500">
+                            <button onclick="updateReps(${s.id}, 1)" class="w-7 h-7 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 flex items-center justify-center text-xs">+</button>
+                        </div>
+                    </td>
+                    <td class="py-3 px-3">
+                        <input type="text" value="${s.weight}" onchange="setWeight(${s.id}, this.value)" placeholder="e.g. 50kg" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-blue-500">
+                    </td>
+                    <td class="py-3 px-3 text-center">
+                        <button onclick="toggleSetComplete(${s.id})" class="px-3 py-1 rounded-full text-xs font-medium transition-all ${s.completed ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">
+                            ${s.completed ? '<i class="fa-solid fa-check mr-1"></i> Done' : 'Pending'}
+                        </button>
+                    </td>
+                    <td class="py-3 px-3 text-right">
+                        <button onclick="removeSet(${s.id})" class="text-slate-500 hover:text-red-400 p-1.5 transition-colors"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function addSet() {
+            const newId = setsData.length > 0 ? Math.max(...setsData.map(s => s.id)) + 1 : 1;
+            const lastReps = setsData.length > 0 ? setsData[setsData.length - 1].reps : 10;
+            const lastWeight = setsData.length > 0 ? setsData[setsData.length - 1].weight : 'Bodyweight';
+            setsData.push({ id: newId, reps: lastReps, weight: lastWeight, completed: false });
+            renderSets();
+        }
+
+        function removeSet(id) {
+            if (setsData.length <= 1) {
+                showToast('Action Denied', 'Workout must have at least one set.', 'warning');
+                return;
+            }
+            setsData = setsData.filter(s => s.id !== id);
+            renderSets();
+        }
+
+        function updateReps(id, delta) {
+            const set = setsData.find(s => s.id === id);
+            if (set) {
+                set.reps = Math.max(1, set.reps + delta);
+                renderSets();
+            }
+        }
+
+        function setReps(id, val) {
+            const set = setsData.find(s => s.id === id);
+            if (set) {
+                set.reps = Math.max(1, parseInt(val) || 0);
+            }
+        }
+
+        function setWeight(id, val) {
+            const set = setsData.find(s => s.id === id);
+            if (set) {
+                set.weight = val;
+            }
+        }
+
+        function toggleSetComplete(id) {
+            const set = setsData.find(s => s.id === id);
+            if (set) {
+                set.completed = !set.completed;
+                if (set.completed) {
+                    // Trigger short rest timer automatically upon completion
+                    setTimerPreset(45);
+                    toggleTimer();
+                }
+                renderSets();
+            }
+        }
+
+        // --- Step Counter Tracker Logic ---
+        function adjustSteps(amount) {
+            stepCount = Math.max(0, stepCount + amount);
+            document.getElementById('step-display').innerText = stepCount;
+        }
+
+        function resetSteps() {
+            stepCount = 0;
+            document.getElementById('step-display').innerText = stepCount;
+        }
+
+        function toggleStepSensor() {
+            const statusEl = document.getElementById('sensor-status');
+            const btn = document.getElementById('sensor-btn');
+
+            if (!isSensorActive) {
+                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                    DeviceMotionEvent.requestPermission().then(response => {
+                        if (response === 'granted') {
+                            activateMotionListener();
+                        } else {
+                            showToast('Permission Denied', 'Motion sensor permission was denied.', 'warning');
+                        }
+                    }).catch(console.error);
+                } else if ('ondevicemotion' in window) {
+                    activateMotionListener();
+                } else {
+                    showToast('Not Supported', 'Device motion sensors are not supported on this browser.', 'warning');
+                }
+            } else {
+                deactivateMotionListener();
+            }
+        }
+
+        function activateMotionListener() {
+            isSensorActive = true;
+            window.addEventListener('devicemotion', handleMotion);
+            document.getElementById('sensor-status').innerText = 'Sensor: Active';
+            document.getElementById('sensor-status').className = 'text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-medium';
+            document.getElementById('sensor-btn').innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Stop Sensor';
+            document.getElementById('sensor-btn').className = 'bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-rose-600/20';
+            showToast('Sensor Active', 'Move your device to record steps automatically!', 'success');
+        }
+
+        function deactivateMotionListener() {
+            isSensorActive = false;
+            window.removeEventListener('devicemotion', handleMotion);
+            document.getElementById('sensor-status').innerText = 'Sensor: Manual';
+            document.getElementById('sensor-status').className = 'text-xs px-2.5 py-1 bg-slate-800 text-slate-400 rounded-full font-medium';
+            document.getElementById('sensor-btn').innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Live Sensor';
+            document.getElementById('sensor-btn').className = 'bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-indigo-600/20';
+        }
+
+        function handleMotion(event) {
+            const acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+            const threshold = 12.0;
+            const currentMagnitude = Math.sqrt((acc.x || 0)**2 + (acc.y || 0)**2 + (acc.z || 0)**2);
+            const now = Date.now();
+            if (currentMagnitude > threshold && (now - lastMotionTime) > 350) {
+                stepCount++;
+                document.getElementById('step-display').innerText = stepCount;
+                lastMotionTime = now;
+            }
+        }
+
+        // --- Workout Logging & Persistence (LocalStorage) ---
+        function completeWorkout() {
+            const name = document.getElementById('exercise-name').value.trim() || 'Custom Workout';
+            const duration = stopwatchSeconds;
+            const steps = stepCount;
+            const totalSets = setsData.length;
+            const completedSetsCount = setsData.filter(s => s.completed).length;
+
+            const workoutRecord = {
+                id: Date.now(),
+                date: new Date().toLocaleString(),
+                name: name,
+                duration: duration,
+                steps: steps,
+                totalSets: totalSets,
+                completedSetsCount: completedSetsCount,
+                sets: JSON.parse(JSON.stringify(setsData))
+            };
+
+            let history = JSON.parse(localStorage.getItem('fitpulse_history') || '[]');
+            history.unshift(workoutRecord);
+            localStorage.setItem('fitpulse_history', JSON.stringify(history));
+
+            showToast('Workout Saved!', `Successfully logged "${name}" to history.`, 'success');
+            
+            // Reset active session state
+            resetStopwatch();
+            resetTimer();
+            resetSteps();
+            if (isSensorActive) deactivateMotionListener();
+            
+            // Switch to history tab to review
+            switchTab('history');
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            const history = JSON.parse(localStorage.getItem('fitpulse_history') || '[]');
+
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-cardBg border border-slate-800 rounded-2xl p-10 text-center text-slate-500 space-y-3">
+                        <i class="fa-solid fa-clipboard-list text-4xl text-slate-600"></i>
+                        <p class="text-sm">No workout sessions logged yet. Complete a workout to see history here!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            history.forEach(item => {
+                const hrs = Math.floor(item.duration / 3600);
+                const mins = Math.floor((item.duration % 3600) / 60);
+                const secs = item.duration % 60;
+                const durationStr = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs}s`;
+
+                const card = document.createElement('div');
+                card.className = 'bg-cardBg border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4';
+                
+                let setsHtml = item.sets.map((s, i) => `
+                    <div class="text-xs bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800 flex justify-between items-center">
+                        <span class="font-medium text-slate-300">Set #${i+1}</span>
+                        <span class="text-slate-400 font-mono">${s.reps} reps ${s.weight ? '(' + s.weight + ')' : ''}</span>
+                        <span class="${s.completed ? 'text-emerald-400' : 'text-slate-500'}"><i class="fa-solid ${s.completed ? 'fa-check' : 'fa-minus'}"></i></span>
+                    </div>
+                `).join('');
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-xs text-blue-400 font-medium">${item.date}</span>
+                            <h3 class="text-base font-bold text-slate-100 mt-0.5">${item.name}</h3>
+                        </div>
+                        <button onclick="deleteHistoryItem(${item.id})" class="text-slate-500 hover:text-red-400 p-2 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 text-center bg-slate-900/40 p-3 rounded-xl border border-slate-800/80">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block uppercase tracking-wider">Duration</span>
+                            <span class="text-sm font-bold font-mono text-emerald-400">${durationStr}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block uppercase tracking-wider">Sets Done</span>
+                            <span class="text-sm font-bold font-mono text-blue-400">${item.completedSetsCount}/${item.totalSets}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block uppercase tracking-wider">Steps</span>
+                            <span class="text-sm font-bold font-mono text-indigo-400">${item.steps}</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        ${setsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function deleteHistoryItem(id) {
+            let history = JSON.parse(localStorage.getItem('fitpulse_history') || '[]');
+            history = history.filter(item => item.id !== id);
+            localStorage.setItem('fitpulse_history', JSON.stringify(history));
+            renderHistory();
+            showToast('Deleted', 'Workout entry removed from history.', 'info');
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to delete all workout history?')) {
+                localStorage.removeItem('fitpulse_history');
+                renderHistory();
+                showToast('History Cleared', 'All past workout records have been deleted.', 'info');
+            }
+        }
+
+        function exportHistory() {
+            const history = localStorage.getItem('fitpulse_history') || '[]';
+            const blob = new Blob([history], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fitpulse_workout_history_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exported', 'History downloaded as JSON file.', 'success');
+        }
+
+        // Initialize application sets render on load
+        window.onload = function() {
+            renderSets();
+            updateTimerDisplay();
+        };
+    </script>
+</body>
+</html>
