@@ -56,8 +56,9 @@
                 <!-- Controls & Actions -->
                 <div class="flex items-center space-x-2 sm:space-x-3">
                     <!-- Target Settings Button -->
-                    <button @click="showSettingsModal = true" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="Settings & Goals">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <button @click="openSettingsModal()" class="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 transition" title="Settings & Daily Target">
+                        <svg class="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span class="hidden sm:inline" x-text="`${dailyTarget} kcal`"></span>
                     </button>
                     <!-- Dark Mode Toggle -->
                     <button @click="toggleDarkMode()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="Toggle Theme">
@@ -122,34 +123,53 @@
                 <div class="md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg">Daily Calorie Budget</h2>
-                            <span class="text-xs px-2.5 py-1 rounded-full font-semibold"
-                                  :class="getRemainingCalories() >= 0 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'"
-                                  x-text="getRemainingCalories() >= 0 ? `${getRemainingCalories()} kcal remaining` : `${Math.abs(getRemainingCalories())} kcal over target`">
-                            </span>
+                            <div>
+                                <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg">Daily Calorie Budget</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Target: <span class="font-semibold" x-text="`${dailyTarget} kcal`"></span></p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs px-2.5 py-1 rounded-full font-semibold"
+                                      :class="getRemainingCalories() >= 0 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'"
+                                      x-text="getRemainingCalories() >= 0 ? `${getRemainingCalories()} kcal remaining` : `${Math.abs(getRemainingCalories())} kcal over limit`">
+                                </span>
+                                <button @click="openSettingsModal()" class="text-xs text-brand-600 dark:text-brand-400 hover:underline font-medium ml-1">
+                                    Edit Goal
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Progress Numbers -->
-                        <div class="grid grid-cols-3 gap-4 mb-4 text-center">
+                        <div class="grid grid-cols-4 gap-3 mb-4 text-center">
                             <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Consumed</p>
-                                <p class="text-xl font-bold text-brand-600 dark:text-brand-400" x-text="totalCalories"></p>
+                                <p class="text-lg sm:text-xl font-bold text-brand-600 dark:text-brand-400" x-text="totalCalories"></p>
                             </div>
                             <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Target Goal</p>
-                                <p class="text-xl font-bold text-slate-700 dark:text-slate-200" x-text="dailyTarget"></p>
+                                <p class="text-lg sm:text-xl font-bold text-slate-700 dark:text-slate-200" x-text="dailyTarget"></p>
                             </div>
                             <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Items Logged</p>
-                                <p class="text-xl font-bold text-slate-700 dark:text-slate-200" x-text="foodEntries.length"></p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Remaining</p>
+                                <p class="text-lg sm:text-xl font-bold" :class="getRemainingCalories() >= 0 ? 'text-slate-700 dark:text-slate-200' : 'text-red-500'" x-text="getRemainingCalories()"></p>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Completion</p>
+                                <p class="text-lg sm:text-xl font-bold" :class="getProgressPercentage() > 100 ? 'text-red-500' : 'text-brand-600 dark:text-brand-400'" x-text="`${getProgressPercentage()}%`"></p>
                             </div>
                         </div>
 
-                        <!-- Progress Bar -->
-                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
-                            <div class="h-full transition-all duration-500 rounded-full"
-                                 :class="getProgressPercentage() > 100 ? 'bg-red-500' : 'bg-brand-500'"
-                                 :style="`width: ${Math.min(getProgressPercentage(), 100)}%`"></div>
+                        <!-- Enhanced Progress Bar with Dynamic Marker & Labels -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                                <span>0 kcal</span>
+                                <span class="font-medium" x-text="`${getProgressPercentage()}% of goal`"></span>
+                                <span x-text="`${dailyTarget} kcal`"></span>
+                            </div>
+                            <div class="w-full bg-slate-200 dark:bg-slate-700 h-3.5 rounded-full overflow-hidden p-0.5 relative">
+                                <div class="h-full transition-all duration-500 rounded-full"
+                                     :class="getProgressPercentage() > 100 ? 'bg-gradient-to-r from-brand-500 to-red-500' : 'bg-brand-500'"
+                                     :style="`width: ${Math.min(getProgressPercentage(), 100)}%`"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -360,24 +380,44 @@
     <div x-show="showSettingsModal" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.away="showSettingsModal = false">
             <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Calorie & Goal Settings</h3>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">🎯</span>
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Set Daily Calorie Target</h3>
+                </div>
                 <button @click="showSettingsModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
             <div class="p-6 space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Daily Calorie Target (kcal)</label>
-                    <input type="number" x-model.number="dailyTarget" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Daily Calorie Goal (kcal)</label>
+                    <input type="number" min="500" max="10000" x-model.number="tempTarget" @keydown.enter="saveSettings(); showSettingsModal = false;" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-base font-semibold focus:outline-none focus:border-brand-500">
+                    <p class="text-xs text-slate-400 mt-1">This target will be saved in your browser storage and used for daily progress calculations.</p>
                 </div>
-                <div class="flex space-x-2 pt-2">
-                    <button @click="dailyTarget = 1500" class="flex-1 py-1.5 text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-lg">Deficit (1500)</button>
-                    <button @click="dailyTarget = 2000" class="flex-1 py-1.5 text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-lg">Standard (2000)</button>
-                    <button @click="dailyTarget = 2500" class="flex-1 py-1.5 text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-lg">Surplus (2500)</button>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">Quick Presets</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button @click="tempTarget = 1500" :class="tempTarget === 1500 ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-bold' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="py-2 text-xs rounded-xl border transition">
+                            Weight Loss<br><span class="font-semibold text-xs opacity-75">1500 kcal</span>
+                        </button>
+                        <button @click="tempTarget = 2000" :class="tempTarget === 2000 ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-bold' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="py-2 text-xs rounded-xl border transition">
+                            Maintenance<br><span class="font-semibold text-xs opacity-75">2000 kcal</span>
+                        </button>
+                        <button @click="tempTarget = 2500" :class="tempTarget === 2500 ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-bold' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="py-2 text-xs rounded-xl border transition">
+                            Muscle Gain<br><span class="font-semibold text-xs opacity-75">2500 kcal</span>
+                        </button>
+                    </div>
                 </div>
-                <button @click="saveSettings(); showSettingsModal = false;" class="w-full mt-4 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-semibold transition">
-                    Save Goal
-                </button>
+
+                <div class="flex space-x-3 pt-2">
+                    <button @click="showSettingsModal = false" class="w-1/2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl text-sm font-semibold transition">
+                        Cancel
+                    </button>
+                    <button @click="saveSettings(); showSettingsModal = false;" class="w-1/2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-semibold transition">
+                        Save Goal
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -402,6 +442,7 @@
                 darkMode: false,
                 selectedDate: '',
                 dailyTarget: 2000,
+                tempTarget: 2000,
                 foodEntries: [],
                 totalCalories: 0,
                 totalCarbs: 0,
@@ -444,15 +485,33 @@
                         document.documentElement.classList.remove('dark');
                     }
 
-                    // Load target
+                    // Load target from localStorage (defaults to 2000 kcal if not set)
                     const savedTarget = localStorage.getItem('dailyTarget');
-                    if (savedTarget) {
+                    if (savedTarget && !isNaN(parseInt(savedTarget))) {
                         this.dailyTarget = parseInt(savedTarget);
+                    } else {
+                        this.dailyTarget = 2000;
                     }
+                    this.tempTarget = this.dailyTarget;
 
                     // Set today's date
                     this.selectedDate = this.getTodayString();
                     this.loadDayData();
+                },
+
+                openSettingsModal() {
+                    this.tempTarget = this.dailyTarget;
+                    this.showSettingsModal = true;
+                },
+
+                saveSettings() {
+                    if (!this.tempTarget || this.tempTarget <= 0) {
+                        this.showToast('Please enter a valid calorie target', '⚠️');
+                        return;
+                    }
+                    this.dailyTarget = Number(this.tempTarget);
+                    localStorage.setItem('dailyTarget', this.dailyTarget);
+                    this.showToast(`Daily target set to ${this.dailyTarget} kcal!`, '🎯');
                 },
 
                 getTodayString() {
