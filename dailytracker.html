@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Daily Tracker & Routine Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-full flex flex-col transition-colors duration-300">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-bolt-lightning text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Elite Routine Tracker</h1>
+                    <p class="text-xs text-slate-400">CI, Fitness, Finance & Continuous Growth</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Date Picker -->
+                <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 shadow-inner">
+                    <i class="fa-regular fa-calendar text-indigo-400 mr-2 text-sm"></i>
+                    <input type="date" id="trackerDate" class="bg-transparent text-sm text-slate-200 focus:outline-none cursor-pointer">
+                </div>
+
+                <!-- Tabs -->
+                <nav class="hidden md:flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
+                    <button onclick="switchTab('tracker')" id="tabTracker" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-600 text-white shadow">Today</button>
+                    <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">History & Missed</button>
+                    <button onclick="switchTab('deploy')" id="tabDeploy" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">GitHub Pages Guide</button>
+                </nav>
+
+                <!-- Data Management Modal Trigger / Dropdown -->
+                <div class="relative">
+                    <button onclick="toggleDataMenu()" class="p-2 bg-slate-900 border border-slate-700 hover:border-slate-600 rounded-xl text-slate-300 transition shadow">
+                        <i class="fa-solid fa-database text-sm"></i>
+                    </button>
+                    <div id="dataMenu" class="hidden absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-2 z-50">
+                        <button onclick="exportData()" class="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 flex items-center">
+                            <i class="fa-solid fa-download mr-2 text-indigo-400"></i> Export JSON
+                        </button>
+                        <label class="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 flex items-center cursor-pointer">
+                            <i class="fa-solid fa-upload mr-2 text-cyan-400"></i> Import JSON
+                            <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Navigation bar -->
+        <div class="md:hidden flex justify-around bg-slate-900/90 border-t border-slate-800 py-2">
+            <button onclick="switchTab('tracker')" id="mobTabTracker" class="text-xs font-medium text-indigo-400 flex flex-col items-center"><i class="fa-solid fa-list-check mb-1"></i>Tracker</button>
+            <button onclick="switchTab('history')" id="mobTabHistory" class="text-xs font-medium text-slate-400 flex flex-col items-center"><i class="fa-solid fa-chart-line mb-1"></i>History</button>
+            <button onclick="switchTab('deploy')" id="mobTabDeploy" class="text-xs font-medium text-slate-400 flex flex-col items-center"><i class="fa-brands fa-github mb-1"></i>Deploy</button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Notification Banner -->
+        <div id="notification" class="hidden p-4 rounded-xl text-sm font-medium shadow-lg transition-all duration-300 flex items-center justify-between">
+            <span id="notificationText"></span>
+            <button onclick="hideNotification()" class="text-current opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- VIEW 1: TRACKER -->
+        <div id="viewTracker" class="space-y-6">
+            <!-- Metrics & Day Status Banner -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Day Card -->
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span id="dayNameBadge" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-semibold rounded-full">Monday</span>
+                        <span id="holidayNotice" class="hidden px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold rounded-full">☀️ Rest Day / Holiday</span>
+                    </div>
+                    <div class="my-4">
+                        <h2 id="currentDisplayDate" class="text-2xl font-bold tracking-tight text-white">Oct 16, 2026</h2>
+                        <p class="text-sm text-slate-400">Daily Execution Dashboard</p>
+                    </div>
+                    <div class="flex items-center space-x-2 text-xs text-slate-400">
+                        <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+                        <span>Productive Target: <strong class="text-slate-200">12.25 Hours</strong></span>
+                    </div>
+                </div>
+
+                <!-- Completion Progress Card -->
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between md:col-span-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-slate-300">Daily Completion Rate</span>
+                        <span id="completionPercent" class="text-xl font-bold text-indigo-400">0%</span>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-900 rounded-full h-3.5 mb-4 overflow-hidden border border-slate-700">
+                        <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-3.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-700/60 text-xs text-slate-400">
+                        <div>Pillars: <strong class="text-slate-200">Health, CI, Finance, Lang</strong></div>
+                        <div>Completed: <strong id="completedCount" class="text-emerald-400">0</strong> / <span id="totalCount">14</span></div>
+                        <div>Missed Tasks: <strong id="missedCount" class="text-rose-400">0</strong></div>
+                        <div class="text-right">
+                            <button onclick="resetToday()" class="text-indigo-400 hover:underline font-medium"><i class="fa-solid fa-rotate-right mr-1"></i> Reset Day</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sunday Notice Box (Conditional) -->
+            <div id="sundayBanner" class="hidden bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-2xl p-5 text-amber-200 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="p-3 bg-amber-500/20 text-amber-400 rounded-xl text-xl">
+                        <i class="fa-solid fa-umbrella-beach"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base">Sunday is designated as a Holiday / Rest Day!</h3>
+                        <p class="text-xs text-amber-300/80">Relax, recover, and recharge for the upcoming week. You can still check tasks if you choose to maintain habits.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Table / Cards -->
+            <div class="bg-slate-800 border border-slate-700/80 rounded-2xl shadow-xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                    <h3 class="font-bold text-slate-200 flex items-center">
+                        <i class="fa-solid fa-list-check text-indigo-400 mr-2"></i> Daily Routine Schedule (Monday to Saturday)
+                    </h3>
+                    <span class="text-xs text-slate-400">Click checkboxes to mark complete</span>
+                </div>
+                
+                <div class="divide-y divide-slate-700/60" id="scheduleList">
+                    <!-- Dynamic Rows populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: HISTORY & UNCOMPLETED METRICS -->
+        <div id="viewHistory" class="hidden space-y-6">
+            <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center">
+                            <i class="fa-solid fa-chart-line text-cyan-400 mr-2"></i> Historical Performance & Uncompleted Tracker
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Review past days and keep tabs on missed routine elements.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="clearAllHistory()" class="px-3 py-1.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 rounded-lg text-xs font-semibold transition">
+                            <i class="fa-solid fa-trash-can mr-1.5"></i> Clear History
+                        </button>
+                    </div>
+                </div>
+
+                <!-- History Summary Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-900/60 border border-slate-700 p-4 rounded-xl">
+                        <span class="text-xs text-slate-400 block">Total Days Logged</span>
+                        <span id="statLoggedDays" class="text-2xl font-bold text-white">0</span>
+                    </div>
+                    <div class="bg-slate-900/60 border border-slate-700 p-4 rounded-xl">
+                        <span class="text-xs text-slate-400 block">Avg. Completion Rate</span>
+                        <span id="statAvgCompletion" class="text-2xl font-bold text-indigo-400">0%</span>
+                    </div>
+                    <div class="bg-slate-900/60 border border-slate-700 p-4 rounded-xl">
+                        <span class="text-xs text-slate-400 block">Total Missed Activities</span>
+                        <span id="statTotalMissed" class="text-2xl font-bold text-rose-400">0</span>
+                    </div>
+                </div>
+
+                <!-- History Breakdown List -->
+                <div class="space-y-4" id="historyListContainer">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: GITHUB PAGES DEPLOYMENT GUIDE -->
+        <div id="viewDeploy" class="hidden space-y-6">
+            <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+                <div>
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl text-xl">
+                            <i class="fa-brands fa-github"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Deploying to GitHub Pages</h2>
+                            <p class="text-xs text-slate-400">Host this Daily Tracker app for free on GitHub Pages in under 2 minutes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-sm text-slate-300">
+                    <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl space-y-2">
+                        <h3 class="font-bold text-indigo-400 flex items-center"><span class="bg-indigo-600 text-white w-6 h-6 rounded-full inline-flex items-center justify-center text-xs mr-2">1</span> Save the File</h3>
+                        <p>Save the code of this page as <code class="bg-slate-800 px-2 py-0.5 rounded text-cyan-300 font-mono text-xs">index.html</code> on your computer.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl space-y-2">
+                        <h3 class="font-bold text-indigo-400 flex items-center"><span class="bg-indigo-600 text-white w-6 h-6 rounded-full inline-flex items-center justify-center text-xs mr-2">2</span> Create a GitHub Repository</h3>
+                        <p>Go to <a href="https://github.com" target="_blank" class="text-indigo-400 underline hover:text-indigo-300">GitHub</a>, log in, and create a new repository (e.g., named <code class="bg-slate-800 px-2 py-0.5 rounded text-cyan-300 font-mono text-xs">daily-tracker</code>). Set it to <strong>Public</strong>.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl space-y-2">
+                        <h3 class="font-bold text-indigo-400 flex items-center"><span class="bg-indigo-600 text-white w-6 h-6 rounded-full inline-flex items-center justify-center text-xs mr-2">3</span> Upload index.html</h3>
+                        <p>Click on <strong>"uploading an existing file"</strong> inside your repository, drag and drop your <code class="bg-slate-800 px-2 py-0.5 rounded text-cyan-300 font-mono text-xs">index.html</code> file, and click <strong>Commit changes</strong>.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl space-y-2">
+                        <h3 class="font-bold text-indigo-400 flex items-center"><span class="bg-indigo-600 text-white w-6 h-6 rounded-full inline-flex items-center justify-center text-xs mr-2">4</span> Enable GitHub Pages</h3>
+                        <p>Go to your repository's <strong>Settings</strong> tab -> Click on <strong>Pages</strong> in the left sidebar -> Under <em>Build and deployment</em>, select Source as <strong>Deploy from a branch</strong> and Branch as <code class="bg-slate-800 px-2 py-0.5 rounded text-cyan-300 font-mono text-xs">main</code> (or <code class="bg-slate-800 px-2 py-0.5 rounded text-cyan-300 font-mono text-xs">master</code>) and root folder <code class="bg-slate-800 px-2 py-0.5 rounded text-cyan-300 font-mono text-xs">/ (root)</code>. Click <strong>Save</strong>.</p>
+                    </div>
+
+                    <div class="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl text-emerald-300 flex items-center space-x-3">
+                        <i class="fa-solid fa-circle-check text-xl"></i>
+                        <div>
+                            <p class="font-semibold">You're Done!</p>
+                            <p class="text-xs opacity-80">Within 60 seconds, GitHub will provide your live URL (e.g. <code class="font-mono">https://yourusername.github.io/daily-tracker/</code>) where your app is fully operational with persistent local storage.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800/40 border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        <p>Elite Daily Tracker & Routine Manager &bull; Built with Tailwind CSS & JavaScript &bull; Total Productive Time: 12.25 Hours</p>
+    </footer>
+
+    <!-- Application Script -->
+    <script>
+        // Exact Schedule Definition matching prompt specifications
+        const scheduleData = [
+            { id: "task_500", time: "5:00 AM", activity: "CI", category: "💻 Continuous Improvement", desc: "Continuous Improvement routine" },
+            { id: "task_800", time: "8:00 AM", activity: "Meditation", category: "🧘 Mindfulness & Wellness", desc: "Mindfulness and mental centering" },
+            { id: "task_830", time: "8:30 AM", activity: "Cardio", category: "🏃 Physical Fitness", desc: "Cardiovascular endurance training" },
+            { id: "task_915", time: "9:15 AM", activity: "Fresh Up", category: "🚿 Morning Routine", desc: "Personal hygiene and refreshment" },
+            { id: "task_930", time: "9:30 AM", activity: "Breakfast", category: "🍳 Healthy Meal", desc: "Nutritious morning fuel" },
+            { id: "task_1000", time: "10:00 AM", activity: "CI - CERTS + Stocks Analysis", category: "📜 Certifications & 📈 Financial Markets", desc: "Certifications & Study session combined with Stocks analysis / Buying-Selling / Updating Records / F&O Trading (30-45 mins window)", isSpecial: true },
+            { id: "task_1400", time: "2:00 PM", activity: "Lunch", category: "🥗 Midday Meal", desc: "Midday nutritional meal" },
+            { id: "task_1430", time: "2:30 PM", activity: "CI - LAB", category: "🧪 Practical Lab Work", desc: "Hands-on technical implementation & labs" },
+            { id: "task_1630", time: "4:30 PM", activity: "Gym Strength Training", category: "🏋️ Muscle & Strength", desc: "Strength and hypertrophy training" },
+            { id: "task_1730", time: "5:30 PM", activity: "Stocks Trading / F&O Learning", category: "📈 Financial Markets", desc: "Market analysis, trading strategies & derivatives learning" },
+            { id: "task_1815", time: "6:15 PM", activity: "Dinner", category: "🍲 Evening Meal", desc: "Evening nutritional meal" },
+            { id: "task_1830", time: "6:30 PM", activity: "German Language Training", category: "🇩🇪 Language Learning", desc: "Vocabulary, grammar, and fluency practice" },
+            { id: "task_1915", time: "7:15 PM", activity: "CI", category: "📊 Evening Review / Work", desc: "Daily review, backlog clearing & continuous improvement" },
+            { id: "task_2100", time: "9:00 PM", activity: "Sleep", category: "🌙 Rest & Recovery", desc: "Rest, recovery & circadian wind-down" }
+        ];
+
+        // State Management
+        let currentDateStr = getLocalDateString(new Date());
+
+        function getLocalDateString(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('trackerDate');
+            dateInput.value = currentDateStr;
+            dateInput.addEventListener('change', (e) => {
+                currentDateStr = e.target.value;
+                renderApp();
+            });
+
+            renderApp();
+        });
+
+        // Tab Switcher
+        function switchTab(tab) {
+            ['tracker', 'history', 'deploy'].forEach(t => {
+                document.getElementById(`view${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
+                const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                if(btn) {
+                    btn.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                    btn.classList.add('text-slate-400');
+                }
+                const mobBtn = document.getElementById(`mobTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                if(mobBtn) {
+                    mobBtn.classList.remove('text-indigo-400');
+                    mobBtn.classList.add('text-slate-400');
+                }
+            });
+
+            document.getElementById(`view${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow');
+                activeBtn.classList.remove('text-slate-400');
+            }
+            const activeMobBtn = document.getElementById(`mobTab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+            if(activeMobBtn) {
+                activeMobBtn.classList.add('text-indigo-400');
+                activeMobBtn.classList.remove('text-slate-400');
+            }
+
+            if(tab === 'history') {
+                renderHistoryView();
+            }
+        }
+
+        // Data Helpers
+        function getAllStoredData() {
+            const data = localStorage.getItem('elite_tracker_records');
+            return data ? JSON.parse(data) : {};
+        }
+
+        function saveAllStoredData(data) {
+            localStorage.setItem('elite_tracker_records', JSON.stringify(data));
+        }
+
+        function getDayRecord(dateStr) {
+            const all = getAllStoredData();
+            return all[dateStr] || { checkedTasks: [] };
+        }
+
+        function saveDayRecord(dateStr, record) {
+            const all = getAllStoredData();
+            all[dateStr] = record;
+            saveAllStoredData(all);
+        }
+
+        // Toggle Task Checkbox
+        function toggleTask(taskId) {
+            const record = getDayRecord(currentDateStr);
+            const index = record.checkedTasks.indexOf(taskId);
+            if(index > -1) {
+                record.checkedTasks.splice(index, 1);
+            } else {
+                record.checkedTasks.push(taskId);
+            }
+            saveDayRecord(currentDateStr, record);
+            renderApp();
+        }
+
+        // Reset Today
+        function resetToday() {
+            if(confirm('Are you sure you want to reset all checkboxes for this date?')) {
+                saveDayRecord(currentDateStr, { checkedTasks: [] });
+                renderApp();
+                showNotification('Day progress reset successfully.', 'info');
+            }
+        }
+
+        // Render Main Tracker View
+        function renderApp() {
+            const dateObj = new Date(currentDateStr + 'T00:00:00');
+            const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('currentDisplayDate').innerText = dateObj.toLocaleDateString('en-US', options);
+
+            const dayOfWeek = dateObj.getDay(); // 0 is Sunday, 6 is Saturday
+            const isSunday = (dayOfWeek === 0);
+
+            // Day badge & Sunday notice
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayBadge = document.getElementById('dayNameBadge');
+            dayBadge.innerText = dayNames[dayOfWeek];
+
+            const holidayNotice = document.getElementById('holidayNotice');
+            const sundayBanner = document.getElementById('sundayBanner');
+
+            if(isSunday) {
+                holidayNotice.classList.remove('hidden');
+                sundayBanner.classList.remove('hidden');
+                dayBadge.className = 'px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold rounded-full';
+            } else {
+                holidayNotice.classList.add('hidden');
+                sundayBanner.classList.add('hidden');
+                dayBadge.className = 'px-3 py-1 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-semibold rounded-full';
+            }
+
+            const record = getDayRecord(currentDateStr);
+            const checkedSet = new Set(record.checkedTasks);
+
+            let html = '';
+            scheduleData.forEach(item => {
+                const isChecked = checkedSet.has(item.id);
+                
+                html += `
+                    <div class="p-4 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-700/20 transition-all ${isChecked ? 'bg-slate-900/30 opacity-60' : ''}">
+                        <div class="flex items-start sm:items-center space-x-4">
+                            <input type="checkbox" id="${item.id}" ${isChecked ? 'checked' : ''} onclick="toggleTask('${item.id}')"
+                                class="w-5 h-5 mt-0.5 sm:mt-0 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900 cursor-pointer">
+                            <div>
+                                <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                                    <span class="font-mono text-xs font-semibold px-2.5 py-1 bg-slate-900 border border-slate-700 text-indigo-300 rounded-lg">${item.time}</span>
+                                    <h4 class="font-semibold text-slate-100 text-base ${isChecked ? 'line-through text-slate-400' : ''}">${item.activity}</h4>
+                                    ${item.isSpecial ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-medium rounded-full"><i class="fa-solid fa-chart-pie mr-1"></i>Includes 30-45m F&O/Stocks</span>' : ''}
+                                </div>
+                                <p class="text-xs text-slate-400 mt-1">${item.desc}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-slate-900 border border-slate-700 text-slate-300">
+                                ${item.category}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('scheduleList').innerHTML = html;
+
+            // Metrics Update
+            const total = scheduleData.length;
+            const completed = record.checkedTasks.length;
+            const missed = total - completed;
+            const percent = Math.round((completed / total) * 100);
+
+            document.getElementById('completedCount').innerText = completed;
+            document.getElementById('totalCount').innerText = total;
+            document.getElementById('missedCount').innerText = missed;
+            document.getElementById('completionPercent').innerText = `${percent}%`;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+        }
+
+        // History View Rendering
+        function renderHistoryView() {
+            const allData = getAllStoredData();
+            const dates = Object.keys(allData).sort().reverse();
+
+            document.getElementById('statLoggedDays').innerText = dates.length;
+
+            let totalCompletedSum = 0;
+            let totalMissedSum = 0;
+
+            dates.forEach(d => {
+                const rec = allData[d];
+                const comp = rec.checkedTasks ? rec.checkedTasks.length : 0;
+                totalCompletedSum += comp;
+                totalMissedSum += (scheduleData.length - comp);
+            });
+
+            const avgComp = dates.length > 0 ? Math.round((totalCompletedSum / (dates.length * scheduleData.length)) * 100) : 0;
+            document.getElementById('statAvgCompletion').innerText = `${avgComp}%`;
+            document.getElementById('statTotalMissed').innerText = totalMissedSum;
+
+            let containerHtml = '';
+            if(dates.length === 0) {
+                containerHtml = `
+                    <div class="text-center py-12 text-slate-500">
+                        <i class="fa-regular fa-folder-open text-4xl mb-3"></i>
+                        <p class="text-sm">No historical tracking records found yet. Start checking off tasks on the Tracker tab!</p>
+                    </div>
+                `;
+            } else {
+                dates.forEach(dateStr => {
+                    const rec = allData[dateStr];
+                    const compCount = rec.checkedTasks ? rec.checkedTasks.length : 0;
+                    const missCount = scheduleData.length - compCount;
+                    const pct = Math.round((compCount / scheduleData.length) * 100);
+
+                    // Find uncompleted tasks
+                    const checkedSet = new Set(rec.checkedTasks || []);
+                    const uncompletedItems = scheduleData.filter(i => !checkedSet.has(i.id));
+
+                    containerHtml += `
+                        <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4 sm:p-5 space-y-3">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
+                                <div>
+                                    <h4 class="font-bold text-white text-base">${dateStr}</h4>
+                                    <p class="text-xs text-slate-400">Completion: <strong class="text-indigo-400">${pct}%</strong> (${compCount}/${scheduleData.length} tasks)</p>
+                                </div>
+                                <button onclick="switchToDate('${dateStr}')" class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-lg text-xs font-semibold transition">
+                                    <i class="fa-solid fa-eye mr-1"></i> View & Edit Date
+                                </button>
+                            </div>
+                            <div>
+                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Uncompleted / Missed Tasks (${missCount}):</span>
+                                ${uncompletedItems.length === 0 ? '<span class="text-xs text-emerald-400 font-medium">✨ All tasks completed successfully on this day!</span>' : `
+                                    <div class="flex flex-wrap gap-1.5">
+                                        ${uncompletedItems.map(item => `
+                                            <span class="px-2.5 py-1 bg-rose-500/10 text-rose-300 border border-rose-500/30 text-xs rounded-lg">
+                                                <i class="fa-solid fa-xmark mr-1"></i>${item.time} - ${item.activity}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('historyListContainer').innerHTML = containerHtml;
+        }
+
+        function switchToDate(dateStr) {
+            currentDateStr = dateStr;
+            document.getElementById('trackerDate').value = dateStr;
+            switchTab('tracker');
+        }
+
+        function clearAllHistory() {
+            if(confirm('Are you sure you want to clear all history records from local storage? This cannot be undone.')) {
+                localStorage.removeItem('elite_tracker_records');
+                renderHistoryView();
+                renderApp();
+                showNotification('All history records cleared.', 'info');
+            }
+        }
+
+        // Import & Export Data
+        function toggleDataMenu() {
+            const menu = document.getElementById('dataMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function exportData() {
+            const allData = getAllStoredData();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `elite_daily_tracker_backup_${getLocalDateString(new Date())}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showNotification('Data exported successfully as JSON.', 'success');
+            toggleDataMenu();
+        }
+
+        function importData(event) {
+            const fileReader = new FileReader();
+            if(event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        saveAllStoredData(parsed);
+                        renderApp();
+                        showNotification('Data imported successfully!', 'success');
+                    } catch(err) {
+                        showNotification('Invalid JSON file format.', 'error');
+                    }
+                    toggleDataMenu();
+                };
+            }
+        }
+
+        // Notification Helper
+        function showNotification(message, type = 'success') {
+            const notif = document.getElementById('notification');
+            const text = document.getElementById('notificationText');
+            text.innerText = message;
+            
+            notif.className = 'p-4 rounded-xl text-sm font-medium shadow-lg transition-all duration-300 flex items-center justify-between ';
+            if(type === 'success') {
+                notif.classList.add('bg-emerald-500/20', 'border', 'border-emerald-500/40', 'text-emerald-300');
+            } else if(type === 'info') {
+                notif.classList.add('bg-indigo-500/20', 'border', 'border-indigo-500/40', 'text-indigo-300');
+            } else {
+                notif.classList.add('bg-rose-500/20', 'border', 'border-rose-500/40', 'text-rose-300');
+            }
+
+            notif.classList.remove('hidden');
+            setTimeout(() => {
+                notif.classList.add('hidden');
+            }, 4000);
+        }
+
+        function hideNotification() {
+            document.getElementById('notification').classList.add('hidden');
+        }
+
+        // Close dropdown on outside click
+        window.addEventListener('click', (e) => {
+            const menu = document.getElementById('dataMenu');
+            if(!e.target.closest('button') && !e.target.closest('#dataMenu')) {
+                menu.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
