@@ -93,7 +93,7 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Exercise Name</label>
-            <input type="text" id="ex-name" placeholder="e.g. Bench Press, Jogging" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <input type="text" id="ex-name" placeholder="e.g. Heavy Squats, Bench Press" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           </div>
 
           <div>
@@ -104,7 +104,8 @@
               <option value="running">Fast Running (~7 mph) - 13.5 kcal/min</option>
               <option value="cycling">Cycling (~12-13 mph) - 9.4 kcal/min</option>
               <option value="boxing">Boxing (Bag/Sparring) - 9.1 kcal/min</option>
-              <option value="weights" selected>Weight Training (Moderate) - 4.8 kcal/min</option>
+              <option value="weights">Weight Training (Moderate) - 4.8 kcal/min</option>
+              <option value="intensive_weights" selected>Intensive Weight Training - 7.1 kcal/min</option>
               <option value="hiit">HIIT / Intense Cardio - 11.2 kcal/min</option>
               <option value="yoga">Yoga / Stretching - 2.8 kcal/min</option>
               <option value="custom">Custom Rate (kcal/min)...</option>
@@ -251,14 +252,15 @@
   <script>
     // MET Reference Values (Compendium of Physical Activities)
     const MET_VALUES = {
-      walking: 3.8,   // ~3.5 mph brisk walk
-      jogging: 8.3,   // ~5 mph moderate jog
-      running: 11.5,  // ~7 mph fast run
-      cycling: 8.0,   // ~12-13 mph moderate cycling
-      boxing: 7.8,    // General boxing, bag work, sparring
-      weights: 4.0,   // Moderate weight lifting
-      hiit: 9.5,      // High intensity interval training
-      yoga: 2.5       // Stretching / Hatha Yoga
+      walking: 3.8,            // ~3.5 mph brisk walk
+      jogging: 8.3,            // ~5 mph moderate jog
+      running: 11.5,           // ~7 mph fast run
+      cycling: 8.0,            // ~12-13 mph moderate cycling
+      boxing: 7.8,             // General boxing, bag work, sparring
+      weights: 4.0,            // Moderate weight lifting
+      intensive_weights: 6.0,  // Heavy weight training / powerlifting / vigorous circuit resistance
+      hiit: 9.5,               // High intensity interval training
+      yoga: 2.5                // Stretching / Hatha Yoga
     };
 
     let activeSession = [];
@@ -310,8 +312,9 @@
       sel.options[3].text = `Cycling (~12-13 mph) - ${(getCalorieRatePerMin('cycling')).toFixed(1)} kcal/min`;
       sel.options[4].text = `Boxing (Bag/Sparring) - ${(getCalorieRatePerMin('boxing')).toFixed(1)} kcal/min`;
       sel.options[5].text = `Weight Training (Moderate) - ${(getCalorieRatePerMin('weights')).toFixed(1)} kcal/min`;
-      sel.options[6].text = `HIIT / Intense Cardio - ${(getCalorieRatePerMin('hiit')).toFixed(1)} kcal/min`;
-      sel.options[7].text = `Yoga / Stretching - ${(getCalorieRatePerMin('yoga')).toFixed(1)} kcal/min`;
+      sel.options[6].text = `Intensive Weight Training - ${(getCalorieRatePerMin('intensive_weights')).toFixed(1)} kcal/min`;
+      sel.options[7].text = `HIIT / Intense Cardio - ${(getCalorieRatePerMin('hiit')).toFixed(1)} kcal/min`;
+      sel.options[8].text = `Yoga / Stretching - ${(getCalorieRatePerMin('yoga')).toFixed(1)} kcal/min`;
     }
 
     function switchTab(tab) {
