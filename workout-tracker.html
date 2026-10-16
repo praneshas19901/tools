@@ -41,26 +41,43 @@
 
     <!-- TRACKER TAB -->
     <div id="tab-tracker" class="space-y-6">
-      <!-- Body Weight Setting & Summary Bar -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+      <!-- Calendar Toggle & User Weight Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Date Selector -->
+        <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="p-3 bg-indigo-500/10 rounded-xl text-indigo-400"><i class="fa-solid fa-calendar-days text-lg"></i></div>
+            <div>
+              <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Viewing Date</p>
+              <input type="date" id="dashboard-date-picker" onchange="onDashboardDateChange()" class="bg-slate-900 border border-slate-700 text-slate-100 rounded text-sm px-3 py-1 mt-1 focus:ring-1 focus:ring-indigo-500 font-bold">
+            </div>
+          </div>
+          <button onclick="setDashboardDateToday()" class="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition font-medium">Today</button>
+        </div>
+
+        <!-- User Weight Setting -->
         <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <div class="p-3 bg-amber-500/10 rounded-xl text-amber-400"><i class="fa-solid fa-weight-scale text-lg"></i></div>
             <div>
-              <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">User Weight</p>
-              <div class="flex items-center space-x-1">
+              <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">User Body Weight</p>
+              <div class="flex items-center space-x-1 mt-1">
                 <input type="number" id="user-weight" value="70" min="30" max="250" onchange="updateCalorieRates()" class="w-16 bg-slate-900 border border-slate-700 text-slate-100 rounded text-sm px-2 py-0.5 focus:ring-1 focus:ring-indigo-500 font-bold">
                 <span class="text-xs text-slate-400">kg</span>
               </div>
             </div>
           </div>
-          <span class="text-xs text-slate-500" title="Calories burn rates scale based on your body weight">(MET Scaled)</span>
+          <span class="text-xs text-slate-500" title="MET Scaled">(MET Scaled)</span>
         </div>
+      </div>
 
+      <!-- Summary Metrics Bar (Reflects selected date + live active session) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 flex items-center space-x-3">
           <div class="p-3 bg-indigo-500/10 rounded-xl text-indigo-400"><i class="fa-solid fa-stopwatch text-lg"></i></div>
           <div>
-            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Session Time</p>
+            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Session Time</p>
             <p id="total-session-time" class="text-lg font-bold text-slate-100">00:00:00</p>
           </div>
         </div>
@@ -68,7 +85,7 @@
         <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 flex items-center space-x-3">
           <div class="p-3 bg-orange-500/10 rounded-xl text-orange-400"><i class="fa-solid fa-fire text-lg"></i></div>
           <div>
-            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Burned</p>
+            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Burned Kcal</p>
             <p id="total-calories-burned" class="text-lg font-bold text-orange-400">0 kcal</p>
           </div>
         </div>
@@ -250,17 +267,16 @@
   <audio id="timer-beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
   <script>
-    // MET Reference Values (Compendium of Physical Activities)
     const MET_VALUES = {
-      walking: 3.8,            // ~3.5 mph brisk walk
-      jogging: 8.3,            // ~5 mph moderate jog
-      running: 11.5,           // ~7 mph fast run
-      cycling: 8.0,            // ~12-13 mph moderate cycling
-      boxing: 7.8,             // General boxing, bag work, sparring
-      weights: 4.0,            // Moderate weight lifting
-      intensive_weights: 6.0,  // Heavy weight training / powerlifting
-      hiit: 9.5,               // High intensity interval training
-      yoga: 2.5                // Stretching / Hatha Yoga
+      walking: 3.8,
+      jogging: 8.3,
+      running: 11.5,
+      cycling: 8.0,
+      boxing: 7.8,
+      weights: 4.0,
+      intensive_weights: 6.0,
+      hiit: 9.5,
+      yoga: 2.5
     };
 
     let activeSession = [];
@@ -272,16 +288,42 @@
     let stopwatchSeconds = 0;
     let countdownSeconds = 0;
     let masterTimerRunning = false;
-
     let exerciseTimers = {};
+
+    // Get today's ISO date string (YYYY-MM-DD) for initial picker state
+    function getTodayISOString() {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    let selectedDashboardDateISO = getTodayISOString();
 
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('user-weight').value = userWeight;
+      document.getElementById('dashboard-date-picker').value = selectedDashboardDateISO;
       updateCalorieRates();
       autoEstimateDuration();
       renderActiveSession();
+      updateDashboardSummary();
       renderHistoryLogs();
     });
+
+    function setDashboardDateToday() {
+      selectedDashboardDateISO = getTodayISOString();
+      document.getElementById('dashboard-date-picker').value = selectedDashboardDateISO;
+      updateDashboardSummary();
+    }
+
+    function onDashboardDateChange() {
+      const picker = document.getElementById('dashboard-date-picker');
+      if (picker.value) {
+        selectedDashboardDateISO = picker.value;
+        updateDashboardSummary();
+      }
+    }
 
     // Smart Auto-Duration Estimator
     function autoEstimateDuration() {
@@ -292,18 +334,13 @@
       let estimatedMinutes = 5;
 
       if (type === 'weights' || type === 'intensive_weights') {
-        // Resistance Training Model:
-        // ~3 seconds per rep + rest period between sets (~60s for moderate, ~90s for heavy)
         const restPerSetSecs = (type === 'intensive_weights') ? 90 : 60;
         const workSecsPerSet = reps * 3;
         const totalSecs = (sets * workSecsPerSet) + ((sets - 1) * restPerSetSecs);
-        estimatedMinutes = Math.max(1, Math.round((totalSecs / 60) * 2) / 2); // Round to nearest 0.5 min
+        estimatedMinutes = Math.max(1, Math.round((totalSecs / 60) * 2) / 2);
       } else if (type === 'hiit' || type === 'boxing') {
-        // High Intensity / Interval Model: ~3 mins per set round + rest
         estimatedMinutes = Math.max(1, sets * 3);
       } else {
-        // Steady State Cardio & General Movement (Walking, Jogging, Cycling, Running, Yoga)
-        // Base estimate: 4 mins per set
         estimatedMinutes = Math.max(1, sets * 4);
       }
 
@@ -361,6 +398,7 @@
         historyTab.classList.add('hidden');
         trackerBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition bg-indigo-600 text-white shadow-md";
         historyBtn.className = "px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-700 transition";
+        updateDashboardSummary();
       } else {
         trackerTab.classList.add('hidden');
         historyTab.classList.remove('hidden');
@@ -400,6 +438,7 @@
       activeSession.push(exerciseItem);
       nameInput.value = '';
       renderActiveSession();
+      updateDashboardSummary();
     }
 
     function removeExerciseItem(id) {
@@ -409,6 +448,7 @@
       }
       activeSession = activeSession.filter(item => item.id !== id);
       renderActiveSession();
+      updateDashboardSummary();
     }
 
     function adjustReps(id, delta) {
@@ -432,6 +472,7 @@
       exerciseTimers = {};
       activeSession = [];
       renderActiveSession();
+      updateDashboardSummary();
     }
 
     function toggleExerciseTimer(id) {
@@ -450,7 +491,7 @@
           item.caloriesBurned = Math.round((parseFloat(item.burnRate) * item.durationMins));
           
           updateExerciseCardUI(id);
-          updateSessionSummary();
+          updateDashboardSummary();
         }, 1000);
       }
       updateExerciseCardUI(id);
@@ -468,7 +509,7 @@
       item.caloriesBurned = 0;
       
       updateExerciseCardUI(id);
-      updateSessionSummary();
+      updateDashboardSummary();
     }
 
     function updateExerciseCardUI(id) {
@@ -502,31 +543,49 @@
       const calEl = card.querySelector('.ex-cal-display');
       if (calEl) calEl.innerText = `${item.caloriesBurned} kcal`;
 
-      updateSessionSummary();
+      updateDashboardSummary();
     }
 
-    function updateSessionSummary() {
+    // Calculates and updates dashboard stats (combining saved logs for selected date + active live session if viewing today)
+    function updateDashboardSummary() {
       let totalCalories = 0;
       let totalSteps = 0;
-      let totalElapsedSeconds = 0;
+      let totalSeconds = 0;
 
-      activeSession.forEach(item => {
-        totalCalories += item.caloriesBurned;
-        totalSteps += item.steps;
-        totalElapsedSeconds += item.elapsedSeconds;
+      // 1. Add saved logs that match selectedDashboardDateISO
+      savedLogs.forEach(log => {
+        // log.timestamp is an ISO string (e.g. 2026-10-16T...)
+        const logDateStr = log.timestamp ? log.timestamp.slice(0, 10) : '';
+        if (logDateStr === selectedDashboardDateISO) {
+          totalCalories += log.totalCalories;
+          totalSteps += log.totalSteps;
+          log.exercises.forEach(ex => {
+            totalSeconds += Math.round((ex.durationMins || 0) * 60);
+          });
+        }
       });
+
+      // 2. If viewing today, also add any ongoing active session exercises currently in the queue
+      const isViewingToday = (selectedDashboardDateISO === getTodayISOString());
+      if (isViewingToday) {
+        activeSession.forEach(item => {
+          totalCalories += item.caloriesBurned;
+          totalSteps += item.steps;
+          totalSeconds += item.elapsedSeconds;
+        });
+      }
 
       document.getElementById('total-calories-burned').innerText = `${totalCalories} kcal`;
       document.getElementById('total-session-steps').innerText = `${totalSteps.toLocaleString()} steps`;
 
-      const hrs = Math.floor(totalElapsedSeconds / 3600);
-      const mins = Math.floor((totalElapsedSeconds % 3600) / 60);
-      const secs = totalElapsedSeconds % 60;
-      const sessionTimeStr = hrs > 0 
+      const hrs = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+      const timeStr = hrs > 0 
         ? `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
         : `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 
-      document.getElementById('total-session-time').innerText = sessionTimeStr;
+      document.getElementById('total-session-time').innerText = timeStr;
     }
 
     function renderActiveSession() {
@@ -598,7 +657,7 @@
           `;
         }).join('');
       }
-      updateSessionSummary();
+      updateDashboardSummary();
     }
 
     // --- Master Timer Panel Functions ---
@@ -842,6 +901,7 @@
             savedLogs = imported;
             localStorage.setItem('fitpulse_logs', JSON.stringify(savedLogs));
             renderHistoryLogs();
+            updateDashboardSummary();
             alert("Workout logs successfully imported!");
           } else {
             alert("Invalid backup file format.");
