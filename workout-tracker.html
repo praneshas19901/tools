@@ -102,6 +102,8 @@
               <option value="walking">Walking (~3.5 mph) - 4.2 kcal/min</option>
               <option value="jogging">Jogging (~5 mph) - 9.8 kcal/min</option>
               <option value="running">Fast Running (~7 mph) - 13.5 kcal/min</option>
+              <option value="cycling">Cycling (~12-13 mph) - 9.4 kcal/min</option>
+              <option value="boxing">Boxing (Bag/Sparring) - 9.1 kcal/min</option>
               <option value="weights" selected>Weight Training (Moderate) - 4.8 kcal/min</option>
               <option value="hiit">HIIT / Intense Cardio - 11.2 kcal/min</option>
               <option value="yoga">Yoga / Stretching - 2.8 kcal/min</option>
@@ -247,13 +249,16 @@
   <audio id="timer-beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
   <script>
+    // MET Reference Values (Compendium of Physical Activities)
     const MET_VALUES = {
-      walking: 3.8,
-      jogging: 8.3,
-      running: 11.5,
-      weights: 4.0,
-      hiit: 9.5,
-      yoga: 2.5
+      walking: 3.8,   // ~3.5 mph brisk walk
+      jogging: 8.3,   // ~5 mph moderate jog
+      running: 11.5,  // ~7 mph fast run
+      cycling: 8.0,   // ~12-13 mph moderate cycling
+      boxing: 7.8,    // General boxing, bag work, sparring
+      weights: 4.0,   // Moderate weight lifting
+      hiit: 9.5,      // High intensity interval training
+      yoga: 2.5       // Stretching / Hatha Yoga
     };
 
     let activeSession = [];
@@ -302,9 +307,11 @@
       sel.options[0].text = `Walking (~3.5 mph) - ${(getCalorieRatePerMin('walking')).toFixed(1)} kcal/min`;
       sel.options[1].text = `Jogging (~5 mph) - ${(getCalorieRatePerMin('jogging')).toFixed(1)} kcal/min`;
       sel.options[2].text = `Fast Running (~7 mph) - ${(getCalorieRatePerMin('running')).toFixed(1)} kcal/min`;
-      sel.options[3].text = `Weight Training (Moderate) - ${(getCalorieRatePerMin('weights')).toFixed(1)} kcal/min`;
-      sel.options[4].text = `HIIT / Intense Cardio - ${(getCalorieRatePerMin('hiit')).toFixed(1)} kcal/min`;
-      sel.options[5].text = `Yoga / Stretching - ${(getCalorieRatePerMin('yoga')).toFixed(1)} kcal/min`;
+      sel.options[3].text = `Cycling (~12-13 mph) - ${(getCalorieRatePerMin('cycling')).toFixed(1)} kcal/min`;
+      sel.options[4].text = `Boxing (Bag/Sparring) - ${(getCalorieRatePerMin('boxing')).toFixed(1)} kcal/min`;
+      sel.options[5].text = `Weight Training (Moderate) - ${(getCalorieRatePerMin('weights')).toFixed(1)} kcal/min`;
+      sel.options[6].text = `HIIT / Intense Cardio - ${(getCalorieRatePerMin('hiit')).toFixed(1)} kcal/min`;
+      sel.options[7].text = `Yoga / Stretching - ${(getCalorieRatePerMin('yoga')).toFixed(1)} kcal/min`;
     }
 
     function switchTab(tab) {
@@ -702,7 +709,6 @@
         return;
       }
 
-      // Group logs by dateFormatted
       const groupedByDate = {};
       filtered.forEach(log => {
         if (!groupedByDate[log.dateFormatted]) {
@@ -717,7 +723,6 @@
         groupedByDate[log.dateFormatted].dailySteps += log.totalSteps;
       });
 
-      // Render Day-Wise Groups
       container.innerHTML = Object.entries(groupedByDate).map(([dateStr, group]) => `
         <div class="space-y-3">
           <!-- Day Header with Total Daily Calories & Steps -->
