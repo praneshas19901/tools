@@ -231,8 +231,8 @@
         </div>
       </div>
 
-      <!-- Logs Stream -->
-      <div id="history-logs-container" class="space-y-4">
+      <!-- Logs Stream Grouped Day-Wise -->
+      <div id="history-logs-container" class="space-y-6">
         <!-- Logs dynamically rendered -->
       </div>
     </div>
@@ -260,14 +260,12 @@
     let savedLogs = JSON.parse(localStorage.getItem('fitpulse_logs') || '[]');
     let userWeight = parseFloat(localStorage.getItem('fitpulse_user_weight') || '70');
 
-    // Master Timer State with safe preservation variables
     let timerMode = 'stopwatch';
     let timerInterval = null;
     let stopwatchSeconds = 0;
     let countdownSeconds = 0;
     let masterTimerRunning = false;
 
-    // Active individual exercise timers map (exerciseId -> interval)
     let exerciseTimers = {};
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -336,10 +334,11 @@
       const sets = parseInt(document.getElementById('ex-sets').value) || 1;
       const reps = parseInt(document.getElementById('ex-reps').value) || 1;
       const steps = parseInt(document.getElementById('ex-steps').value) || 0;
-      const durationMins = parseFloat(document.getElementById('ex-duration').value) || 5;
+      const defaultDurationMins = parseFloat(document.getElementById('ex-duration').value) || 5;
 
       const burnRate = getCalorieRatePerMin(type);
-      const caloriesBurned = Math.round(burnRate * durationMins);
+      const initialCalories = Math.round(burnRate * defaultDurationMins);
+      const initialSeconds = Math.round(defaultDurationMins * 60);
 
       const exerciseItem = {
         id: Date.now(),
@@ -348,19 +347,16 @@
         sets,
         reps,
         steps,
-        durationMins,
+        durationMins: defaultDurationMins,
         burnRate: burnRate.toFixed(1),
-        caloriesBurned,
-        elapsedSeconds: 0,
+        caloriesBurned: initialCalories,
+        elapsedSeconds: initialSeconds,
         isRunning: false
       };
 
       activeSession.push(exerciseItem);
       nameInput.value = '';
       renderActiveSession();
-      
-      // Automatically start timer on newly added item
-      toggleExerciseTimer(exerciseItem.id);
     }
 
     function removeExerciseItem(id) {
@@ -395,22 +391,18 @@
       renderActiveSession();
     }
 
-    // --- Individual Exercise Timer Functions ---
     function toggleExerciseTimer(id) {
       const item = activeSession.find(i => i.id === id);
       if (!item) return;
 
       if (item.isRunning) {
-        // Pause timer
         clearInterval(exerciseTimers[id]);
         delete exerciseTimers[id];
         item.isRunning = false;
       } else {
-        // Start timer
         item.isRunning = true;
         exerciseTimers[id] = setInterval(() => {
           item.elapsedSeconds++;
-          // Recalculate duration & calories dynamically as time ticks
           item.durationMins = parseFloat((item.elapsedSeconds / 60).toFixed(2));
           item.caloriesBurned = Math.round((parseFloat(item.burnRate) * item.durationMins));
           
@@ -429,8 +421,8 @@
       delete exerciseTimers[id];
       item.isRunning = false;
       item.elapsedSeconds = 0;
-      item.durationMins = 5; // default fallback
-      item.caloriesBurned = Math.round(parseFloat(item.burnRate) * item.durationMins);
+      item.durationMins = 0;
+      item.caloriesBurned = 0;
       
       updateExerciseCardUI(id);
       updateSessionSummary();
@@ -450,7 +442,6 @@
         ? `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
         : `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 
-      // Update specific DOM elements inside the card without full re-render
       const timeEl = card.querySelector('.ex-time-display');
       if (timeEl) timeEl.innerText = timeStr;
 
@@ -474,13 +465,25 @@
     function updateSessionSummary() {
       let totalCalories = 0;
       let totalSteps = 0;
+      let totalElapsedSeconds = 0;
+
       activeSession.forEach(item => {
         totalCalories += item.caloriesBurned;
         totalSteps += item.steps;
+        totalElapsedSeconds += item.elapsedSeconds;
       });
 
       document.getElementById('total-calories-burned').innerText = `${totalCalories} kcal`;
       document.getElementById('total-session-steps').innerText = `${totalSteps.toLocaleString()} steps`;
+
+      const hrs = Math.floor(totalElapsedSeconds / 3600);
+      const mins = Math.floor((totalElapsedSeconds % 3600) / 60);
+      const secs = totalElapsedSeconds % 60;
+      const sessionTimeStr = hrs > 0 
+        ? `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
+        : `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+      document.getElementById('total-session-time').innerText = sessionTimeStr;
     }
 
     function renderActiveSession() {
@@ -555,7 +558,7 @@
       updateSessionSummary();
     }
 
-    // --- Master Timer Panel Functions (Non-resetting on mode switch) ---
+    // --- Master Timer Panel Functions ---
     function toggleTimerMode(mode) {
       timerMode = mode;
       updateMasterTimerDisplay();
@@ -639,18 +642,15 @@
         : `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 
       document.getElementById('timer-display').innerText = formatted;
-      if (timerMode === 'stopwatch') {
-        document.getElementById('total-session-time').innerText = formatted;
-      }
     }
 
+    // --- Logging & Day-Wise Grouping ---
     function saveCurrentSessionLog() {
       if (activeSession.length === 0) {
         alert("Please add at least one exercise before saving!");
         return;
       }
 
-      // Stop all running timers before saving
       Object.values(exerciseTimers).forEach(clearInterval);
       exerciseTimers = {};
       pauseTimer();
@@ -702,37 +702,71 @@
         return;
       }
 
-      container.innerHTML = filtered.map(log => `
-        <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/80 space-y-4">
-          <div class="flex justify-between items-start border-b border-slate-700 pb-3">
-            <div>
-              <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-calendar-day text-indigo-400"></i>
-                <h3 class="font-bold text-slate-100">${log.dateFormatted}</h3>
-                <span class="text-xs text-slate-400">at ${log.timeFormatted}</span>
+      // Group logs by dateFormatted
+      const groupedByDate = {};
+      filtered.forEach(log => {
+        if (!groupedByDate[log.dateFormatted]) {
+          groupedByDate[log.dateFormatted] = {
+            logs: [],
+            dailyCalories: 0,
+            dailySteps: 0
+          };
+        }
+        groupedByDate[log.dateFormatted].logs.push(log);
+        groupedByDate[log.dateFormatted].dailyCalories += log.totalCalories;
+        groupedByDate[log.dateFormatted].dailySteps += log.totalSteps;
+      });
+
+      // Render Day-Wise Groups
+      container.innerHTML = Object.entries(groupedByDate).map(([dateStr, group]) => `
+        <div class="space-y-3">
+          <!-- Day Header with Total Daily Calories & Steps -->
+          <div class="bg-gradient-to-r from-slate-800 to-indigo-950/60 border border-indigo-500/30 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 shadow-md">
+            <div class="flex items-center space-x-3">
+              <div class="p-2.5 bg-indigo-600/20 rounded-xl text-indigo-400">
+                <i class="fa-solid fa-calendar-day text-base"></i>
               </div>
+              <h3 class="font-bold text-slate-100 text-base md:text-lg">${dateStr}</h3>
             </div>
             <div class="flex items-center space-x-4">
-              <div class="text-right">
-                <span class="text-sm font-bold text-orange-400">${log.totalCalories} kcal</span>
-                ${log.totalSteps > 0 ? `<p class="text-xs text-emerald-400">${log.totalSteps.toLocaleString()} steps</p>` : ''}
-              </div>
-              <button onclick="deleteLogEntry(${log.id})" class="text-slate-500 hover:text-rose-400 p-1">
-                <i class="fa-solid fa-trash"></i>
-              </button>
+              <span class="text-xs px-3 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-full font-bold">
+                <i class="fa-solid fa-fire mr-1"></i> ${group.dailyCalories} kcal Total
+              </span>
+              ${group.dailySteps > 0 ? `
+                <span class="text-xs px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full font-bold">
+                  <i class="fa-solid fa-shoe-prints mr-1"></i> ${group.dailySteps.toLocaleString()} steps Total
+                </span>
+              ` : ''}
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            ${log.exercises.map(ex => `
-              <div class="bg-slate-900 p-3 rounded-xl border border-slate-700/80 text-xs space-y-1">
-                <div class="flex justify-between font-semibold text-slate-200">
-                  <span>${ex.name}</span>
-                  <span class="text-indigo-400">${ex.sets} sets × ${ex.reps} reps</span>
+          <!-- Individual Workout Cards for this Day -->
+          <div class="space-y-3 pl-0 md:pl-4">
+            ${group.logs.map(log => `
+              <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 space-y-3">
+                <div class="flex justify-between items-center border-b border-slate-700/60 pb-2">
+                  <span class="text-xs font-semibold text-indigo-300">Logged at ${log.timeFormatted}</span>
+                  <div class="flex items-center space-x-3">
+                    <span class="text-xs font-bold text-orange-400">${log.totalCalories} kcal</span>
+                    <button onclick="deleteLogEntry(${log.id})" class="text-slate-500 hover:text-rose-400 p-1">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
-                <div class="flex justify-between text-slate-400">
-                  <span>Duration: ${ex.durationMins}m</span>
-                  <span>Burn: ${ex.caloriesBurned} kcal</span>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  ${log.exercises.map(ex => `
+                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700/60 text-xs space-y-1">
+                      <div class="flex justify-between font-semibold text-slate-200">
+                        <span>${ex.name}</span>
+                        <span class="text-indigo-400">${ex.sets} sets × ${ex.reps} reps</span>
+                      </div>
+                      <div class="flex justify-between text-slate-400">
+                        <span>Duration: ${ex.durationMins}m</span>
+                        <span>Burn: ${ex.caloriesBurned} kcal</span>
+                      </div>
+                    </div>
+                  `).join('')}
                 </div>
               </div>
             `).join('')}
