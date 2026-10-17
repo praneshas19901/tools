@@ -1330,11 +1330,11 @@
             (async function() {
                 if (self.dbConnected && self.supabaseClient) {
                     try {
-                        // Delete using entry_id (your app's unique tracker ID) rather than the database primary key
+                        // Fixed: Use 'id' to match the database table's primary key column
                         const { error } = await self.supabaseClient
                             .from('daily_logs')
                             .delete()
-                            .eq('entry_id', id);
+                            .eq('id', id);
                             
                         if (error) {
                             console.error('Supabase delete error:', error.message);
