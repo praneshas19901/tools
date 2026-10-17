@@ -3,11 +3,16 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -24,6 +29,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          echo "Injecting Supabase configuration..."
           sed -i "s|__SUPABASE_URL__|$SUPABASE_URL|g" calorietracker.html
           sed -i "s|__SUPABASE_ANON_KEY__|$SUPABASE_ANON_KEY|g" calorietracker.html
 
