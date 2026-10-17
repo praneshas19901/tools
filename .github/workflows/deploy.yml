@@ -16,7 +16,6 @@ concurrency:
 
 jobs:
   deploy:
-    # This environment block is required to access your Environment Secrets
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -25,14 +24,38 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Inject Supabase Secrets into calorietracker.html
+      - name: Debug and Inject Supabase Secrets
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "Injecting Supabase configuration into calorietracker.html..."
-          sed -i "s|__SUPABASE_URL__|$SUPABASE_URL|g" calorietracker.html
-          sed -i "s|__SUPABASE_ANON_KEY__|$SUPABASE_ANON_KEY|g" calorietracker.html
+          python3 -c '
+          import os
+          url = os.environ.get("SUPABASE_URL", "")
+          key = os.environ.get("SUPABASE_ANON_KEY", "")
+          
+          print(f"DEBUG: URL length found: {len(url)}")
+          print(f"DEBUG: Key length found: {len(key)}")
+          
+          if not url or not key:
+              raise ValueError("ERROR: One or both GitHub secrets are empty or not accessible to this job!")
+              
+          with open("calorietracker.html", "r", encoding="utf-8") as f:
+              content = f.read()
+              
+          if "__SUPABASE_URL__" not in content:
+              print("WARNING: __SUPABASE_URL__ placeholder not found in calorietracker.html!")
+          if "__SUPABASE_ANON_KEY__" not in content:
+              print("WARNING: __SUPABASE_ANON_KEY__ placeholder not found in calorietracker.html!")
+              
+          content = content.replace("__SUPABASE_URL__", url)
+          content = content.replace("__SUPABASE_ANON_KEY__", key)
+          
+          with open("calorietracker.html", "w", encoding="utf-8") as f:
+              f.write(content)
+              
+          print("Successfully injected secrets into calorietracker.html")
+          '
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
