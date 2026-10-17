@@ -316,8 +316,20 @@
             </div>
             <div class="p-6 space-y-4">
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Enter your 64-bit database master password below to unlock cloud sync with Supabase.
+                    Enter your Supabase API credentials and master password below to enable real-time cloud synchronization.
                 </p>
+
+                <!-- Project URL -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Supabase Endpoint URL</label>
+                    <input type="text" x-model="dbConfig.url" placeholder="https://xyz.supabase.co" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
+                </div>
+
+                <!-- Anon Key -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Supabase Anon Key</label>
+                    <input type="password" x-model="dbConfig.anonKey" placeholder="eyJhbGci..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
+                </div>
 
                 <!-- 64-bit Master Password Prompt -->
                 <div>
@@ -325,7 +337,7 @@
                         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Database Master Password (≥ 64-bit strength)</label>
                         <span class="text-[10px] text-red-500 font-semibold" x-text="`Attempts left: ${3 - failedAttempts}`"></span>
                     </div>
-                    <input type="password" x-model="dbConfig.password" placeholder="Min 12 chars / 64-bit entropy password..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500 font-mono">
+                    <input type="password" x-model="dbConfig.password" placeholder="Min 12 chars / 64-bit entropy password..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
                     <p class="text-[10px] text-slate-400 mt-1">Requires high-entropy password (min 12 chars with upper, lower, numbers/symbols) to protect remote sync payload.</p>
                 </div>
 
@@ -597,7 +609,6 @@
 
     <!-- Application Script Logic -->
     <script>
-        // Automatic environment secrets fallback placeholders
         const ENV_SUPABASE_URL = "__SUPABASE_URL__";
         const ENV_SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
 
@@ -843,7 +854,7 @@
                     localStorage.setItem('failed_db_attempts', this.failedAttempts.toString());
 
                     if (this.failedAttempts >= 3) {
-                        this.triggerLockout(30 * 60 * 1000); // 30 mins lockout
+                        this.triggerLockout(30 * 60 * 1000);
                     } else {
                         this.showToast(`${reason}. Attempts left: ${3 - this.failedAttempts}`, '❌');
                     }
@@ -854,7 +865,7 @@
                     if (this.isLockedOut) return;
 
                     if (!this.dbConfig.url || !this.dbConfig.anonKey) {
-                        this.showToast('Supabase repository secrets (URL & Anon Key) missing or unconfigured.', '⚠️');
+                        this.showToast('Please provide both Supabase Endpoint URL and Anon Key.', '⚠️');
                         return;
                     }
 
@@ -1307,7 +1318,7 @@
                                 console.error('Failed to delete cloud entry', e);
                             }
                         }
-                        self.foodEntries = self.foodEntries.filter(function(item) { return item.id !== id; });
+                        self.foodEntries = self.foodEntries.filter(function(item) { return item.id !== item.id; });
                         self.saveDayData();
                         self.showToast('Entry deleted', '🗑️');
                     })();
