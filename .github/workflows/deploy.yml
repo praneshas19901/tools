@@ -44,24 +44,24 @@ jobs:
 
           for filename in target_files:
             if not os.path.exists(filename):
-            print(f"WARNING: {filename} does not exist, skipping.")
-            continue
+              print(f"WARNING: {filename} does not exist, skipping.")
+              continue
 
-          with open(filename, "r", encoding="utf-8") as f:
-          content = f.read()
+            with open(filename, "r", encoding="utf-8") as f:
+            content = f.read()
         
-          if "__SUPABASE_URL__" not in content:
-          print(f"WARNING: __SUPABASE_URL__ placeholder not found in {filename}!")
-          if "__SUPABASE_ANON_KEY__" not in content:
-          print(f"WARNING: __SUPABASE_ANON_KEY__ placeholder not found in {filename}!")
+            if "__SUPABASE_URL__" not in content:
+              print(f"WARNING: __SUPABASE_URL__ placeholder not found in {filename}!")
+            if "__SUPABASE_ANON_KEY__" not in content:
+              print(f"WARNING: __SUPABASE_ANON_KEY__ placeholder not found in {filename}!")
         
-          content = content.replace("__SUPABASE_URL__", url)
-          content = content.replace("__SUPABASE_ANON_KEY__", key)
+            content = content.replace("__SUPABASE_URL__", url)
+            content = content.replace("__SUPABASE_ANON_KEY__", key)
     
-          with open(filename, "w", encoding="utf-8") as f:
-          f.write(content)
+            with open(filename, "w", encoding="utf-8") as f:
+            f.write(content)
         
-          print(f"Successfully injected secrets into {filename}")
+            print(f"Successfully injected secrets into {filename}")
           '
 
       - name: Setup Pages
