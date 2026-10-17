@@ -608,8 +608,8 @@
     <!-- Application Script Logic -->
     <script>
         // Fetch secrets injected via GitHub Secrets / Environment build process
-        const ENV_SUPABASE_URL = "__SUPABASE_URL__";
-        const ENV_SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
+        const SUPABASE_URL = typeof ENV_SUPABASE_URL !== 'undefined' && !ENV_SUPABASE_URL.startsWith('__') ? ENV_SUPABASE_URL : '';
+        const SUPABASE_ANON_KEY = typeof ENV_SUPABASE_ANON_KEY !== 'undefined' && !ENV_SUPABASE_ANON_KEY.startsWith('__') ? ENV_SUPABASE_ANON_KEY : '';
 
         const BUILTIN_FOOD_DATABASE = [
             { id: 'off_1', name: 'Apple', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, baseQty: 100, baseUnit: 'g', source: 'Offline' },
