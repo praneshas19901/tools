@@ -1326,20 +1326,22 @@
                 },
 
                 deleteEntry(id) {
-                    var self = this;
-                    (async function() {
-                        if (self.dbConnected && self.supabaseClient) {
-                            try {
-                                await self.supabaseClient.from('daily_logs').delete().eq('id', id);
-                            } catch (e) {
-                                console.error('Failed to delete cloud entry', e);
-                            }
-                        }
-                        self.foodEntries = self.foodEntries.filter(function(item) { return item.id !== item.id; });
-                        self.saveDayData();
-                        self.showToast('Entry deleted', '🗑️');
-                    })();
-                },
+            var self = this;
+            (async function() {
+                if (self.dbConnected && self.supabaseClient) {
+                    try {
+                        await self.supabaseClient.from('daily_logs').delete().eq('id', id);
+                    } catch (e) {
+                        console.error('Failed to delete cloud entry', e);
+                    }
+                }
+                // Fixed: Compare item.id against the passed parameter 'id'
+                self.foodEntries = self.foodEntries.filter(function(item) { return item.id !== id; });
+                self.saveDayData();
+                self.calculateTotals(); // Recalculate totals immediately
+                self.showToast('Entry deleted', '🗑️');
+            })();
+        },
 
                 exportData() {
                     var allLogs = localStorage.getItem('calorieLogs') || '{}';
