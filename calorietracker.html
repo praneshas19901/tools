@@ -607,9 +607,9 @@
 
     <!-- Application Script Logic -->
     <script>
-        // Fetch secrets injected via GitHub Secrets / Environment build process
-        const SUPABASE_URL = typeof ENV_SUPABASE_URL !== 'undefined' && !ENV_SUPABASE_URL.startsWith('__') ? ENV_SUPABASE_URL : '';
-        const SUPABASE_ANON_KEY = typeof ENV_SUPABASE_ANON_KEY !== 'undefined' && !ENV_SUPABASE_ANON_KEY.startsWith('__') ? ENV_SUPABASE_ANON_KEY : '';
+        // Safe global environment fallback for local testing vs GitHub Actions
+        const SUPABASE_URL = (typeof ENV_SUPABASE_URL !== 'undefined' && !ENV_SUPABASE_URL.startsWith('__')) ? ENV_SUPABASE_URL : '';
+        const SUPABASE_ANON_KEY = (typeof ENV_SUPABASE_ANON_KEY !== 'undefined' && !ENV_SUPABASE_ANON_KEY.startsWith('__')) ? ENV_SUPABASE_ANON_KEY : '';
 
         const BUILTIN_FOOD_DATABASE = [
             { id: 'off_1', name: 'Apple', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, baseQty: 100, baseUnit: 'g', source: 'Offline' },
@@ -733,31 +733,30 @@
                 },
 
                 validateRepositorySecrets() {
-    const url = ENV_SUPABASE_URL && !ENV_SUPABASE_URL.startsWith('__') ? ENV_SUPABASE_URL : (window.ENV_SUPABASE_URL || '');
-    const anonKey = ENV_SUPABASE_ANON_KEY && !ENV_SUPABASE_ANON_KEY.startsWith('__') ? ENV_SUPABASE_ANON_KEY : (window.ENV_SUPABASE_ANON_KEY || '');
+            const url = SUPABASE_URL;
+            const anonKey = SUPABASE_ANON_KEY;
 
-    // Relaxed validation to support standard and regional Supabase URLs
-    const isUrlValid = url.trim().startsWith('https://') && url.includes('supabase.co');
-    const isKeyValid = anonKey.trim().length > 20 && anonKey.includes('.');
+            const isUrlValid = url.trim().startsWith('https://') && url.includes('supabase.co');
+            const isKeyValid = anonKey.trim().length > 20 && anonKey.includes('.');
 
-    if (isUrlValid && isKeyValid) {
-        this.dbConfig.url = url.trim();
-        this.dbConfig.anonKey = anonKey.trim();
-        this.secretsValidated = true;
-        this.secretsValidationMessage = 'SUPABASE_URL and SUPABASE_ANON_KEY secrets successfully loaded.';
-        return true;
-    } else {
-        this.secretsValidated = false;
-        if (!isUrlValid && !isKeyValid) {
-            this.secretsValidationMessage = 'Both SUPABASE_URL and SUPABASE_ANON_KEY secrets are missing or unconfigured in GitHub Secrets.';
-        } else if (!isUrlValid) {
-            this.secretsValidationMessage = 'SUPABASE_URL is invalid or missing. Expected format: https://<project>.supabase.co';
-        } else {
-            this.secretsValidationMessage = 'SUPABASE_ANON_KEY is missing or invalid JSON Web Token format.';
-        }
-        return false;
-    }
-                },
+            if (isUrlValid && isKeyValid) {
+                this.dbConfig.url = url.trim();
+                this.dbConfig.anonKey = anonKey.trim();
+                this.secretsValidated = true;
+                this.secretsValidationMessage = 'SUPABASE_URL and SUPABASE_ANON_KEY secrets successfully loaded.';
+                return true;
+            } else {
+                this.secretsValidated = false;
+                if (!isUrlValid && !isKeyValid) {
+                    this.secretsValidationMessage = 'Both SUPABASE_URL and SUPABASE_ANON_KEY secrets are missing or unconfigured in GitHub Secrets.';
+                } else if (!isUrlValid) {
+                    this.secretsValidationMessage = 'SUPABASE_URL is invalid or missing. Expected format: https://<project>.supabase.co';
+                } else {
+                    this.secretsValidationMessage = 'SUPABASE_ANON_KEY is missing or invalid JSON Web Token format.';
+                }
+                return false;
+            }
+        },
 
                 initApp() {
                     var self = this;
