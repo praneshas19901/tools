@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   deploy:
+    # This environment block is required to access your Environment Secrets
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
