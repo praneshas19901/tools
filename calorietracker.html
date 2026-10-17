@@ -1330,15 +1330,26 @@
             (async function() {
                 if (self.dbConnected && self.supabaseClient) {
                     try {
-                        await self.supabaseClient.from('daily_logs').delete().eq('id', id);
+                        // Delete using entry_id (your app's unique tracker ID) rather than the database primary key
+                        const { error } = await self.supabaseClient
+                            .from('daily_logs')
+                            .delete()
+                            .eq('entry_id', id);
+                            
+                        if (error) {
+                            console.error('Supabase delete error:', error.message);
+                            self.showToast('Cloud delete failed: ' + error.message, '❌');
+                            return;
+                        }
                     } catch (e) {
                         console.error('Failed to delete cloud entry', e);
                     }
                 }
-                // Fixed: Compare item.id against the passed parameter 'id'
+                
+                // Remove from local array and update UI
                 self.foodEntries = self.foodEntries.filter(function(item) { return item.id !== id; });
                 self.saveDayData();
-                self.calculateTotals(); // Recalculate totals immediately
+                self.calculateTotals();
                 self.showToast('Entry deleted', '🗑️');
             })();
         },
