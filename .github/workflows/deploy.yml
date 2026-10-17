@@ -24,8 +24,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          sed -i "s|SUPABASE_URL|$SUPABASE_URL|g" calorietracker.html
-          sed -i "s|SUPABASE_ANON_KEY|$SUPABASE_ANON_KEY|g" calorietracker.html
+          sed -i "s|__SUPABASE_URL__|$SUPABASE_URL|g" calorietracker.html
+          sed -i "s|__SUPABASE_ANON_KEY__|$SUPABASE_ANON_KEY|g" calorietracker.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
