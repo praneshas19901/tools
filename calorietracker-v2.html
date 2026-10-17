@@ -308,16 +308,7 @@
                 </button>
             </div>
             <div class="p-6 space-y-4">
-                <!-- Secrets Status Indicator -->
-                <div class="p-3 rounded-xl text-xs font-mono border"
-                     :class="secretsValidated ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300' : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300'">
-                    <div class="flex items-center space-x-2">
-                        <span x-text="secretsValidated ? '✅' : '⚠️'"></span>
-                        <span class="font-bold" x-text="secretsValidated ? 'GitHub Secrets Detected & Validated' : 'Repository Secrets Missing'"></span>
-                    </div>
-                    <p class="text-[11px] mt-1 opacity-90" x-text="secretsValidationMessage"></p>
-                </div>
-
+               
                 <!-- Auth State Message -->
                 <template x-if="dbConnected">
                     <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-3 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
