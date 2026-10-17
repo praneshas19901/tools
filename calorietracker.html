@@ -878,42 +878,43 @@
                 },
 
                 connectAndAuthenticateDB() {
-                    var self = this;
-                    if (this.isLockedOut) return;
+    var self = this;
+    if (this.isLockedOut) return;
 
-                    if (!this.validateRepositorySecrets()) {
-                        this.showToast('Validation failed: Missing or invalid SUPABASE_URL / SUPABASE_ANON_KEY secrets', '⚠️');
-                        return;
-                    }
+    if (!this.validateRepositorySecrets()) {
+        this.showToast('Validation failed: Missing or invalid SUPABASE_URL / SUPABASE_ANON_KEY secrets', '⚠️');
+        return;
+    }
 
-                    if (!this.validate64BitPassword(this.dbConfig.password)) {
-                        this.handleFailedAttempt('Password does not meet 64-bit strength criteria (Min 12 chars with upper, lower, numbers/symbols)');
-                        return;
-                    }
+    // STRICT PASSWORD ENFORCEMENT CHECK
+    if (!this.dbConfig.password || !this.validate64BitPassword(this.dbConfig.password)) {
+        this.handleFailedAttempt('Invalid or missing Master Password. Min 12 chars with upper, lower, numbers/symbols required.');
+        return;
+    }
 
-                    (async function() {
-                        try {
-                            if (window.supabase) {
-                                self.supabaseClient = window.supabase.createClient(self.dbConfig.url, self.dbConfig.anonKey);
-                                const { data, error } = await self.supabaseClient.from('daily_logs').select('id').limit(1);
-                                if (error) throw error;
+    (async function() {
+        try {
+            if (window.supabase) {
+                self.supabaseClient = window.supabase.createClient(self.dbConfig.url, self.dbConfig.anonKey);
+                const { data, error } = await self.supabaseClient.from('daily_logs').select('id').limit(1);
+                if (error) throw error;
 
-                                self.dbConnected = true;
-                                self.failedAttempts = 0;
-                                localStorage.setItem('failed_db_attempts', '0');
-                                self.showDbModal = false;
-                                self.showToast('Supabase Cloud Database Connected via Repository Secrets!', '⚡');
-                                await self.syncCustomLibraryFromCloud();
-                                await self.loadDayData();
-                            } else {
-                                throw new Error('Supabase SDK not loaded');
-                            }
-                        } catch (e) {
-                            console.error(e);
-                            self.handleFailedAttempt('Database connection/authentication failed');
-                        }
-                    })();
-                },
+                self.dbConnected = true;
+                self.failedAttempts = 0;
+                localStorage.setItem('failed_db_attempts', '0');
+                self.showDbModal = false;
+                self.showToast('Supabase Cloud Database Authenticated & Connected!', '⚡');
+                await self.syncCustomLibraryFromCloud();
+                await self.loadDayData();
+            } else {
+                throw new Error('Supabase SDK not loaded');
+            }
+        } catch (e) {
+            console.error(e);
+            self.handleFailedAttempt('Database connection/authentication failed');
+        }
+    })();
+},
 
                 loadDayData() {
                     var self = this;
