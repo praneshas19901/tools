@@ -20,9 +20,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Inject Supabase Secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          sed -i 's|__SUPABASE_URL__|${{ secrets.SUPABASE_URL }}|g' calorietracker.html
-          sed -i 's|__SUPABASE_ANON_KEY__|${{ secrets.SUPABASE_ANON_KEY }}|g' calorietracker.html
+          sed -i "s|SUPABASE_URL|$SUPABASE_URL|g" calorietracker.html
+          sed -i "s|SUPABASE_ANON_KEY|$SUPABASE_ANON_KEY|g" calorietracker.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
