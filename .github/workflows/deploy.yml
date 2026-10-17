@@ -40,7 +40,7 @@ jobs:
           if not url or not key:
             raise ValueError("ERROR: One or both GitHub secrets are empty or not accessible to this job!")
 
-          target_files = ["calorietracker.html", "calorietracker-v2.html"]
+          target_files = ["calorietracker-v2.html"]
 
           for filename in target_files:
             if not os.path.exists(filename):
