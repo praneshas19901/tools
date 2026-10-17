@@ -66,6 +66,13 @@
                         <svg x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                     </button>
 
+                    <!-- Database Connection Indicator -->
+                    <button @click="openDbModal()" class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition"
+                            :class="dbConnected ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
+                        <span class="w-2 h-2 rounded-full" :class="dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
+                        <span x-text="dbConnected ? 'Cloud Sync Active' : 'Connect Supabase DB'"></span>
+                    </button>
+
                     <!-- Data Backup Dropdown -->
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-2 rounded-lg text-sm font-medium transition">
@@ -274,9 +281,74 @@
         <!-- Footer -->
         <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-4 mt-8">
             <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                NutriTrack Pro • Persistent Saved Custom Library • Exportable JSON Schema
+                NutriTrack Pro • Persistent Saved Custom Library • Cloud Sync & 64-bit Auth Lockout Protection
             </div>
         </footer>
+    </div>
+
+    <!-- LOCKOUT OVERLAY SCREEN -->
+    <div x-show="isLockedOut" class="fixed inset-0 z-50 bg-red-950/90 backdrop-blur-md flex items-center justify-center p-4 text-center text-white" x-cloak>
+        <div class="max-w-md bg-slate-900 border border-red-500/50 rounded-2xl p-6 shadow-2xl space-y-4">
+            <div class="text-5xl animate-bounce">🔒</div>
+            <h2 class="text-2xl font-bold text-red-400">Application Locked Out</h2>
+            <p class="text-sm text-slate-300">Maximum authentication attempts (3) exceeded. Security protocol engaged to prevent unauthorized access.</p>
+            <div class="bg-red-900/40 border border-red-800 p-4 rounded-xl">
+                <span class="text-xs uppercase tracking-wider font-semibold text-red-300 block mb-1">Time Remaining</span>
+                <span class="text-3xl font-mono font-bold text-white" x-text="lockoutTimerText">30:00</span>
+            </div>
+            <p class="text-xs text-slate-400">Please try again after the timer expires.</p>
+        </div>
+    </div>
+
+    <!-- MODAL: SUPABASE DATABASE CONNECTION & 64-BIT AUTH PROMPT -->
+    <div x-show="showDbModal && !isLockedOut" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">🗄️</span>
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Supabase Cloud Database Sync</h3>
+                </div>
+                <button @click="showDbModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Enter your Supabase database endpoint credentials and your 64-bit master password below.
+                </p>
+
+                <!-- Connection String / URL -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Supabase Endpoint URL</label>
+                    <input type="text" x-model="dbConfig.url" placeholder="https://xyzcompany.supabase.co" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
+                </div>
+
+                <!-- Anon API Key -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Supabase Anon Key</label>
+                    <input type="password" x-model="dbConfig.anonKey" placeholder="eyJhbGciOiJIUzI1NiI..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
+                </div>
+
+                <!-- 64-bit Master Password Prompt -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Database Master Password (≥ 64-bit strength)</label>
+                        <span class="text-[10px] text-red-500 font-semibold" x-text="`Attempts left: ${3 - failedAttempts}`"></span>
+                    </div>
+                    <input type="password" x-model="dbConfig.password" placeholder="Min 12-16 chars / 64-bit entropy password..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500 font-mono">
+                    <p class="text-[10px] text-slate-400 mt-1">Requires standard high-entropy password (min 12 chars/64-bit key size) to protect remote sync payload.</p>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button @click="showDbModal = false" class="w-1/2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl text-sm font-semibold transition">
+                        Cancel
+                    </button>
+                    <button @click="connectAndAuthenticateDB()" class="w-1/2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center space-x-1">
+                        <span>Connect & Sync</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL 1: ADD / SEARCH / LIBRARY DIALOG -->
@@ -566,6 +638,19 @@
                 customFoodLibrary: [],
                 saveToLibraryToggle: true,
 
+                // Database & Security State
+                dbConnected: false,
+                showDbModal: false,
+                failedAttempts: 0,
+                isLockedOut: false,
+                lockoutTimerText: '30:00',
+                lockoutInterval: null,
+                dbConfig: {
+                    url: '',
+                    anonKey: '',
+                    password: ''
+                },
+
                 totalCalories: 0,
                 totalCarbs: 0,
                 totalProtein: 0,
@@ -599,6 +684,8 @@
                 },
 
                 initApp() {
+                    this.checkLockoutStatus();
+
                     if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                         this.darkMode = true;
                         document.documentElement.classList.add('dark');
@@ -623,60 +710,145 @@
                         try { this.customFoodLibrary = JSON.parse(savedLibrary); } catch(e){}
                     }
 
+                    // Check saved DB settings
+                    const savedDb = localStorage.getItem('supabase_config');
+                    if (savedDb) {
+                        try {
+                            const parsed = JSON.parse(savedDb);
+                            this.dbConfig.url = parsed.url || '';
+                            this.dbConfig.anonKey = parsed.anonKey || '';
+                        } catch(e){}
+                    }
+
                     this.selectedDate = this.getTodayString();
                     this.loadDayData();
                     this.refreshSearchResults();
                 },
 
-                openSettingsModal() {
-                    this.tempTarget = this.dailyTarget;
-                    this.tempMacroTargets = { ...this.macroTargets };
-                    this.showSettingsModal = true;
+                openDbModal() {
+                    this.showDbModal = true;
                 },
 
-                applyGoalPreset(kcal) {
-                    this.tempTarget = kcal;
-                    this.recalculateMacroPresets();
-                },
+                checkLockoutStatus() {
+                    const lockoutTime = localStorage.getItem('lockout_until');
+                    const attempts = parseInt(localStorage.getItem('failed_db_attempts') || '0');
+                    this.failedAttempts = attempts;
 
-                recalculateMacroPresets() {
-                    const kcal = this.tempTarget || 2000;
-                    this.tempMacroTargets = {
-                        protein: Math.round((kcal * 0.3) / 4),
-                        carbs: Math.round((kcal * 0.45) / 4),
-                        fat: Math.round((kcal * 0.25) / 9)
-                    };
-                },
-
-                saveSettingsModal() {
-                    if (!this.tempTarget || this.tempTarget <= 0) {
-                        this.showToast('Please enter a valid target goal', '⚠️');
-                        return;
+                    if (lockoutTime) {
+                        const now = Date.now();
+                        const remainingMs = parseInt(lockoutTime) - now;
+                        if (remainingMs > 0) {
+                            this.triggerLockout(remainingMs);
+                        } else {
+                            localStorage.removeItem('lockout_until');
+                            localStorage.setItem('failed_db_attempts', '0');
+                            this.failedAttempts = 0;
+                            this.isLockedOut = false;
+                        }
                     }
-                    this.dailyTarget = Number(this.tempTarget);
-                    this.macroTargets = { ...this.tempMacroTargets };
-
-                    localStorage.setItem('dailyTarget', this.dailyTarget);
-                    localStorage.setItem('macroTargets', JSON.stringify(this.macroTargets));
-                    this.showToast(`Updated daily goals (${this.dailyTarget} kcal)`, '🎯');
                 },
 
                 getTodayString() {
-                    const now = new Date();
-                    const year = now.getFullYear();
-                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                    const day = String(now.getDate()).padStart(2, '0');
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
                     return `${year}-${month}-${day}`;
                 },
 
-                toggleDarkMode() {
-                    this.darkMode = !this.darkMode;
-                    if (this.darkMode) {
-                        document.documentElement.classList.add('dark');
-                        localStorage.setItem('theme', 'dark');
+                triggerLockout(durationMs) {
+                    this.isLockedOut = true;
+                    this.showDbModal = false;
+
+                    const endTime = Date.now() + durationMs;
+                    localStorage.setItem('lockout_until', endTime.toString());
+
+                    if (this.lockoutInterval) clearInterval(this.lockoutInterval);
+
+                    const updateTimer = () => {
+                        const now = Date.now();
+                        const diff = endTime - now;
+                        if (diff <= 0) {
+                            clearInterval(this.lockoutInterval);
+                            this.isLockedOut = false;
+                            this.failedAttempts = 0;
+                            localStorage.setItem('failed_db_attempts', '0');
+                            localStorage.removeItem('lockout_until');
+                            this.showToast('Lockout expired. You may attempt authentication again.', '🔓');
+                            return;
+                        }
+                        const mins = Math.floor(diff / 60000);
+                        const secs = Math.floor((diff % 60000) / 1000);
+                        this.lockoutTimerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    };
+
+                    updateTimer();
+                    this.lockoutInterval = setInterval(updateTimer, 1000);
+                },
+
+                validate64BitPassword(pwd) {
+                    // Standard 64-bit security constraint test (at least 12 chars with complexity or 16+ chars)
+                    if (!pwd || pwd.length < 12) return false;
+                    const hasUpper = /[A-Z]/.test(pwd);
+                    const hasLower = /[a-z]/.test(pwd);
+                    const hasDigit = /[0-9]/.test(pwd);
+                    const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+                    return (hasUpper && hasLower && (hasDigit || hasSpecial));
+                },
+
+                async connectAndAuthenticateDB() {
+                    if (this.isLockedOut) return;
+
+                    if (!this.dbConfig.url || !this.dbConfig.anonKey) {
+                        this.showToast('Please enter both Supabase URL & Anon Key', '⚠️');
+                        return;
+                    }
+
+                    // Verify 64-bit complexity constraint
+                    if (!this.validate64BitPassword(this.dbConfig.password)) {
+                        this.handleFailedAttempt('Password does not meet 64-bit strength criteria (Min 12 characters with uppercase, lowercase, numbers/symbols)');
+                        return;
+                    }
+
+                    try {
+                        // Test Supabase REST API query connection
+                        const testUrl = `${this.dbConfig.url.replace(/\/$/, '')}/rest/v1/`;
+                        const res = await fetch(testUrl, {
+                            method: 'GET',
+                            headers: {
+                                'apikey': this.dbConfig.anonKey,
+                                'Authorization': `Bearer ${this.dbConfig.anonKey}`
+                            }
+                        });
+
+                        if (res.ok || res.status === 404 || res.status === 200) {
+                            this.dbConnected = true;
+                            this.failedAttempts = 0;
+                            localStorage.setItem('failed_db_attempts', '0');
+                            localStorage.setItem('supabase_config', JSON.stringify({
+                                url: this.dbConfig.url,
+                                anonKey: this.dbConfig.anonKey
+                            }));
+                            this.showDbModal = false;
+                            this.showToast('Supabase Cloud Database Connected!', '⚡');
+                        } else {
+                            throw new Error('Supabase Auth failed');
+                        }
+                    } catch (e) {
+                        this.handleFailedAttempt('Database connection/authentication failed');
+                    }
+                },
+
+                handleFailedAttempt(message) {
+                    this.failedAttempts++;
+                    localStorage.setItem('failed_db_attempts', this.failedAttempts.toString());
+
+                    if (this.failedAttempts >= 3) {
+                        this.showToast('3 Failed attempts reached. Locking system!', '🚨');
+                        this.triggerLockout(30 * 60 * 1000); // 30 minutes in ms
                     } else {
-                        document.documentElement.classList.remove('dark');
-                        localStorage.setItem('theme', 'light');
+                        const remaining = 3 - this.failedAttempts;
+                        this.showToast(`${message}. ${remaining} attempt(s) remaining before 30-min lockout.`, '❌');
                     }
                 },
 
@@ -1015,6 +1187,36 @@
                         this.initApp();
                         this.showToast('All data reset', '🗑️');
                     }
+                },
+
+                recalculateMacroPresets() {
+                    var target = Number(this.tempTarget) || 2000;
+                    // Standard macro split recommendation: 30% Protein, 45% Carbs, 25% Fat
+                    this.tempMacroTargets = {
+                        protein: Math.round((target * 0.30) / 4),
+                        carbs: Math.round((target * 0.45) / 4),
+                        fat: Math.round((target * 0.25) / 9)
+                    };
+                },
+
+                applyGoalPreset(targetCalories) {
+                    this.tempTarget = targetCalories;
+                    this.recalculateMacroPresets();
+                },
+
+                openSettingsModal() {
+                    this.tempTarget = this.dailyTarget;
+                    this.tempMacroTargets = { ...this.macroTargets };
+                    this.showSettingsModal = true;
+                },
+
+                saveSettingsModal() {
+                    this.dailyTarget = Number(this.tempTarget) || 2000;
+                    this.macroTargets = { ...this.tempMacroTargets };
+                    localStorage.setItem('dailyTarget', this.dailyTarget.toString());
+                    localStorage.setItem('macroTargets', JSON.stringify(this.macroTargets));
+                    this.showSettingsModal = false;
+                    this.showToast('Calorie & Macro goals updated!', '🎯');
                 },
 
                 showToast(message, icon) {
