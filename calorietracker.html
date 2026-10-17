@@ -26,8 +26,6 @@
     </script>
     <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Supabase JS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -66,13 +64,6 @@
                     <button @click="toggleDarkMode()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="Toggle Theme">
                         <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                         <svg x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    </button>
-
-                    <!-- Database Connection Indicator -->
-                    <button @click="openDbModal()" class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition"
-                            :class="dbConnected ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
-                        <span class="w-2 h-2 rounded-full" :class="dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
-                        <span x-text="dbConnected ? 'Cloud Sync Active' : 'Connect Supabase DB'"></span>
                     </button>
 
                     <!-- Data Backup Dropdown -->
@@ -283,72 +274,9 @@
         <!-- Footer -->
         <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-4 mt-8">
             <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                NutriTrack Pro • Persistent Saved Custom Library • Cloud Sync & 64-bit Auth Lockout Protection
+                NutriTrack Pro • Persistent Local Storage Custom Library & Tracker
             </div>
         </footer>
-    </div>
-
-    <!-- LOCKOUT OVERLAY SCREEN -->
-    <div x-show="isLockedOut" class="fixed inset-0 z-50 bg-red-950/90 backdrop-blur-md flex items-center justify-center p-4 text-center text-white" x-cloak>
-        <div class="max-w-md bg-slate-900 border border-red-500/50 rounded-2xl p-6 shadow-2xl space-y-4">
-            <div class="text-5xl animate-bounce">🔒</div>
-            <h2 class="text-2xl font-bold text-red-400">Application Locked Out</h2>
-            <p class="text-sm text-slate-300">Maximum authentication attempts (3) exceeded. Security protocol engaged to prevent unauthorized access.</p>
-            <div class="bg-red-900/40 border border-red-800 p-4 rounded-xl">
-                <span class="text-xs uppercase tracking-wider font-semibold text-red-300 block mb-1">Time Remaining</span>
-                <span class="text-3xl font-mono font-bold text-white" x-text="lockoutTimerText">30:00</span>
-            </div>
-            <p class="text-xs text-slate-400">Please try again after the timer expires.</p>
-        </div>
-    </div>
-
-    <!-- MODAL: SUPABASE DATABASE AUTHENTICATION PROMPT -->
-    <div x-show="showDbModal && !isLockedOut" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
-            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <span class="text-xl">🗄️</span>
-                    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Supabase Cloud Database Sync</h3>
-                </div>
-                <button @click="showDbModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="p-6 space-y-4">
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Database credentials (<code class="font-mono text-brand-600 dark:text-brand-400">SUPABASE_URL</code> & <code class="font-mono text-brand-600 dark:text-brand-400">SUPABASE_ANON_KEY</code>) are injected directly from GitHub Repository Secrets.
-                </p>
-
-                <!-- Secrets Status Validation Box -->
-                <div class="p-3 rounded-xl text-xs font-mono border"
-                     :class="secretsValidated ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300' : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300'">
-                    <div class="flex items-center space-x-2">
-                        <span x-text="secretsValidated ? '✅' : '⚠️'"></span>
-                        <span class="font-bold" x-text="secretsValidated ? 'GitHub Secrets Detected & Validated' : 'Repository Secrets Missing'"></span>
-                    </div>
-                    <p class="text-[11px] mt-1 opacity-90" x-text="secretsValidationMessage"></p>
-                </div>
-
-                <!-- 64-bit Master Password Prompt -->
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Database Master Password (≥ 64-bit strength)</label>
-                        <span class="text-[10px] text-red-500 font-semibold" x-text="`Attempts left: ${3 - failedAttempts}`"></span>
-                    </div>
-                    <input type="password" x-model="dbConfig.password" placeholder="Min 12 chars / 64-bit entropy password..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
-                    <p class="text-[10px] text-slate-400 mt-1">Requires high-entropy password (min 12 chars with upper, lower, numbers/symbols) to protect remote sync payload.</p>
-                </div>
-
-                <div class="flex space-x-3 pt-2">
-                    <button @click="showDbModal = false" class="w-1/2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl text-sm font-semibold transition">
-                        Cancel
-                    </button>
-                    <button @click="connectAndAuthenticateDB()" :disabled="!secretsValidated" class="w-1/2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center space-x-1">
-                        <span>Connect & Sync</span>
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- MODAL 1: ADD / SEARCH / LIBRARY DIALOG -->
@@ -607,14 +535,6 @@
 
     <!-- Application Script Logic -->
     <script>
-        // Placeholders replaced automatically during GitHub Actions deployment
-        const ENV_SUPABASE_URL = "__SUPABASE_URL__";
-        const ENV_SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
-
-        // Safe evaluation for local testing vs production
-        const SUPABASE_URL = (typeof ENV_SUPABASE_URL !== 'undefined' && !ENV_SUPABASE_URL.startsWith('__')) ? ENV_SUPABASE_URL : '';
-        const SUPABASE_ANON_KEY = (typeof ENV_SUPABASE_ANON_KEY !== 'undefined' && !ENV_SUPABASE_ANON_KEY.startsWith('__')) ? ENV_SUPABASE_ANON_KEY : '';
-        
         const BUILTIN_FOOD_DATABASE = [
             { id: 'off_1', name: 'Apple', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, baseQty: 100, baseUnit: 'g', source: 'Offline' },
             { id: 'off_2', name: 'Banana', calories: 89, protein: 1.1, carbs: 23, fat: 0.3, baseQty: 100, baseUnit: 'g', source: 'Offline' },
@@ -648,25 +568,6 @@
 
                 // Toast notification
                 toast: { show: false, message: '', icon: '✅' },
-
-                // Database & Security State
-                supabaseClient: null,
-                dbConnected: false,
-                showDbModal: false,
-                failedAttempts: 0,
-                isLockedOut: false,
-                lockoutTimerText: '30:00',
-                lockoutInterval: null,
-                
-                // Secret validation state
-                secretsValidated: false,
-                secretsValidationMessage: '',
-
-                dbConfig: {
-                    url: '',
-                    anonKey: '',
-                    password: ''
-                },
 
                 totalCalories: 0,
                 totalCarbs: 0,
@@ -736,37 +637,7 @@
                     }
                 },
 
-                validateRepositorySecrets() {
-            const url = SUPABASE_URL;
-            const anonKey = SUPABASE_ANON_KEY;
-
-            const isUrlValid = url.trim().startsWith('https://') && url.includes('supabase.co');
-            const isKeyValid = anonKey.trim().length > 20 && anonKey.includes('.');
-
-            if (isUrlValid && isKeyValid) {
-                this.dbConfig.url = url.trim();
-                this.dbConfig.anonKey = anonKey.trim();
-                this.secretsValidated = true;
-                this.secretsValidationMessage = 'SUPABASE_URL and SUPABASE_ANON_KEY secrets successfully loaded.';
-                return true;
-            } else {
-                this.secretsValidated = false;
-                if (!isUrlValid && !isKeyValid) {
-                    this.secretsValidationMessage = 'Both SUPABASE_URL and SUPABASE_ANON_KEY secrets are missing or unconfigured in GitHub Secrets.';
-                } else if (!isUrlValid) {
-                    this.secretsValidationMessage = 'SUPABASE_URL is invalid or missing. Expected format: https://<project>.supabase.co';
-                } else {
-                    this.secretsValidationMessage = 'SUPABASE_ANON_KEY is missing or invalid JSON Web Token format.';
-                }
-                return false;
-            }
-        },
-
                 initApp() {
-                    var self = this;
-                    this.checkLockoutStatus();
-                    this.validateRepositorySecrets();
-
                     if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                         this.darkMode = true;
                         document.documentElement.classList.add('dark');
@@ -791,177 +662,12 @@
                         try { this.customFoodLibrary = JSON.parse(savedLibrary); } catch(e){}
                     }
 
-                    if (this.secretsValidated && window.supabase) {
-                        this.supabaseClient = window.supabase.createClient(this.dbConfig.url, this.dbConfig.anonKey);
-                        this.dbConnected = true;
-                    }
-
                     this.selectedDate = this.getTodayString();
-                    this.loadDayData().then(function() {
-                        if (self.dbConnected) {
-                            self.syncCustomLibraryFromCloud();
-                        }
-                        self.refreshSearchResults();
-                    });
+                    this.loadDayData();
+                    this.refreshSearchResults();
                 },
-
-                openDbModal() {
-                    this.validateRepositorySecrets();
-                    this.showDbModal = true;
-                },
-
-                checkLockoutStatus() {
-                    const lockoutTime = localStorage.getItem('lockout_until');
-                    const attempts = parseInt(localStorage.getItem('failed_db_attempts') || '0');
-                    this.failedAttempts = attempts;
-
-                    if (lockoutTime) {
-                        const now = Date.now();
-                        const remainingMs = parseInt(lockoutTime) - now;
-                        if (remainingMs > 0) {
-                            this.triggerLockout(remainingMs);
-                        } else {
-                            localStorage.removeItem('lockout_until');
-                            localStorage.setItem('failed_db_attempts', '0');
-                            this.failedAttempts = 0;
-                            this.isLockedOut = false;
-                        }
-                    }
-                },
-
-                triggerLockout(durationMs) {
-                    var self = this;
-                    this.isLockedOut = true;
-                    this.showDbModal = false;
-
-                    const endTime = Date.now() + durationMs;
-                    localStorage.setItem('lockout_until', endTime.toString());
-
-                    if (this.lockoutInterval) clearInterval(this.lockoutInterval);
-
-                    const updateTimer = function() {
-                        const now = Date.now();
-                        const diff = endTime - now;
-                        if (diff <= 0) {
-                            clearInterval(self.lockoutInterval);
-                            self.isLockedOut = false;
-                            self.failedAttempts = 0;
-                            localStorage.setItem('failed_db_attempts', '0');
-                            localStorage.removeItem('lockout_until');
-                            self.showToast('Lockout expired. You may attempt authentication again.', '🔓');
-                            return;
-                        }
-                        const mins = Math.floor(diff / 60000);
-                        const secs = Math.floor((diff % 60000) / 1000);
-                        self.lockoutTimerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-                    };
-
-                    updateTimer();
-                    this.lockoutInterval = setInterval(updateTimer, 1000);
-                },
-
-                validate64BitPassword(pwd) {
-                    if (!pwd || pwd.length < 12) return false;
-                    const hasUpper = /[A-Z]/.test(pwd);
-                    const hasLower = /[a-z]/.test(pwd);
-                    const hasDigit = /[0-9]/.test(pwd);
-                    const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
-                    return (hasUpper && hasLower && (hasDigit || hasSpecial));
-                },
-
-                handleFailedAttempt(reason) {
-                    this.failedAttempts += 1;
-                    localStorage.setItem('failed_db_attempts', this.failedAttempts.toString());
-
-                    if (this.failedAttempts >= 3) {
-                        this.triggerLockout(30 * 60 * 1000);
-                    } else {
-                        this.showToast(`${reason}. Attempts left: ${3 - this.failedAttempts}`, '❌');
-                    }
-                },
-
-                connectAndAuthenticateDB() {
-    var self = this;
-    if (this.isLockedOut) return;
-
-    if (!this.validateRepositorySecrets()) {
-        this.showToast('Validation failed: Missing or invalid SUPABASE_URL / SUPABASE_ANON_KEY secrets', '⚠️');
-        return;
-    }
-
-    // STRICT PASSWORD ENFORCEMENT CHECK
-    if (!this.dbConfig.password || !this.validate64BitPassword(this.dbConfig.password)) {
-        this.handleFailedAttempt('Invalid or missing Master Password. Min 12 chars with upper, lower, numbers/symbols required.');
-        return;
-    }
-
-    (async function() {
-        try {
-            if (window.supabase) {
-                self.supabaseClient = window.supabase.createClient(self.dbConfig.url, self.dbConfig.anonKey);
-                const { data, error } = await self.supabaseClient.from('daily_logs').select('id').limit(1);
-                if (error) throw error;
-
-                self.dbConnected = true;
-                self.failedAttempts = 0;
-                localStorage.setItem('failed_db_attempts', '0');
-                self.showDbModal = false;
-                self.showToast('Supabase Cloud Database Authenticated & Connected!', '⚡');
-                await self.syncCustomLibraryFromCloud();
-                await self.loadDayData();
-            } else {
-                throw new Error('Supabase SDK not loaded');
-            }
-        } catch (e) {
-            console.error(e);
-            self.handleFailedAttempt('Database connection/authentication failed');
-        }
-    })();
-},
 
                 loadDayData() {
-                    var self = this;
-                    return new Promise(function(resolve) {
-                        if (self.dbConnected && self.supabaseClient) {
-                            self.supabaseClient
-                                .from('daily_logs')
-                                .select('*')
-                                .eq('log_date', self.selectedDate)
-                                .then(function(res) {
-                                    if (!res.error && res.data) {
-                                        self.foodEntries = res.data.map(function(item) {
-                                            return {
-                                                id: item.id,
-                                                entryId: item.entry_id,
-                                                name: item.item_name,
-                                                calories: Number(item.calories),
-                                                servingQty: Number(item.serving_qty),
-                                                servingUnit: item.serving_unit,
-                                                protein: Number(item.protein),
-                                                carbs: Number(item.carbs),
-                                                fat: Number(item.fat),
-                                                isCustom: item.is_custom,
-                                                timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Logged'
-                                            };
-                                        });
-                                        self.calculateTotals();
-                                        resolve();
-                                        return;
-                                    }
-                                    self.fallbackLocalLoad();
-                                    resolve();
-                                }).catch(function() {
-                                    self.fallbackLocalLoad();
-                                    resolve();
-                                });
-                        } else {
-                            self.fallbackLocalLoad();
-                            resolve();
-                        }
-                    });
-                },
-
-                fallbackLocalLoad() {
                     const allData = JSON.parse(localStorage.getItem('calorieLogs') || '{}');
                     this.foodEntries = allData[this.selectedDate] || [];
                     this.calculateTotals();
@@ -972,30 +678,6 @@
                     allData[this.selectedDate] = this.foodEntries;
                     localStorage.setItem('calorieLogs', JSON.stringify(allData));
                     this.calculateTotals();
-                },
-
-                syncCustomLibraryFromCloud() {
-                    var self = this;
-                    if (!this.dbConnected || !this.supabaseClient) return Promise.resolve();
-                    return this.supabaseClient.from('custom_foods').select('*').then(function(res) {
-                        if (!res.error && res.data && res.data.length > 0) {
-                            self.customFoodLibrary = res.data.map(function(item) {
-                                return {
-                                    id: item.id,
-                                    foodId: item.food_id,
-                                    name: item.name,
-                                    calories: Number(item.calories),
-                                    baseQty: Number(item.base_qty),
-                                    baseUnit: item.base_unit,
-                                    protein: Number(item.protein),
-                                    carbs: Number(item.carbs),
-                                    fat: Number(item.fat)
-                                };
-                            });
-                            self.saveLibraryData();
-                            self.refreshSearchResults();
-                        }
-                    });
                 },
 
                 saveLibraryData() {
@@ -1114,7 +796,6 @@
 
                 addSelectedFoodToLog() {
                     if (!this.selectedFood) return;
-                    var self = this;
                     
                     var now = new Date();
                     var timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1133,35 +814,10 @@
                         isCustom: this.selectedFood.source === 'My Library'
                     };
 
-                    (async function() {
-                        if (self.dbConnected && self.supabaseClient) {
-                            try {
-                                const { data, error } = await self.supabaseClient.from('daily_logs').insert([{
-                                    log_date: self.selectedDate,
-                                    entry_id: entryId,
-                                    item_name: newEntry.name,
-                                    calories: newEntry.calories,
-                                    serving_qty: newEntry.servingQty,
-                                    serving_unit: newEntry.servingUnit,
-                                    protein: newEntry.protein,
-                                    carbs: newEntry.carbs,
-                                    fat: newEntry.fat,
-                                    is_custom: newEntry.isCustom
-                                }]).select();
-
-                                if (!error && data && data[0]) {
-                                    newEntry.id = data[0].id;
-                                }
-                            } catch (e) {
-                                console.error('Failed to sync entry to cloud database', e);
-                            }
-                        }
-
-                        self.foodEntries.push(newEntry);
-                        self.saveDayData();
-                        self.showAddModal = false;
-                        self.showToast('Logged ' + newEntry.name, '🍏');
-                    })();
+                    this.foodEntries.push(newEntry);
+                    this.saveDayData();
+                    this.showAddModal = false;
+                    this.showToast('Logged ' + newEntry.name, '🍏');
                 },
 
                 saveCustomOrEditedEntry() {
@@ -1172,126 +828,62 @@
 
                     var now = new Date();
                     var timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    var self = this;
 
-                    (async function() {
-                        if (self.editingEntryId) {
-                            var idx = self.foodEntries.findIndex(function(e) { return e.id === self.editingEntryId; });
-                            if (idx !== -1) {
-                                var updated = Object.assign({}, self.foodEntries[idx], {
-                                    name: self.customFood.name,
-                                    calories: Number(self.customFood.calories),
-                                    servingUnit: self.customFood.servingUnit || 'portion',
-                                    carbs: Number(self.customFood.carbs) || 0,
-                                    protein: Number(self.customFood.protein) || 0,
-                                    fat: Number(self.customFood.fat) || 0
-                                });
+                    if (this.editingEntryId) {
+                        var idx = this.foodEntries.findIndex(e => e.id === this.editingEntryId);
+                        if (idx !== -1) {
+                            this.foodEntries[idx] = Object.assign({}, this.foodEntries[idx], {
+                                name: this.customFood.name,
+                                calories: Number(this.customFood.calories),
+                                servingUnit: this.customFood.servingUnit || 'portion',
+                                carbs: Number(this.customFood.carbs) || 0,
+                                protein: Number(this.customFood.protein) || 0,
+                                fat: Number(this.customFood.fat) || 0
+                            });
+                            this.showToast('Updated entry: ' + this.customFood.name, '✏️');
+                        }
+                    } else {
+                        var entryId = 'custom_log_' + Date.now();
+                        var newEntry = {
+                            id: entryId,
+                            name: this.customFood.name,
+                            calories: Number(this.customFood.calories),
+                            servingQty: 1,
+                            servingUnit: this.customFood.servingUnit || 'portion',
+                            carbs: Number(this.customFood.carbs) || 0,
+                            protein: Number(this.customFood.protein) || 0,
+                            fat: Number(this.customFood.fat) || 0,
+                            timestamp: timestamp,
+                            isCustom: true
+                        };
 
-                                if (self.dbConnected && self.supabaseClient) {
-                                    try {
-                                        await self.supabaseClient.from('daily_logs').update({
-                                            item_name: updated.name,
-                                            calories: updated.calories,
-                                            serving_unit: updated.servingUnit,
-                                            carbs: updated.carbs,
-                                            protein: updated.protein,
-                                            fat: updated.fat
-                                        }).eq('id', updated.id);
-                                    } catch (e) {
-                                        console.error('Failed to update cloud item', e);
-                                    }
-                                }
+                        this.foodEntries.push(newEntry);
 
-                                self.foodEntries[idx] = updated;
-                                self.showToast('Updated entry: ' + self.customFood.name, '✏️');
-                            }
-                        } else {
-                            var entryId = 'custom_log_' + Date.now();
-                            var newEntry = {
-                                id: entryId,
-                                name: self.customFood.name,
-                                calories: Number(self.customFood.calories),
-                                servingQty: 1,
-                                servingUnit: self.customFood.servingUnit || 'portion',
-                                carbs: Number(self.customFood.carbs) || 0,
-                                protein: Number(self.customFood.protein) || 0,
-                                fat: Number(self.customFood.fat) || 0,
-                                timestamp: timestamp,
-                                isCustom: true
+                        if (this.saveToLibraryToggle) {
+                            var libFoodId = 'lib_' + Date.now();
+                            var libraryItem = {
+                                id: libFoodId,
+                                foodId: libFoodId,
+                                name: this.customFood.name,
+                                calories: Number(this.customFood.calories),
+                                baseQty: 1,
+                                baseUnit: this.customFood.servingUnit || 'portion',
+                                carbs: Number(this.customFood.carbs) || 0,
+                                protein: Number(this.customFood.protein) || 0,
+                                fat: Number(this.customFood.fat) || 0
                             };
 
-                            if (self.dbConnected && self.supabaseClient) {
-                                try {
-                                    const { data, error } = await self.supabaseClient.from('daily_logs').insert([{
-                                        log_date: self.selectedDate,
-                                        entry_id: entryId,
-                                        item_name: newEntry.name,
-                                        calories: newEntry.calories,
-                                        serving_qty: newEntry.servingQty,
-                                        serving_unit: newEntry.servingUnit,
-                                        protein: newEntry.protein,
-                                        carbs: newEntry.carbs,
-                                        fat: newEntry.fat,
-                                        is_custom: true
-                                    }]).select();
-
-                                    if (!error && data && data[0]) {
-                                        newEntry.id = data[0].id;
-                                    }
-                                } catch (e) {
-                                    console.error('Failed to insert custom entry to cloud', e);
-                                }
-                            }
-
-                            self.foodEntries.push(newEntry);
-
-                            if (self.saveToLibraryToggle) {
-                                var libFoodId = 'lib_' + Date.now();
-                                var libraryItem = {
-                                    id: libFoodId,
-                                    foodId: libFoodId,
-                                    name: self.customFood.name,
-                                    calories: Number(self.customFood.calories),
-                                    baseQty: 1,
-                                    baseUnit: self.customFood.servingUnit || 'portion',
-                                    carbs: Number(self.customFood.carbs) || 0,
-                                    protein: Number(self.customFood.protein) || 0,
-                                    fat: Number(self.customFood.fat) || 0
-                                };
-
-                                if (self.dbConnected && self.supabaseClient) {
-                                    try {
-                                        const { data } = await self.supabaseClient.from('custom_foods').insert([{
-                                            food_id: libraryItem.foodId,
-                                            name: libraryItem.name,
-                                            calories: libraryItem.calories,
-                                            base_qty: libraryItem.baseQty,
-                                            base_unit: libraryItem.baseUnit,
-                                            protein: libraryItem.protein,
-                                            carbs: libraryItem.carbs,
-                                            fat: libraryItem.fat
-                                        }]).select();
-
-                                        if (data && data[0]) {
-                                            libraryItem.id = data[0].id;
-                                        }
-                                    } catch (e) {
-                                        console.error('Failed to insert into cloud custom library', e);
-                                    }
-                                }
-
-                                self.customFoodLibrary.push(libraryItem);
-                                self.saveLibraryData();
-                                self.showToast('Logged & saved "' + libraryItem.name + '" to Library!', '⭐');
-                            } else {
-                                self.showToast('Logged custom food: ' + newEntry.name, '✏️');
-                            }
+                            this.customFoodLibrary.push(libraryItem);
+                            this.saveLibraryData();
+                            this.showToast('Logged & saved "' + libraryItem.name + '" to Library!', '⭐');
+                        } else {
+                            this.showToast('Logged custom food: ' + newEntry.name, '✏️');
                         }
+                    }
 
-                        self.saveDayData();
-                        self.showAddModal = false;
-                        self.editingEntryId = null;
-                    })();
+                    this.saveDayData();
+                    this.showAddModal = false;
+                    this.editingEntryId = null;
                 },
 
                 editEntry(entry) {
@@ -1309,50 +901,18 @@
                 },
 
                 deleteFromLibrary(id) {
-                    var self = this;
-                    (async function() {
-                        if (self.dbConnected && self.supabaseClient) {
-                            try {
-                                await self.supabaseClient.from('custom_foods').delete().eq('id', id);
-                            } catch (e) {
-                                console.error('Failed to delete library item from cloud', e);
-                            }
-                        }
-                        self.customFoodLibrary = self.customFoodLibrary.filter(function(i) { return i.id !== id; });
-                        self.saveLibraryData();
-                        self.refreshSearchResults();
-                        self.showToast('Removed from Custom Library', '🗑️');
-                    })();
+                    this.customFoodLibrary = this.customFoodLibrary.filter(i => i.id !== id);
+                    this.saveLibraryData();
+                    this.refreshSearchResults();
+                    this.showToast('Removed from Custom Library', '🗑️');
                 },
 
                 deleteEntry(id) {
-            var self = this;
-            (async function() {
-                if (self.dbConnected && self.supabaseClient) {
-                    try {
-                        // Fixed: Use 'id' to match the database table's primary key column
-                        const { error } = await self.supabaseClient
-                            .from('daily_logs')
-                            .delete()
-                            .eq('id', id);
-                            
-                        if (error) {
-                            console.error('Supabase delete error:', error.message);
-                            self.showToast('Cloud delete failed: ' + error.message, '❌');
-                            return;
-                        }
-                    } catch (e) {
-                        console.error('Failed to delete cloud entry', e);
-                    }
-                }
-                
-                // Remove from local array and update UI
-                self.foodEntries = self.foodEntries.filter(function(item) { return item.id !== id; });
-                self.saveDayData();
-                self.calculateTotals();
-                self.showToast('Entry deleted', '🗑️');
-            })();
-        },
+                    this.foodEntries = this.foodEntries.filter(item => item.id !== id);
+                    this.saveDayData();
+                    this.calculateTotals();
+                    this.showToast('Entry deleted', '🗑️');
+                },
 
                 exportData() {
                     var allLogs = localStorage.getItem('calorieLogs') || '{}';
@@ -1404,7 +964,7 @@
                             }
                             self.loadDayData();
                             self.refreshSearchResults();
-                            self.showToast('All logs & Custom Library restored!', '📤');
+                            this.showToast('All logs & Custom Library restored!', '📤');
                         } catch (err) {
                             console.error(err);
                             self.showToast('Invalid JSON backup file', '❌');
