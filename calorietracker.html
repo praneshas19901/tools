@@ -302,7 +302,7 @@
         </div>
     </div>
 
-    <!-- MODAL: SUPABASE DATABASE CONNECTION & 64-BIT AUTH PROMPT -->
+    <!-- MODAL: SUPABASE DATABASE AUTHENTICATION PROMPT -->
     <div x-show="showDbModal && !isLockedOut" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
             <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
@@ -316,19 +316,17 @@
             </div>
             <div class="p-6 space-y-4">
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Enter your Supabase API credentials and master password below to enable real-time cloud synchronization.
+                    Database credentials (<code class="font-mono text-brand-600 dark:text-brand-400">SUPABASE_URL</code> & <code class="font-mono text-brand-600 dark:text-brand-400">SUPABASE_ANON_KEY</code>) are injected directly from GitHub Repository Secrets.
                 </p>
 
-                <!-- Project URL -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Supabase Endpoint URL</label>
-                    <input type="text" x-model="dbConfig.url" placeholder="https://xyz.supabase.co" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
-                </div>
-
-                <!-- Anon Key -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Supabase Anon Key</label>
-                    <input type="password" x-model="dbConfig.anonKey" placeholder="eyJhbGci..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
+                <!-- Secrets Status Validation Box -->
+                <div class="p-3 rounded-xl text-xs font-mono border"
+                     :class="secretsValidated ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300' : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300'">
+                    <div class="flex items-center space-x-2">
+                        <span x-text="secretsValidated ? '✅' : '⚠️'"></span>
+                        <span class="font-bold" x-text="secretsValidated ? 'GitHub Secrets Detected & Validated' : 'Repository Secrets Missing'"></span>
+                    </div>
+                    <p class="text-[11px] mt-1 opacity-90" x-text="secretsValidationMessage"></p>
                 </div>
 
                 <!-- 64-bit Master Password Prompt -->
@@ -345,7 +343,7 @@
                     <button @click="showDbModal = false" class="w-1/2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl text-sm font-semibold transition">
                         Cancel
                     </button>
-                    <button @click="connectAndAuthenticateDB()" class="w-1/2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center space-x-1">
+                    <button @click="connectAndAuthenticateDB()" :disabled="!secretsValidated" class="w-1/2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center space-x-1">
                         <span>Connect & Sync</span>
                     </button>
                 </div>
@@ -609,6 +607,7 @@
 
     <!-- Application Script Logic -->
     <script>
+        // Fetch secrets injected via GitHub Secrets / Environment build process
         const ENV_SUPABASE_URL = "__SUPABASE_URL__";
         const ENV_SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
 
@@ -654,6 +653,11 @@
                 isLockedOut: false,
                 lockoutTimerText: '30:00',
                 lockoutInterval: null,
+                
+                // Secret validation state
+                secretsValidated: false,
+                secretsValidationMessage: '',
+
                 dbConfig: {
                     url: '',
                     anonKey: '',
@@ -728,9 +732,36 @@
                     }
                 },
 
+                validateRepositorySecrets() {
+                    const url = ENV_SUPABASE_URL && !ENV_SUPABASE_URL.startsWith('__') ? ENV_SUPABASE_URL : (window.ENV_SUPABASE_URL || '');
+                    const anonKey = ENV_SUPABASE_ANON_KEY && !ENV_SUPABASE_ANON_KEY.startsWith('__') ? ENV_SUPABASE_ANON_KEY : (window.ENV_SUPABASE_ANON_KEY || '');
+
+                    const isUrlValid = /^https:\/\/[a-z0-9-]+\.supabase\.co/i.test(url.trim());
+                    const isKeyValid = anonKey.trim().length > 20 && anonKey.includes('.');
+
+                    if (isUrlValid && isKeyValid) {
+                        this.dbConfig.url = url.trim();
+                        this.dbConfig.anonKey = anonKey.trim();
+                        this.secretsValidated = true;
+                        this.secretsValidationMessage = 'SUPABASE_URL and SUPABASE_ANON_KEY secrets successfully loaded.';
+                        return true;
+                    } else {
+                        this.secretsValidated = false;
+                        if (!isUrlValid && !isKeyValid) {
+                            this.secretsValidationMessage = 'Both SUPABASE_URL and SUPABASE_ANON_KEY secrets are missing or unconfigured in GitHub Secrets.';
+                        } else if (!isUrlValid) {
+                            this.secretsValidationMessage = 'SUPABASE_URL is invalid or missing. Expected format: https://<project>.supabase.co';
+                        } else {
+                            this.secretsValidationMessage = 'SUPABASE_ANON_KEY is missing or invalid JSON Web Token format.';
+                        }
+                        return false;
+                    }
+                },
+
                 initApp() {
                     var self = this;
                     this.checkLockoutStatus();
+                    this.validateRepositorySecrets();
 
                     if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                         this.darkMode = true;
@@ -756,25 +787,9 @@
                         try { this.customFoodLibrary = JSON.parse(savedLibrary); } catch(e){}
                     }
 
-                    // Auto-resolve Supabase credentials from Repository Secrets or localStorage
-                    if (ENV_SUPABASE_URL && !ENV_SUPABASE_URL.startsWith('__')) {
-                        this.dbConfig.url = ENV_SUPABASE_URL;
-                    }
-                    if (ENV_SUPABASE_ANON_KEY && !ENV_SUPABASE_ANON_KEY.startsWith('__')) {
-                        this.dbConfig.anonKey = ENV_SUPABASE_ANON_KEY;
-                    }
-
-                    const savedDb = localStorage.getItem('supabase_config');
-                    if (savedDb) {
-                        try {
-                            const parsed = JSON.parse(savedDb);
-                            if (!this.dbConfig.url) this.dbConfig.url = parsed.url || '';
-                            if (!this.dbConfig.anonKey) this.dbConfig.anonKey = parsed.anonKey || '';
-                            if (this.dbConfig.url && this.dbConfig.anonKey && window.supabase) {
-                                this.supabaseClient = window.supabase.createClient(this.dbConfig.url, this.dbConfig.anonKey);
-                                this.dbConnected = true;
-                            }
-                        } catch(e){}
+                    if (this.secretsValidated && window.supabase) {
+                        this.supabaseClient = window.supabase.createClient(this.dbConfig.url, this.dbConfig.anonKey);
+                        this.dbConnected = true;
                     }
 
                     this.selectedDate = this.getTodayString();
@@ -787,6 +802,7 @@
                 },
 
                 openDbModal() {
+                    this.validateRepositorySecrets();
                     this.showDbModal = true;
                 },
 
@@ -864,8 +880,8 @@
                     var self = this;
                     if (this.isLockedOut) return;
 
-                    if (!this.dbConfig.url || !this.dbConfig.anonKey) {
-                        this.showToast('Please provide both Supabase Endpoint URL and Anon Key.', '⚠️');
+                    if (!this.validateRepositorySecrets()) {
+                        this.showToast('Validation failed: Missing or invalid SUPABASE_URL / SUPABASE_ANON_KEY secrets', '⚠️');
                         return;
                     }
 
@@ -884,12 +900,8 @@
                                 self.dbConnected = true;
                                 self.failedAttempts = 0;
                                 localStorage.setItem('failed_db_attempts', '0');
-                                localStorage.setItem('supabase_config', JSON.stringify({
-                                    url: self.dbConfig.url,
-                                    anonKey: self.dbConfig.anonKey
-                                }));
                                 self.showDbModal = false;
-                                self.showToast('Supabase Cloud Database Connected!', '⚡');
+                                self.showToast('Supabase Cloud Database Connected via Repository Secrets!', '⚡');
                                 await self.syncCustomLibraryFromCloud();
                                 await self.loadDayData();
                             } else {
