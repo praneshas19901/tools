@@ -733,29 +733,30 @@
                 },
 
                 validateRepositorySecrets() {
-                    const url = ENV_SUPABASE_URL && !ENV_SUPABASE_URL.startsWith('__') ? ENV_SUPABASE_URL : (window.ENV_SUPABASE_URL || '');
-                    const anonKey = ENV_SUPABASE_ANON_KEY && !ENV_SUPABASE_ANON_KEY.startsWith('__') ? ENV_SUPABASE_ANON_KEY : (window.ENV_SUPABASE_ANON_KEY || '');
+    const url = ENV_SUPABASE_URL && !ENV_SUPABASE_URL.startsWith('__') ? ENV_SUPABASE_URL : (window.ENV_SUPABASE_URL || '');
+    const anonKey = ENV_SUPABASE_ANON_KEY && !ENV_SUPABASE_ANON_KEY.startsWith('__') ? ENV_SUPABASE_ANON_KEY : (window.ENV_SUPABASE_ANON_KEY || '');
 
-                    const isUrlValid = /^https:\/\/[a-z0-9-]+\.supabase\.co/i.test(url.trim());
-                    const isKeyValid = anonKey.trim().length > 20 && anonKey.includes('.');
+    // Relaxed validation to support standard and regional Supabase URLs
+    const isUrlValid = url.trim().startsWith('https://') && url.includes('supabase.co');
+    const isKeyValid = anonKey.trim().length > 20 && anonKey.includes('.');
 
-                    if (isUrlValid && isKeyValid) {
-                        this.dbConfig.url = url.trim();
-                        this.dbConfig.anonKey = anonKey.trim();
-                        this.secretsValidated = true;
-                        this.secretsValidationMessage = 'SUPABASE_URL and SUPABASE_ANON_KEY secrets successfully loaded.';
-                        return true;
-                    } else {
-                        this.secretsValidated = false;
-                        if (!isUrlValid && !isKeyValid) {
-                            this.secretsValidationMessage = 'Both SUPABASE_URL and SUPABASE_ANON_KEY secrets are missing or unconfigured in GitHub Secrets.';
-                        } else if (!isUrlValid) {
-                            this.secretsValidationMessage = 'SUPABASE_URL is invalid or missing. Expected format: https://<project>.supabase.co';
-                        } else {
-                            this.secretsValidationMessage = 'SUPABASE_ANON_KEY is missing or invalid JSON Web Token format.';
-                        }
-                        return false;
-                    }
+    if (isUrlValid && isKeyValid) {
+        this.dbConfig.url = url.trim();
+        this.dbConfig.anonKey = anonKey.trim();
+        this.secretsValidated = true;
+        this.secretsValidationMessage = 'SUPABASE_URL and SUPABASE_ANON_KEY secrets successfully loaded.';
+        return true;
+    } else {
+        this.secretsValidated = false;
+        if (!isUrlValid && !isKeyValid) {
+            this.secretsValidationMessage = 'Both SUPABASE_URL and SUPABASE_ANON_KEY secrets are missing or unconfigured in GitHub Secrets.';
+        } else if (!isUrlValid) {
+            this.secretsValidationMessage = 'SUPABASE_URL is invalid or missing. Expected format: https://<project>.supabase.co';
+        } else {
+            this.secretsValidationMessage = 'SUPABASE_ANON_KEY is missing or invalid JSON Web Token format.';
+        }
+        return false;
+    }
                 },
 
                 initApp() {
