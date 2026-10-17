@@ -26,6 +26,8 @@
     </script>
     <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -314,20 +316,8 @@
             </div>
             <div class="p-6 space-y-4">
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Enter your Supabase database endpoint credentials and your 64-bit master password below.
+                    Enter your 64-bit database master password below to unlock cloud sync with Supabase.
                 </p>
-
-                <!-- Connection String / URL -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Supabase Endpoint URL</label>
-                    <input type="text" x-model="dbConfig.url" placeholder="https://xyzcompany.supabase.co" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
-                </div>
-
-                <!-- Anon API Key -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Supabase Anon Key</label>
-                    <input type="password" x-model="dbConfig.anonKey" placeholder="eyJhbGciOiJIUzI1NiI..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
-                </div>
 
                 <!-- 64-bit Master Password Prompt -->
                 <div>
@@ -335,8 +325,8 @@
                         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Database Master Password (≥ 64-bit strength)</label>
                         <span class="text-[10px] text-red-500 font-semibold" x-text="`Attempts left: ${3 - failedAttempts}`"></span>
                     </div>
-                    <input type="password" x-model="dbConfig.password" placeholder="Min 12-16 chars / 64-bit entropy password..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500 font-mono">
-                    <p class="text-[10px] text-slate-400 mt-1">Requires standard high-entropy password (min 12 chars/64-bit key size) to protect remote sync payload.</p>
+                    <input type="password" x-model="dbConfig.password" placeholder="Min 12 chars / 64-bit entropy password..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500 font-mono">
+                    <p class="text-[10px] text-slate-400 mt-1">Requires high-entropy password (min 12 chars with upper, lower, numbers/symbols) to protect remote sync payload.</p>
                 </div>
 
                 <div class="flex space-x-3 pt-2">
@@ -607,6 +597,10 @@
 
     <!-- Application Script Logic -->
     <script>
+        // Automatic environment secrets fallback placeholders
+        const ENV_SUPABASE_URL = "__SUPABASE_URL__";
+        const ENV_SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
+
         const BUILTIN_FOOD_DATABASE = [
             { id: 'off_1', name: 'Apple', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, baseQty: 100, baseUnit: 'g', source: 'Offline' },
             { id: 'off_2', name: 'Banana', calories: 89, protein: 1.1, carbs: 23, fat: 0.3, baseQty: 100, baseUnit: 'g', source: 'Offline' },
@@ -638,7 +632,11 @@
                 customFoodLibrary: [],
                 saveToLibraryToggle: true,
 
+                // Toast notification
+                toast: { show: false, message: '', icon: '✅' },
+
                 // Database & Security State
+                supabaseClient: null,
                 dbConnected: false,
                 showDbModal: false,
                 failedAttempts: 0,
@@ -677,13 +675,50 @@
                     fat: ''
                 },
 
-                toast: {
-                    show: false,
-                    message: '',
-                    icon: '✅'
+                getTodayString() {
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                },
+
+                getDateSubtitle() {
+                    if (!this.selectedDate) return '';
+                    if (this.selectedDate === this.getTodayString()) return 'Today';
+                    const parts = this.selectedDate.split('-');
+                    if (parts.length === 3) {
+                        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+                        return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                    }
+                    return this.selectedDate;
+                },
+
+                changeDate(offset) {
+                    if (!this.selectedDate) this.selectedDate = this.getTodayString();
+                    const parts = this.selectedDate.split('-');
+                    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+                    d.setDate(d.getDate() + offset);
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    this.selectedDate = `${year}-${month}-${day}`;
+                    this.loadDayData();
+                },
+
+                toggleDarkMode() {
+                    this.darkMode = !this.darkMode;
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        localStorage.setItem('theme', 'light');
+                    }
                 },
 
                 initApp() {
+                    var self = this;
                     this.checkLockoutStatus();
 
                     if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -710,19 +745,34 @@
                         try { this.customFoodLibrary = JSON.parse(savedLibrary); } catch(e){}
                     }
 
-                    // Check saved DB settings
+                    // Auto-resolve Supabase credentials from Repository Secrets or localStorage
+                    if (ENV_SUPABASE_URL && !ENV_SUPABASE_URL.startsWith('__')) {
+                        this.dbConfig.url = ENV_SUPABASE_URL;
+                    }
+                    if (ENV_SUPABASE_ANON_KEY && !ENV_SUPABASE_ANON_KEY.startsWith('__')) {
+                        this.dbConfig.anonKey = ENV_SUPABASE_ANON_KEY;
+                    }
+
                     const savedDb = localStorage.getItem('supabase_config');
                     if (savedDb) {
                         try {
                             const parsed = JSON.parse(savedDb);
-                            this.dbConfig.url = parsed.url || '';
-                            this.dbConfig.anonKey = parsed.anonKey || '';
+                            if (!this.dbConfig.url) this.dbConfig.url = parsed.url || '';
+                            if (!this.dbConfig.anonKey) this.dbConfig.anonKey = parsed.anonKey || '';
+                            if (this.dbConfig.url && this.dbConfig.anonKey && window.supabase) {
+                                this.supabaseClient = window.supabase.createClient(this.dbConfig.url, this.dbConfig.anonKey);
+                                this.dbConnected = true;
+                            }
                         } catch(e){}
                     }
 
                     this.selectedDate = this.getTodayString();
-                    this.loadDayData();
-                    this.refreshSearchResults();
+                    this.loadDayData().then(function() {
+                        if (self.dbConnected) {
+                            self.syncCustomLibraryFromCloud();
+                        }
+                        self.refreshSearchResults();
+                    });
                 },
 
                 openDbModal() {
@@ -748,15 +798,8 @@
                     }
                 },
 
-                getTodayString() {
-                    const today = new Date();
-                    const year = today.getFullYear();
-                    const month = String(today.getMonth() + 1).padStart(2, '0');
-                    const day = String(today.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                },
-
                 triggerLockout(durationMs) {
+                    var self = this;
                     this.isLockedOut = true;
                     this.showDbModal = false;
 
@@ -765,21 +808,21 @@
 
                     if (this.lockoutInterval) clearInterval(this.lockoutInterval);
 
-                    const updateTimer = () => {
+                    const updateTimer = function() {
                         const now = Date.now();
                         const diff = endTime - now;
                         if (diff <= 0) {
-                            clearInterval(this.lockoutInterval);
-                            this.isLockedOut = false;
-                            this.failedAttempts = 0;
+                            clearInterval(self.lockoutInterval);
+                            self.isLockedOut = false;
+                            self.failedAttempts = 0;
                             localStorage.setItem('failed_db_attempts', '0');
                             localStorage.removeItem('lockout_until');
-                            this.showToast('Lockout expired. You may attempt authentication again.', '🔓');
+                            self.showToast('Lockout expired. You may attempt authentication again.', '🔓');
                             return;
                         }
                         const mins = Math.floor(diff / 60000);
                         const secs = Math.floor((diff % 60000) / 1000);
-                        this.lockoutTimerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                        self.lockoutTimerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
                     };
 
                     updateTimer();
@@ -787,7 +830,6 @@
                 },
 
                 validate64BitPassword(pwd) {
-                    // Standard 64-bit security constraint test (at least 12 chars with complexity or 16+ chars)
                     if (!pwd || pwd.length < 12) return false;
                     const hasUpper = /[A-Z]/.test(pwd);
                     const hasLower = /[a-z]/.test(pwd);
@@ -796,78 +838,102 @@
                     return (hasUpper && hasLower && (hasDigit || hasSpecial));
                 },
 
-                async connectAndAuthenticateDB() {
-                    if (this.isLockedOut) return;
-
-                    if (!this.dbConfig.url || !this.dbConfig.anonKey) {
-                        this.showToast('Please enter both Supabase URL & Anon Key', '⚠️');
-                        return;
-                    }
-
-                    // Verify 64-bit complexity constraint
-                    if (!this.validate64BitPassword(this.dbConfig.password)) {
-                        this.handleFailedAttempt('Password does not meet 64-bit strength criteria (Min 12 characters with uppercase, lowercase, numbers/symbols)');
-                        return;
-                    }
-
-                    try {
-                        // Test Supabase REST API query connection
-                        const testUrl = `${this.dbConfig.url.replace(/\/$/, '')}/rest/v1/`;
-                        const res = await fetch(testUrl, {
-                            method: 'GET',
-                            headers: {
-                                'apikey': this.dbConfig.anonKey,
-                                'Authorization': `Bearer ${this.dbConfig.anonKey}`
-                            }
-                        });
-
-                        if (res.ok || res.status === 404 || res.status === 200) {
-                            this.dbConnected = true;
-                            this.failedAttempts = 0;
-                            localStorage.setItem('failed_db_attempts', '0');
-                            localStorage.setItem('supabase_config', JSON.stringify({
-                                url: this.dbConfig.url,
-                                anonKey: this.dbConfig.anonKey
-                            }));
-                            this.showDbModal = false;
-                            this.showToast('Supabase Cloud Database Connected!', '⚡');
-                        } else {
-                            throw new Error('Supabase Auth failed');
-                        }
-                    } catch (e) {
-                        this.handleFailedAttempt('Database connection/authentication failed');
-                    }
-                },
-
-                handleFailedAttempt(message) {
-                    this.failedAttempts++;
+                handleFailedAttempt(reason) {
+                    this.failedAttempts += 1;
                     localStorage.setItem('failed_db_attempts', this.failedAttempts.toString());
 
                     if (this.failedAttempts >= 3) {
-                        this.showToast('3 Failed attempts reached. Locking system!', '🚨');
-                        this.triggerLockout(30 * 60 * 1000); // 30 minutes in ms
+                        this.triggerLockout(30 * 60 * 1000); // 30 mins lockout
                     } else {
-                        const remaining = 3 - this.failedAttempts;
-                        this.showToast(`${message}. ${remaining} attempt(s) remaining before 30-min lockout.`, '❌');
+                        this.showToast(`${reason}. Attempts left: ${3 - this.failedAttempts}`, '❌');
                     }
                 },
 
-                changeDate(days) {
-                    const d = new Date(this.selectedDate + 'T00:00:00');
-                    d.setDate(d.getDate() + days);
-                    const year = d.getFullYear();
-                    const month = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    this.selectedDate = `${year}-${month}-${day}`;
-                    this.loadDayData();
-                },
+                connectAndAuthenticateDB() {
+                    var self = this;
+                    if (this.isLockedOut) return;
 
-                getDateSubtitle() {
-                    const d = new Date(this.selectedDate + 'T00:00:00');
-                    return d.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+                    if (!this.dbConfig.url || !this.dbConfig.anonKey) {
+                        this.showToast('Supabase repository secrets (URL & Anon Key) missing or unconfigured.', '⚠️');
+                        return;
+                    }
+
+                    if (!this.validate64BitPassword(this.dbConfig.password)) {
+                        this.handleFailedAttempt('Password does not meet 64-bit strength criteria (Min 12 chars with upper, lower, numbers/symbols)');
+                        return;
+                    }
+
+                    (async function() {
+                        try {
+                            if (window.supabase) {
+                                self.supabaseClient = window.supabase.createClient(self.dbConfig.url, self.dbConfig.anonKey);
+                                const { data, error } = await self.supabaseClient.from('daily_logs').select('id').limit(1);
+                                if (error) throw error;
+
+                                self.dbConnected = true;
+                                self.failedAttempts = 0;
+                                localStorage.setItem('failed_db_attempts', '0');
+                                localStorage.setItem('supabase_config', JSON.stringify({
+                                    url: self.dbConfig.url,
+                                    anonKey: self.dbConfig.anonKey
+                                }));
+                                self.showDbModal = false;
+                                self.showToast('Supabase Cloud Database Connected!', '⚡');
+                                await self.syncCustomLibraryFromCloud();
+                                await self.loadDayData();
+                            } else {
+                                throw new Error('Supabase SDK not loaded');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            self.handleFailedAttempt('Database connection/authentication failed');
+                        }
+                    })();
                 },
 
                 loadDayData() {
+                    var self = this;
+                    return new Promise(function(resolve) {
+                        if (self.dbConnected && self.supabaseClient) {
+                            self.supabaseClient
+                                .from('daily_logs')
+                                .select('*')
+                                .eq('log_date', self.selectedDate)
+                                .then(function(res) {
+                                    if (!res.error && res.data) {
+                                        self.foodEntries = res.data.map(function(item) {
+                                            return {
+                                                id: item.id,
+                                                entryId: item.entry_id,
+                                                name: item.item_name,
+                                                calories: Number(item.calories),
+                                                servingQty: Number(item.serving_qty),
+                                                servingUnit: item.serving_unit,
+                                                protein: Number(item.protein),
+                                                carbs: Number(item.carbs),
+                                                fat: Number(item.fat),
+                                                isCustom: item.is_custom,
+                                                timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Logged'
+                                            };
+                                        });
+                                        self.calculateTotals();
+                                        resolve();
+                                        return;
+                                    }
+                                    self.fallbackLocalLoad();
+                                    resolve();
+                                }).catch(function() {
+                                    self.fallbackLocalLoad();
+                                    resolve();
+                                });
+                        } else {
+                            self.fallbackLocalLoad();
+                            resolve();
+                        }
+                    });
+                },
+
+                fallbackLocalLoad() {
                     const allData = JSON.parse(localStorage.getItem('calorieLogs') || '{}');
                     this.foodEntries = allData[this.selectedDate] || [];
                     this.calculateTotals();
@@ -878,6 +944,30 @@
                     allData[this.selectedDate] = this.foodEntries;
                     localStorage.setItem('calorieLogs', JSON.stringify(allData));
                     this.calculateTotals();
+                },
+
+                syncCustomLibraryFromCloud() {
+                    var self = this;
+                    if (!this.dbConnected || !this.supabaseClient) return Promise.resolve();
+                    return this.supabaseClient.from('custom_foods').select('*').then(function(res) {
+                        if (!res.error && res.data && res.data.length > 0) {
+                            self.customFoodLibrary = res.data.map(function(item) {
+                                return {
+                                    id: item.id,
+                                    foodId: item.food_id,
+                                    name: item.name,
+                                    calories: Number(item.calories),
+                                    baseQty: Number(item.base_qty),
+                                    baseUnit: item.base_unit,
+                                    protein: Number(item.protein),
+                                    carbs: Number(item.carbs),
+                                    fat: Number(item.fat)
+                                };
+                            });
+                            self.saveLibraryData();
+                            self.refreshSearchResults();
+                        }
+                    });
                 },
 
                 saveLibraryData() {
@@ -922,94 +1012,88 @@
                         this.refreshSearchResults();
                         return;
                     }
-                    var query = this.searchQuery.toLowerCase();
-                    var libraryMatches = this.customFoodLibrary.filter(function(f) {
-                        return f.name.toLowerCase().includes(query);
-                    }).map(function(i) {
-                        return Object.assign({}, i, { source: 'My Library' });
+                    var q = this.searchQuery.toLowerCase();
+                    var libraryFormatted = this.customFoodLibrary.map(function(item) {
+                        return Object.assign({}, item, { source: 'My Library' });
                     });
-                    var offlineMatches = BUILTIN_FOOD_DATABASE.filter(function(f) {
-                        return f.name.toLowerCase().includes(query);
+                    var combined = libraryFormatted.concat(BUILTIN_FOOD_DATABASE);
+                    this.searchResults = combined.filter(function(item) {
+                        return item.name.toLowerCase().includes(q);
                     });
-                    this.searchResults = libraryMatches.concat(offlineMatches);
                 },
 
-                searchFoodAPI: async function() {
+                searchFoodAPI() {
                     if (!this.searchQuery.trim()) return;
+                    var self = this;
                     this.isSearching = true;
 
-                    var query = this.searchQuery.toLowerCase();
-                    var libraryMatches = this.customFoodLibrary.filter(function(f) {
-                        return f.name.toLowerCase().includes(query);
-                    }).map(function(i) {
-                        return Object.assign({}, i, { source: 'My Library' });
-                    });
-                    var results = libraryMatches.concat(BUILTIN_FOOD_DATABASE.filter(function(f) {
-                        return f.name.toLowerCase().includes(query);
-                    }));
-
-                    try {
-                        var usdaRes = await fetch('https://api.nal.usda.gov/fdc/v1/foods/search?query=' + encodeURIComponent(this.searchQuery) + '&pageSize=8&api_key=DEMO_KEY');
-                        if (usdaRes.ok) {
-                            var data = await usdaRes.json();
+                    fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=' + encodeURIComponent(this.searchQuery) + '&pageSize=10')
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
                             if (data.foods && data.foods.length > 0) {
-                                var parsedUsda = data.foods.map(function(item) {
-                                    var getNutrient = function(name) {
-                                        var found = item.foodNutrients.find(function(n) {
-                                            return n.nutrientName && n.nutrientName.toLowerCase().includes(name.toLowerCase());
-                                        });
+                                var usdaResults = data.foods.map(function(f) {
+                                    var getNutrient = function(id) {
+                                        var found = f.foodNutrients.find(function(n) { return n.nutrientId === id; });
                                         return found ? Math.round(found.value * 10) / 10 : 0;
                                     };
                                     return {
-                                        id: 'usda_' + item.fdcId,
-                                        name: item.description,
-                                        calories: Math.round(getNutrient('Energy') || getNutrient('KCAL')),
-                                        protein: getNutrient('Protein'),
-                                        carbs: getNutrient('Carbohydrate'),
-                                        fat: getNutrient('Total lipid'),
+                                        id: 'usda_' + f.fdcId,
+                                        name: f.description,
+                                        calories: Math.round(getNutrient(1008)),
+                                        protein: getNutrient(1003),
+                                        carbs: getNutrient(1005),
+                                        fat: getNutrient(1004),
                                         baseQty: 100,
                                         baseUnit: 'g',
-                                        source: 'USDA'
+                                        source: 'USDA API'
                                     };
-                                }).filter(function(i) { return i.calories > 0; });
+                                });
 
-                                results = libraryMatches.concat(parsedUsda, results);
+                                var libMatches = self.customFoodLibrary.filter(function(i) {
+                                    return i.name.toLowerCase().includes(self.searchQuery.toLowerCase());
+                                }).map(function(i) { return Object.assign({}, i, { source: 'My Library' }); });
+
+                                self.searchResults = libMatches.concat(usdaResults);
                             }
-                        }
-                    } catch (e) {
-                        console.warn('USDA search offline fallback activated');
-                    }
-
-                    this.searchResults = results;
-                    this.isSearching = false;
+                            self.isSearching = false;
+                        })
+                        .catch(function(e) {
+                            console.warn('USDA API search failed, falling back to local database', e);
+                            self.onSearchInput();
+                            self.isSearching = false;
+                        });
                 },
 
                 selectSearchFood(item) {
                     this.selectedFood = item;
                     this.servingQuantity = item.baseQty || 100;
-                    this.servingUnit = item.baseUnit || item.servingUnit || 'g';
+                    this.servingUnit = item.baseUnit || 'g';
                 },
 
                 calculatePortionCalories() {
                     if (!this.selectedFood) return 0;
-                    var base = this.selectedFood.baseQty || 100;
-                    return Math.round((this.selectedFood.calories * this.servingQuantity) / base);
+                    var base = Number(this.selectedFood.baseQty) || 1;
+                    var factor = Number(this.servingQuantity) / base;
+                    return Math.round(Number(this.selectedFood.calories) * factor);
                 },
 
                 calculatePortionMacro(macro) {
                     if (!this.selectedFood) return 0;
-                    var base = this.selectedFood.baseQty || 100;
-                    return Math.round(((this.selectedFood[macro] || 0) * this.servingQuantity / base) * 10) / 10;
+                    var base = Number(this.selectedFood.baseQty) || 1;
+                    var factor = Number(this.servingQuantity) / base;
+                    return Math.round((Number(this.selectedFood[macro]) || 0) * factor * 10) / 10;
                 },
 
                 addSelectedFoodToLog() {
                     if (!this.selectedFood) return;
+                    var self = this;
                     
                     var now = new Date();
                     var timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+                    var entryId = 'item_' + Date.now();
                     var newEntry = {
-                        id: 'item_' + Date.now(),
+                        id: entryId,
                         name: this.selectedFood.name,
                         calories: this.calculatePortionCalories(),
                         servingQty: this.servingQuantity,
@@ -1021,10 +1105,35 @@
                         isCustom: this.selectedFood.source === 'My Library'
                     };
 
-                    this.foodEntries.push(newEntry);
-                    this.saveDayData();
-                    this.showAddModal = false;
-                    this.showToast('Logged ' + newEntry.name, '🍏');
+                    (async function() {
+                        if (self.dbConnected && self.supabaseClient) {
+                            try {
+                                const { data, error } = await self.supabaseClient.from('daily_logs').insert([{
+                                    log_date: self.selectedDate,
+                                    entry_id: entryId,
+                                    item_name: newEntry.name,
+                                    calories: newEntry.calories,
+                                    serving_qty: newEntry.servingQty,
+                                    serving_unit: newEntry.servingUnit,
+                                    protein: newEntry.protein,
+                                    carbs: newEntry.carbs,
+                                    fat: newEntry.fat,
+                                    is_custom: newEntry.isCustom
+                                }]).select();
+
+                                if (!error && data && data[0]) {
+                                    newEntry.id = data[0].id;
+                                }
+                            } catch (e) {
+                                console.error('Failed to sync entry to cloud database', e);
+                            }
+                        }
+
+                        self.foodEntries.push(newEntry);
+                        self.saveDayData();
+                        self.showAddModal = false;
+                        self.showToast('Logged ' + newEntry.name, '🍏');
+                    })();
                 },
 
                 saveCustomOrEditedEntry() {
@@ -1037,83 +1146,171 @@
                     var timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     var self = this;
 
-                    if (this.editingEntryId) {
-                        var idx = this.foodEntries.findIndex(function(e) { return e.id === self.editingEntryId; });
-                        if (idx !== -1) {
-                            this.foodEntries[idx] = Object.assign({}, this.foodEntries[idx], {
-                                name: this.customFood.name,
-                                calories: Number(this.customFood.calories),
-                                servingUnit: this.customFood.servingUnit || 'portion',
-                                carbs: Number(this.customFood.carbs) || 0,
-                                protein: Number(this.customFood.protein) || 0,
-                                fat: Number(this.customFood.fat) || 0
-                            });
-                            this.showToast('Updated entry: ' + this.customFood.name, '✏️');
-                        }
-                    } else {
-                        var newEntry = {
-                            id: 'custom_log_' + Date.now(),
-                            name: this.customFood.name,
-                            calories: Number(this.customFood.calories),
-                            servingQty: 1,
-                            servingUnit: this.customFood.servingUnit || 'portion',
-                            carbs: Number(this.customFood.carbs) || 0,
-                            protein: Number(this.customFood.protein) || 0,
-                            fat: Number(this.customFood.fat) || 0,
-                            timestamp: timestamp,
-                            isCustom: true
-                        };
-                        this.foodEntries.push(newEntry);
+                    (async function() {
+                        if (self.editingEntryId) {
+                            var idx = self.foodEntries.findIndex(function(e) { return e.id === self.editingEntryId; });
+                            if (idx !== -1) {
+                                var updated = Object.assign({}, self.foodEntries[idx], {
+                                    name: self.customFood.name,
+                                    calories: Number(self.customFood.calories),
+                                    servingUnit: self.customFood.servingUnit || 'portion',
+                                    carbs: Number(self.customFood.carbs) || 0,
+                                    protein: Number(self.customFood.protein) || 0,
+                                    fat: Number(self.customFood.fat) || 0
+                                });
 
-                        if (this.saveToLibraryToggle) {
-                            var libraryItem = {
-                                id: 'lib_' + Date.now(),
-                                name: this.customFood.name,
-                                calories: Number(this.customFood.calories),
-                                baseQty: 1,
-                                baseUnit: this.customFood.servingUnit || 'portion',
-                                carbs: Number(this.customFood.carbs) || 0,
-                                protein: Number(this.customFood.protein) || 0,
-                                fat: Number(this.customFood.fat) || 0
-                            };
-                            this.customFoodLibrary.push(libraryItem);
-                            this.saveLibraryData();
-                            this.showToast('Logged & saved "' + libraryItem.name + '" to Library!', '⭐');
+                                if (self.dbConnected && self.supabaseClient) {
+                                    try {
+                                        await self.supabaseClient.from('daily_logs').update({
+                                            item_name: updated.name,
+                                            calories: updated.calories,
+                                            serving_unit: updated.servingUnit,
+                                            carbs: updated.carbs,
+                                            protein: updated.protein,
+                                            fat: updated.fat
+                                        }).eq('id', updated.id);
+                                    } catch (e) {
+                                        console.error('Failed to update cloud item', e);
+                                    }
+                                }
+
+                                self.foodEntries[idx] = updated;
+                                self.showToast('Updated entry: ' + self.customFood.name, '✏️');
+                            }
                         } else {
-                            this.showToast('Logged custom food: ' + newEntry.name, '✏️');
+                            var entryId = 'custom_log_' + Date.now();
+                            var newEntry = {
+                                id: entryId,
+                                name: self.customFood.name,
+                                calories: Number(self.customFood.calories),
+                                servingQty: 1,
+                                servingUnit: self.customFood.servingUnit || 'portion',
+                                carbs: Number(self.customFood.carbs) || 0,
+                                protein: Number(self.customFood.protein) || 0,
+                                fat: Number(self.customFood.fat) || 0,
+                                timestamp: timestamp,
+                                isCustom: true
+                            };
+
+                            if (self.dbConnected && self.supabaseClient) {
+                                try {
+                                    const { data, error } = await self.supabaseClient.from('daily_logs').insert([{
+                                        log_date: self.selectedDate,
+                                        entry_id: entryId,
+                                        item_name: newEntry.name,
+                                        calories: newEntry.calories,
+                                        serving_qty: newEntry.servingQty,
+                                        serving_unit: newEntry.servingUnit,
+                                        protein: newEntry.protein,
+                                        carbs: newEntry.carbs,
+                                        fat: newEntry.fat,
+                                        is_custom: true
+                                    }]).select();
+
+                                    if (!error && data && data[0]) {
+                                        newEntry.id = data[0].id;
+                                    }
+                                } catch (e) {
+                                    console.error('Failed to insert custom entry to cloud', e);
+                                }
+                            }
+
+                            self.foodEntries.push(newEntry);
+
+                            if (self.saveToLibraryToggle) {
+                                var libFoodId = 'lib_' + Date.now();
+                                var libraryItem = {
+                                    id: libFoodId,
+                                    foodId: libFoodId,
+                                    name: self.customFood.name,
+                                    calories: Number(self.customFood.calories),
+                                    baseQty: 1,
+                                    baseUnit: self.customFood.servingUnit || 'portion',
+                                    carbs: Number(self.customFood.carbs) || 0,
+                                    protein: Number(self.customFood.protein) || 0,
+                                    fat: Number(self.customFood.fat) || 0
+                                };
+
+                                if (self.dbConnected && self.supabaseClient) {
+                                    try {
+                                        const { data } = await self.supabaseClient.from('custom_foods').insert([{
+                                            food_id: libraryItem.foodId,
+                                            name: libraryItem.name,
+                                            calories: libraryItem.calories,
+                                            base_qty: libraryItem.baseQty,
+                                            base_unit: libraryItem.baseUnit,
+                                            protein: libraryItem.protein,
+                                            carbs: libraryItem.carbs,
+                                            fat: libraryItem.fat
+                                        }]).select();
+
+                                        if (data && data[0]) {
+                                            libraryItem.id = data[0].id;
+                                        }
+                                    } catch (e) {
+                                        console.error('Failed to insert into cloud custom library', e);
+                                    }
+                                }
+
+                                self.customFoodLibrary.push(libraryItem);
+                                self.saveLibraryData();
+                                self.showToast('Logged & saved "' + libraryItem.name + '" to Library!', '⭐');
+                            } else {
+                                self.showToast('Logged custom food: ' + newEntry.name, '✏️');
+                            }
                         }
-                    }
 
-                    this.saveDayData();
-                    this.showAddModal = false;
-                    this.editingEntryId = null;
-                },
-
-                deleteFromLibrary(id) {
-                    this.customFoodLibrary = this.customFoodLibrary.filter(function(i) { return i.id !== id; });
-                    this.saveLibraryData();
-                    this.refreshSearchResults();
-                    this.showToast('Removed from Custom Library', '🗑️');
+                        self.saveDayData();
+                        self.showAddModal = false;
+                        self.editingEntryId = null;
+                    })();
                 },
 
                 editEntry(entry) {
                     this.editingEntryId = entry.id;
-                    this.addMode = 'custom';
                     this.customFood = {
                         name: entry.name,
                         calories: entry.calories,
-                        servingUnit: entry.servingUnit || 'portion',
+                        servingUnit: entry.servingUnit,
                         carbs: entry.carbs,
                         protein: entry.protein,
                         fat: entry.fat
                     };
                     this.showAddModal = true;
+                    this.addMode = 'custom';
+                },
+
+                deleteFromLibrary(id) {
+                    var self = this;
+                    (async function() {
+                        if (self.dbConnected && self.supabaseClient) {
+                            try {
+                                await self.supabaseClient.from('custom_foods').delete().eq('id', id);
+                            } catch (e) {
+                                console.error('Failed to delete library item from cloud', e);
+                            }
+                        }
+                        self.customFoodLibrary = self.customFoodLibrary.filter(function(i) { return i.id !== id; });
+                        self.saveLibraryData();
+                        self.refreshSearchResults();
+                        self.showToast('Removed from Custom Library', '🗑️');
+                    })();
                 },
 
                 deleteEntry(id) {
-                    this.foodEntries = this.foodEntries.filter(function(item) { return item.id !== id; });
-                    this.saveDayData();
-                    this.showToast('Entry deleted', '🗑️');
+                    var self = this;
+                    (async function() {
+                        if (self.dbConnected && self.supabaseClient) {
+                            try {
+                                await self.supabaseClient.from('daily_logs').delete().eq('id', id);
+                            } catch (e) {
+                                console.error('Failed to delete cloud entry', e);
+                            }
+                        }
+                        self.foodEntries = self.foodEntries.filter(function(item) { return item.id !== id; });
+                        self.saveDayData();
+                        self.showToast('Entry deleted', '🗑️');
+                    })();
                 },
 
                 exportData() {
@@ -1191,7 +1388,6 @@
 
                 recalculateMacroPresets() {
                     var target = Number(this.tempTarget) || 2000;
-                    // Standard macro split recommendation: 30% Protein, 45% Carbs, 25% Fat
                     this.tempMacroTargets = {
                         protein: Math.round((target * 0.30) / 4),
                         carbs: Math.round((target * 0.45) / 4),
@@ -1223,16 +1419,12 @@
                     this.toast.message = message;
                     this.toast.icon = icon || '✅';
                     this.toast.show = true;
-                    setTimeout(function() {
-                        // handled inside alpine reactivity
-                    }, 3000);
-                    // Use standard timeout assignment for reactivity
                     var self = this;
                     setTimeout(function() {
                         self.toast.show = false;
                     }, 3000);
                 }
-            }
+            };
         }
     </script>
 </body>
