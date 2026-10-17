@@ -48,7 +48,7 @@ jobs:
               continue
 
             with open(filename, "r", encoding="utf-8") as f:
-            content = f.read()
+              content = f.read()
         
             if "__SUPABASE_URL__" not in content:
               print(f"WARNING: __SUPABASE_URL__ placeholder not found in {filename}!")
@@ -59,7 +59,7 @@ jobs:
             content = content.replace("__SUPABASE_ANON_KEY__", key)
     
             with open(filename, "w", encoding="utf-8") as f:
-            f.write(content)
+              f.write(content)
         
             print(f"Successfully injected secrets into {filename}")
           '
