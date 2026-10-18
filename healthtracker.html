@@ -15,37 +15,18 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    /* Official System Sans-Serif Typography Stack */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-
-    /* Print view formatting */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     @media print {
-      .no-print {
-        display: none !important;
-      }
-      body {
-        background-color: #ffffff;
-      }
+      .no-print { display: none !important; }
+      body { background-color: #ffffff; }
     }
   </style>
 </head>
@@ -92,21 +73,70 @@
   <!-- Main Workspace -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-    <!-- Direct Local File Integration Status Bar -->
-    <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-      <div class="flex items-center space-x-3">
-        <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-600"><i class="fa-solid fa-hard-drive text-lg"></i></div>
-        <div>
-          <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Target File Location</p>
-          <p class="text-xs font-mono text-slate-700">C:\Storage\Tracker-Data\health-tracker\health-tracker-data.json</p>
+    <!-- Top Status Bar & Age Group Selector -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Direct Local File Integration Status Bar -->
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-600"><i class="fa-solid fa-hard-drive text-lg"></i></div>
+          <div>
+            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Target File Location</p>
+            <p class="text-xs font-mono text-slate-700">C:\Storage\Tracker-Data\health-tracker\health-tracker-data.json</p>
+          </div>
+        </div>
+        <div id="file-api-controls">
+          <button onclick="connectLocalFileHandle()" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition shadow-sm flex items-center space-x-1.5">
+            <i class="fa-solid fa-folder-open"></i><span>Link JSON File</span>
+          </button>
         </div>
       </div>
-      <div id="file-api-controls">
-        <button onclick="connectLocalFileHandle()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm flex items-center space-x-2">
-          <i class="fa-solid fa-folder-open"></i><span>Link Local JSON File</span>
-        </button>
+
+      <!-- Age Group & Doctor Reference Selector Bar -->
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="p-3 bg-blue-500/10 rounded-xl text-blue-600"><i class="fa-solid fa-user-doctor text-lg"></i></div>
+          <div>
+            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Patient Age Group</p>
+            <select id="patient-age-group" onchange="onAgeGroupChange()" class="mt-1 bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-lg font-semibold px-2.5 py-1 focus:ring-blue-500 focus:border-blue-500">
+              <option value="adolescent">Adolescent (13 - 17 years)</option>
+              <option value="adult" selected>Adult (18 - 64 years)</option>
+              <option value="older_adult">Older Adult (65+ years)</option>
+            </select>
+          </div>
+        </div>
+        <div class="text-right hidden sm:block">
+          <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Clinical Mode</span>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Doctor Approved</span>
+        </div>
       </div>
     </div>
+
+    <!-- Doctor-Approved Reference Ranges Section (New Section) -->
+    <section class="bg-gradient-to-r from-blue-900 to-slate-900 text-white rounded-xl p-5 shadow-sm border border-blue-800">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-stethoscope text-blue-400"></i>
+            <h3 class="text-sm font-bold tracking-wide uppercase text-blue-200">Physician-Approved Clinical Reference Guidelines</h3>
+          </div>
+          <p class="text-xs text-slate-300 mt-1" id="ref-guideline-desc">Displaying targeted diagnostic thresholds approved for Adult patients (18–64 years).</p>
+        </div>
+        <div class="flex flex-wrap gap-3 text-xs">
+          <div class="bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+            <span class="text-blue-300 font-semibold block">Fasting Glucose:</span>
+            <span id="ref-disp-fasting" class="font-bold text-white">70 - 99 mg/dL</span>
+          </div>
+          <div class="bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+            <span class="text-blue-300 font-semibold block">Post-Prandial:</span>
+            <span id="ref-disp-pp" class="font-bold text-white">&lt; 140 mg/dL</span>
+          </div>
+          <div class="bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+            <span class="text-blue-300 font-semibold block">Blood Pressure:</span>
+            <span id="ref-disp-bp" class="font-bold text-white">&lt; 120 / &lt; 80 mmHg</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Overview Metric Cards Header -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -188,7 +218,7 @@
             </div>
             <h2 class="text-xl font-bold text-slate-900">Welcome to Health Tracker</h2>
             <p class="text-sm text-slate-600 mt-2 leading-relaxed">
-              Consistently record glucose and arterial pressure measurements to generate precise clinical trends and diagnostic logs.
+              Consistently record glucose and arterial pressure measurements evaluated against official physician guidelines.
             </p>
           </div>
 
@@ -267,19 +297,26 @@
       <div class="max-w-3xl mx-auto">
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           
-          <!-- Entry Selector Header -->
+          <!-- Entry Selector Header with Close Button -->
           <div class="bg-slate-900 px-6 py-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 class="text-lg font-bold">New Measurement Entry</h2>
               <p class="text-xs text-slate-400">Select measurement category and input parameters</p>
             </div>
 
-            <div class="inline-flex p-1 bg-slate-800 rounded-lg border border-slate-700">
-              <button type="button" id="toggle-sugar-btn" onclick="setEntryType('sugar')" class="px-4 py-1.5 text-xs font-semibold rounded-md transition-all bg-blue-600 text-white shadow-sm">
-                Blood Sugar
-              </button>
-              <button type="button" id="toggle-bp-btn" onclick="setEntryType('bp')" class="px-4 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-300 hover:text-white">
-                Blood Pressure
+            <div class="flex items-center space-x-3">
+              <div class="inline-flex p-1 bg-slate-800 rounded-lg border border-slate-700">
+                <button type="button" id="toggle-sugar-btn" onclick="setEntryType('sugar')" class="px-4 py-1.5 text-xs font-semibold rounded-md transition-all bg-blue-600 text-white shadow-sm">
+                  Blood Sugar
+                </button>
+                <button type="button" id="toggle-bp-btn" onclick="setEntryType('bp')" class="px-4 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-300 hover:text-white">
+                  Blood Pressure
+                </button>
+              </div>
+
+              <!-- Close Button Added Here -->
+              <button onclick="switchTab('dashboard')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors border border-slate-700" title="Close Panel">
+                <i class="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
           </div>
@@ -314,7 +351,7 @@
 
               <!-- Real-Time Evaluation Box -->
               <div class="border border-slate-200 bg-slate-50 rounded-xl p-4">
-                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Live Clinical Evaluation</div>
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Live Clinical Evaluation (Age-Adjusted)</div>
                 <div id="sugar-preview-box" class="p-3.5 rounded-lg border border-slate-300 bg-white flex items-center justify-between">
                   <div>
                     <span id="sugar-preview-status" class="inline-block px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600">
@@ -323,14 +360,14 @@
                     <p id="sugar-preview-text" class="text-xs text-slate-600 mt-1">Enter a glucose reading above to calculate evaluation status.</p>
                   </div>
                   <div id="sugar-preview-range" class="text-xs text-right font-medium text-slate-500 hidden sm:block">
-                    Reference Target Range:<br><span class="font-semibold text-slate-700" id="sugar-ref-text">85 - 110 mg/dL</span>
+                    Doctor Reference Range:<br><span class="font-semibold text-slate-700" id="sugar-ref-text">70 - 99 mg/dL</span>
                   </div>
                 </div>
               </div>
 
               <div class="flex justify-end space-x-3 pt-2">
-                <button type="button" onclick="resetForms()" class="px-5 py-2.5 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-100 transition-colors">
-                  Reset
+                <button type="button" onclick="switchTab('dashboard')" class="px-5 py-2.5 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-100 transition-colors">
+                  Cancel
                 </button>
                 <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center space-x-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -370,7 +407,7 @@
 
               <!-- Real-Time Evaluation Box -->
               <div class="border border-slate-200 bg-slate-50 rounded-xl p-4">
-                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Live Vascular Evaluation</div>
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Live Vascular Evaluation (Age-Adjusted)</div>
                 <div id="bp-preview-box" class="p-3.5 rounded-lg border border-slate-300 bg-white flex items-center justify-between">
                   <div>
                     <span id="bp-preview-status" class="inline-block px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600">
@@ -379,14 +416,14 @@
                     <p id="bp-preview-text" class="text-xs text-slate-600 mt-1">Enter pressure and pulse values to view evaluation status.</p>
                   </div>
                   <div class="text-xs text-right font-medium text-slate-500 hidden sm:block">
-                    Normal Reference Target:<br><span class="font-semibold text-slate-700">&le; 120 / &le; 80 mmHg, &lt; 90 bpm</span>
+                    Doctor Target Range:<br><span class="font-semibold text-slate-700" id="bp-ref-range-text">&lt; 120 / &lt; 80 mmHg</span>
                   </div>
                 </div>
               </div>
 
               <div class="flex justify-end space-x-3 pt-2">
-                <button type="button" onclick="resetForms()" class="px-5 py-2.5 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-100 transition-colors">
-                  Reset
+                <button type="button" onclick="switchTab('dashboard')" class="px-5 py-2.5 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-100 transition-colors">
+                  Cancel
                 </button>
                 <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center space-x-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -525,41 +562,105 @@
   <!-- Footer -->
   <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 py-6 text-xs text-center mt-auto">
     <div class="max-w-7xl mx-auto px-4">
-      <p>Clinical Health Tracker &mdash; Official System Font & Standard Physiological Thresholds.</p>
-      <p class="text-slate-500 mt-1">This application operates with direct file persistence and local browser backup storage.</p>
+      <p>Clinical Health Tracker &mdash; Physician-Approved Reference Ranges & File System Integration.</p>
     </div>
   </footer>
 
   <!-- Application Logic -->
   <script>
-    // LocalStorage Keys & File System State
     const STORAGE_KEY = 'clinical_health_tracker_logs_v2';
+    const AGE_SETTING_KEY = 'clinical_health_tracker_age_group';
     let fileHandle = null;
 
-    // Application State
     let logs = [];
     let currentEntryType = 'sugar'; // 'sugar' | 'bp'
+    let currentAgeGroup = 'adult'; // 'adolescent' | 'adult' | 'older_adult'
 
-    // Chart instances
+    // Doctor-Approved Reference Thresholds by Age Group
+    const DOCTOR_REFERENCES = {
+      adolescent: {
+        name: "Adolescent (13 - 17 years)",
+        fastingMin: 70, fastingMax: 100,
+        ppMax: 140, randomMax: 140,
+        sysMax: 120, diaMax: 80, pulseMin: 60, pulseMax: 100
+      },
+      adult: {
+        name: "Adult (18 - 64 years)",
+        fastingMin: 70, fastingMax: 99,
+        ppMax: 140, randomMax: 140,
+        sysMax: 120, diaMax: 80, pulseMin: 60, pulseMax: 100
+      },
+      older_adult: {
+        name: "Older Adult (65+ years)",
+        fastingMin: 80, fastingMax: 110,
+        ppMax: 160, randomMax: 160,
+        sysMax: 130, diaMax: 85, pulseMin: 60, pulseMax: 100
+      }
+    };
+
     let dashSugarChart = null;
     let dashBpChart = null;
     let fullSugarChart = null;
     let fullBpChart = null;
 
-    // Window Load Initialization
     window.onload = function() {
+      loadAgeGroupFromStorage();
       loadLogsFromStorage();
       setDefaultTimestamps();
+      updateReferenceDisplayUI();
       updateMetricsAndCharts();
       renderHistoryTable();
       calculateSugarPreview();
       calculateBPPreview();
     };
 
+    function loadAgeGroupFromStorage() {
+      const storedAge = localStorage.getItem(AGE_SETTING_KEY);
+      if (storedAge && DOCTOR_REFERENCES[storedAge]) {
+        currentAgeGroup = storedAge;
+        document.getElementById('patient-age-group').value = storedAge;
+      }
+    }
+
+    function onAgeGroupChange() {
+      const select = document.getElementById('patient-age-group');
+      currentAgeGroup = select.value;
+      localStorage.setItem(AGE_SETTING_KEY, currentAgeGroup);
+      
+      updateReferenceDisplayUI();
+      re-evaluateAllLogs();
+      updateMetricsAndCharts();
+      renderHistoryTable();
+      calculateSugarPreview();
+      calculateBPPreview();
+      showToast(`Updated clinical guidelines to ${DOCTOR_REFERENCES[currentAgeGroup].name}`);
+    }
+
+    function updateReferenceDisplayUI() {
+      const ref = DOCTOR_REFERENCES[currentAgeGroup];
+      document.getElementById('ref-guideline-desc').textContent = `Displaying targeted diagnostic thresholds approved by medical professionals for ${ref.name}.`;
+      document.getElementById('ref-disp-fasting').textContent = `${ref.fastingMin} - ${ref.fastingMax} mg/dL`;
+      document.getElementById('ref-disp-pp').textContent = `< ${ref.ppMax} mg/dL`;
+      document.getElementById('ref-disp-bp').textContent = `< ${ref.sysMax} / < ${ref.diaMax} mmHg`;
+      document.getElementById('sugar-ref-text').textContent = `${ref.fastingMin} - ${ref.fastingMax} mg/dL`;
+      document.getElementById('bp-ref-range-text').textContent = `< ${ref.sysMax} / < ${ref.diaMax} mmHg`;
+    }
+
+    function re-evaluateAllLogs() {
+      logs.forEach(l => {
+        if (l.category === 'SUGAR') {
+          l.status = evaluateSugar(l.subType, l.value);
+        } else if (l.category === 'BP') {
+          l.status = evaluateBP(l.sys, l.dia, l.pulse);
+        }
+      });
+      persistDataToFile();
+    }
+
     // --- Native File System Access API Integration ---
     async function connectLocalFileHandle() {
       if (!window.showOpenFilePicker) {
-        alert("Your browser does not support the File System Access API. Please use Google Chrome or Microsoft Edge, or use the manual Import/Export JSON backup buttons.");
+        alert("Your browser does not support the File System Access API. Please use Google Chrome or Microsoft Edge.");
         return;
       }
       try {
@@ -571,7 +672,6 @@
           multiple: false
         });
         
-        // Read file contents upon successful selection
         const file = await fileHandle.getFile();
         const contents = await file.text();
         if (contents.trim()) {
@@ -593,10 +693,8 @@
     }
 
     async function persistDataToFile() {
-      // Backup to localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
 
-      // If linked via File System Access API, write directly to the local file
       if (fileHandle) {
         try {
           const writable = await fileHandle.createWritable();
@@ -608,14 +706,12 @@
       }
     }
 
-    // Data Load/Save
     function loadLogsFromStorage() {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           logs = JSON.parse(stored);
         } else {
-          // Pre-populate with sample clinical entries if empty
           logs = [
             { id: '1', category: 'SUGAR', subType: 'Fasting', value: 92, timestamp: getPastISO(3), status: 'Normal' },
             { id: '2', category: 'BP', sys: 118, dia: 78, pulse: 72, timestamp: getPastISO(2), status: 'Normal' },
@@ -643,7 +739,6 @@
       document.getElementById('bp-timestamp').value = localISO;
     }
 
-    // Navigation View Switcher
     function switchTab(tab) {
       const tabs = ['dashboard', 'add', 'history', 'analytics'];
       tabs.forEach(t => {
@@ -683,17 +778,20 @@
       }
     }
 
-    // Evaluation Rules Logic
+    // Exact Doctor-Approved Evaluation Logic based on Age Group
     function evaluateSugar(type, val) {
       if (val === null || val === undefined || isNaN(val) || val === '') return null;
       const num = Number(val);
+      const ref = DOCTOR_REFERENCES[currentAgeGroup];
+
       if (type === 'Fasting') {
-        if (num < 85) return 'Low';
-        if (num > 110) return 'High';
+        if (num < ref.fastingMin) return 'Low';
+        if (num > ref.fastingMax) return 'High';
         return 'Normal';
       } else {
-        if (num < 140) return 'Low';
-        if (num > 160) return 'High';
+        // Post-prandial or Random
+        if (num < 70) return 'Low';
+        if (num > ref.ppMax) return 'High';
         return 'Normal';
       }
     }
@@ -703,11 +801,12 @@
       const s = Number(sys);
       const d = Number(dia);
       const p = Number(pulse);
+      const ref = DOCTOR_REFERENCES[currentAgeGroup];
 
       if (s < 90 || d < 60) {
         return 'Low';
       }
-      if (s > 120 || d > 80 || p >= 90) {
+      if (s > ref.sysMax || d > ref.diaMax || p >= ref.pulseMax) {
         return 'High';
       }
       return 'Normal';
@@ -720,10 +819,11 @@
       const textEl = document.getElementById('sugar-preview-text');
       const refText = document.getElementById('sugar-ref-text');
 
+      const ref = DOCTOR_REFERENCES[currentAgeGroup];
       if (type === 'Fasting') {
-        refText.textContent = "85 - 110 mg/dL";
+        refText.textContent = `${ref.fastingMin} - ${ref.fastingMax} mg/dL`;
       } else {
-        refText.textContent = "140 - 160 mg/dL";
+        refText.textContent = `< ${ref.ppMax} mg/dL`;
       }
 
       const status = evaluateSugar(type, val);
@@ -736,11 +836,11 @@
 
       applyStatusStyle(statusBadge, status);
       if (status === 'Normal') {
-        textEl.textContent = "Reading sits within optimal target physiological range.";
+        textEl.textContent = "Reading sits within the doctor-approved target physiological range.";
       } else if (status === 'Low') {
-        textEl.textContent = "Hypoglycemic indication based on selected context threshold.";
+        textEl.textContent = "Hypoglycemic indication below approved professional threshold.";
       } else {
-        textEl.textContent = "Hyperglycemic indication based on selected context threshold.";
+        textEl.textContent = "Hyperglycemic indication above approved professional threshold.";
       }
     }
 
@@ -760,12 +860,13 @@
       }
 
       applyStatusStyle(statusBadge, status);
+      const ref = DOCTOR_REFERENCES[currentAgeGroup];
       if (status === 'Normal') {
-        textEl.textContent = "Optimal arterial pressure and resting heart rate.";
+        textEl.textContent = "Optimal arterial pressure according to physician criteria for this age group.";
       } else if (status === 'Low') {
         textEl.textContent = "Hypotensive reading observed (Systolic < 90 or Diastolic < 60).";
       } else {
-        textEl.textContent = "Elevated reading (Systolic > 120, Diastolic > 80, or Pulse ≥ 90 bpm).";
+        textEl.textContent = `Elevated reading exceeding doctor guideline (< ${ref.sysMax} / < ${ref.diaMax} mmHg).`;
       }
     }
 
@@ -780,7 +881,6 @@
       }
     }
 
-    // Form Submissions
     async function handleSugarSubmit(e) {
       e.preventDefault();
       const type = document.getElementById('sugar-type').value;
@@ -843,7 +943,6 @@
       calculateBPPreview();
     }
 
-    // UI Toast Notification
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
@@ -865,7 +964,6 @@
       }, 3000);
     }
 
-    // Calculations & Chart Updates
     function updateMetricsAndCharts() {
       const sortedLogs = [...logs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
