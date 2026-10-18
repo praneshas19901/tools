@@ -111,7 +111,7 @@
       </div>
     </div>
 
-    <!-- Doctor-Approved Reference Ranges Section (New Section) -->
+    <!-- Doctor-Approved Reference Ranges Section -->
     <section class="bg-gradient-to-r from-blue-900 to-slate-900 text-white rounded-xl p-5 shadow-sm border border-blue-800">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -314,7 +314,7 @@
                 </button>
               </div>
 
-              <!-- Close Button Added Here -->
+              <!-- Close Button -->
               <button onclick="switchTab('dashboard')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors border border-slate-700" title="Close Panel">
                 <i class="fa-solid fa-xmark text-sm"></i>
               </button>
@@ -628,7 +628,7 @@
       localStorage.setItem(AGE_SETTING_KEY, currentAgeGroup);
       
       updateReferenceDisplayUI();
-      re-evaluateAllLogs();
+      reEvaluateAllLogs();
       updateMetricsAndCharts();
       renderHistoryTable();
       calculateSugarPreview();
@@ -646,7 +646,7 @@
       document.getElementById('bp-ref-range-text').textContent = `< ${ref.sysMax} / < ${ref.diaMax} mmHg`;
     }
 
-    function re-evaluateAllLogs() {
+    function reEvaluateAllLogs() {
       logs.forEach(l => {
         if (l.category === 'SUGAR') {
           l.status = evaluateSugar(l.subType, l.value);
@@ -778,7 +778,6 @@
       }
     }
 
-    // Exact Doctor-Approved Evaluation Logic based on Age Group
     function evaluateSugar(type, val) {
       if (val === null || val === undefined || isNaN(val) || val === '') return null;
       const num = Number(val);
@@ -789,7 +788,6 @@
         if (num > ref.fastingMax) return 'High';
         return 'Normal';
       } else {
-        // Post-prandial or Random
         if (num < 70) return 'Low';
         if (num > ref.ppMax) return 'High';
         return 'Normal';
