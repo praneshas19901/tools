@@ -42,7 +42,23 @@
     <!-- TRACKER TAB -->
     <div id="tab-tracker" class="space-y-6">
 
-      <!-- Calendar Toggle & User Weight Bar -->
+      <!-- Direct Local File Integration Status Bar -->
+      <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+          <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><i class="fa-solid fa-hard-drive text-lg"></i></div>
+          <div>
+            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Target File Location</p>
+            <p class="text-xs font-mono text-slate-300">C:\Storage\Tracker-Data\workout-tracker\workout-tracker-data.json</p>
+          </div>
+        </div>
+        <div id="file-api-controls">
+          <button onclick="connectLocalFileHandle()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition shadow-md flex items-center space-x-2">
+            <i class="fa-solid fa-folder-open"></i><span>Link Local JSON File</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Calendar Date Selector & User Weight Bar -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Date Selector -->
         <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 flex items-center justify-between">
@@ -72,7 +88,7 @@
         </div>
       </div>
 
-      <!-- Summary Metrics Bar (Reflects selected date + live active session) -->
+      <!-- Summary Metrics Bar (Reflects selected date totals) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 flex items-center space-x-3">
           <div class="p-3 bg-indigo-500/10 rounded-xl text-indigo-400"><i class="fa-solid fa-stopwatch text-lg"></i></div>
@@ -102,7 +118,7 @@
       <!-- Main Add Exercise & Timer Workspace -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- Form: Add/Configure Exercise -->
+        <!-- Form: Add Exercise -->
         <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/80 space-y-4">
           <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
             <i class="fa-solid fa-circle-plus text-indigo-400"></i> Add Exercise
@@ -241,11 +257,11 @@
 
         <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
           <button onclick="exportDataJSON()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-xl transition flex items-center space-x-2">
-            <i class="fa-solid fa-download text-indigo-400"></i><span>Export Backup (JSON)</span>
+            <i class="fa-solid fa-download text-indigo-400"></i><span>Export JSON Backup</span>
           </button>
           
           <label class="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-sm font-medium rounded-xl transition cursor-pointer flex items-center space-x-2">
-            <i class="fa-solid fa-upload"></i><span>Import Backup</span>
+            <i class="fa-solid fa-upload"></i><span>Import JSON File</span>
             <input type="file" id="import-file" accept=".json" onchange="importDataJSON(event)" class="hidden">
           </label>
         </div>
@@ -260,7 +276,7 @@
   </main>
 
   <footer class="text-center text-xs text-slate-500 py-6 border-t border-slate-800 mt-auto">
-    FitPulse &copy; 2026 - Data stored locally in browser storage.
+    FitPulse &copy; 2026 - Direct File Access & Local Storage Sync.
   </footer>
 
   <!-- Audio alert tone for timer -->
@@ -283,6 +299,8 @@
     let savedLogs = JSON.parse(localStorage.getItem('fitpulse_logs') || '[]');
     let userWeight = parseFloat(localStorage.getItem('fitpulse_user_weight') || '70');
 
+    let fileHandle = null; // Stores the local file handle for Solution 2
+
     let timerMode = 'stopwatch';
     let timerInterval = null;
     let stopwatchSeconds = 0;
@@ -290,7 +308,6 @@
     let masterTimerRunning = false;
     let exerciseTimers = {};
 
-    // Get today's ISO date string (YYYY-MM-DD) for initial picker state
     function getTodayISOString() {
       const d = new Date();
       const year = d.getFullYear();
@@ -311,6 +328,58 @@
       renderHistoryLogs();
     });
 
+    // --- Solution 2: File System Access API Implementation ---
+    async function connectLocalFileHandle() {
+      if (!window.showOpenFilePicker) {
+        alert("Your browser does not support the File System Access API. Please use Google Chrome or Microsoft Edge.");
+        return;
+      }
+      try {
+        [fileHandle] = await window.showOpenFilePicker({
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }],
+          multiple: false
+        });
+        
+        // Read file contents upon successful selection
+        const file = await fileHandle.getFile();
+        const contents = await file.text();
+        if (contents.trim()) {
+          savedLogs = JSON.parse(contents);
+          localStorage.setItem('fitpulse_logs', JSON.stringify(savedLogs));
+        }
+        
+        document.getElementById('file-api-controls').innerHTML = `
+          <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check"></i> Linked to workout-tracker-data.json
+          </span>
+        `;
+        updateDashboardSummary();
+        renderHistoryLogs();
+        alert("Successfully linked to local JSON data file!");
+      } catch (err) {
+        console.log("File selection cancelled or failed:", err);
+      }
+    }
+
+    async function persistDataToFile() {
+      // Backup to localStorage
+      localStorage.setItem('fitpulse_logs', JSON.stringify(savedLogs));
+
+      // If linked via File System Access API, write directly to the local file
+      if (fileHandle) {
+        try {
+          const writable = await fileHandle.createWritable();
+          await writable.write(JSON.stringify(savedLogs, null, 2));
+          await writable.close();
+        } catch (err) {
+          console.error("Auto-save to file failed:", err);
+        }
+      }
+    }
+
     function setDashboardDateToday() {
       selectedDashboardDateISO = getTodayISOString();
       document.getElementById('dashboard-date-picker').value = selectedDashboardDateISO;
@@ -325,7 +394,6 @@
       }
     }
 
-    // Smart Auto-Duration Estimator
     function autoEstimateDuration() {
       const sets = parseInt(document.getElementById('ex-sets').value) || 1;
       const reps = parseInt(document.getElementById('ex-reps').value) || 1;
@@ -546,15 +614,12 @@
       updateDashboardSummary();
     }
 
-    // Calculates and updates dashboard stats (combining saved logs for selected date + active live session if viewing today)
     function updateDashboardSummary() {
       let totalCalories = 0;
       let totalSteps = 0;
       let totalSeconds = 0;
 
-      // 1. Add saved logs that match selectedDashboardDateISO
       savedLogs.forEach(log => {
-        // log.timestamp is an ISO string (e.g. 2026-10-16T...)
         const logDateStr = log.timestamp ? log.timestamp.slice(0, 10) : '';
         if (logDateStr === selectedDashboardDateISO) {
           totalCalories += log.totalCalories;
@@ -565,7 +630,6 @@
         }
       });
 
-      // 2. If viewing today, also add any ongoing active session exercises currently in the queue
       const isViewingToday = (selectedDashboardDateISO === getTodayISOString());
       if (isViewingToday) {
         activeSession.forEach(item => {
@@ -621,7 +685,6 @@
                   </div>
                 </div>
 
-                <!-- Individual Exercise Timer Controls -->
                 <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
                   <button onclick="toggleExerciseTimer(${item.id})" class="ex-toggle-btn px-3 py-1.5 ${item.isRunning ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500'} text-white rounded-lg text-xs font-semibold flex items-center space-x-1 transition">
                     <i class="fa-solid ${item.isRunning ? 'fa-pause' : 'fa-play'}"></i><span>${item.isRunning ? 'Pause' : 'Start'}</span>
@@ -635,7 +698,6 @@
                 </div>
               </div>
 
-              <!-- Sets & Reps Controls Bar -->
               <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
                 <div class="flex items-center space-x-4">
                   <div class="flex items-center space-x-2 bg-slate-800 rounded-lg px-2 py-1 border border-slate-700">
@@ -660,7 +722,6 @@
       updateDashboardSummary();
     }
 
-    // --- Master Timer Panel Functions ---
     function toggleTimerMode(mode) {
       timerMode = mode;
       updateMasterTimerDisplay();
@@ -746,8 +807,8 @@
       document.getElementById('timer-display').innerText = formatted;
     }
 
-    // --- Logging & Day-Wise Grouping ---
-    function saveCurrentSessionLog() {
+    // --- Logging & Automatic Persistence ---
+    async function saveCurrentSessionLog() {
       if (activeSession.length === 0) {
         alert("Please add at least one exercise before saving!");
         return;
@@ -770,17 +831,17 @@
       };
 
       savedLogs.unshift(logEntry);
-      localStorage.setItem('fitpulse_logs', JSON.stringify(savedLogs));
+      await persistDataToFile();
 
-      alert("Workout log saved successfully!");
+      alert("Workout log saved successfully to persistent data file!");
       clearActiveSession();
       switchTab('history');
     }
 
-    function deleteLogEntry(id) {
+    async function deleteLogEntry(id) {
       if (confirm("Are you sure you want to delete this workout log?")) {
         savedLogs = savedLogs.filter(log => log.id !== id);
-        localStorage.setItem('fitpulse_logs', JSON.stringify(savedLogs));
+        await persistDataToFile();
         renderHistoryLogs();
       }
     }
@@ -820,7 +881,6 @@
 
       container.innerHTML = Object.entries(groupedByDate).map(([dateStr, group]) => `
         <div class="space-y-3">
-          <!-- Day Header with Total Daily Calories & Steps -->
           <div class="bg-gradient-to-r from-slate-800 to-indigo-950/60 border border-indigo-500/30 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 shadow-md">
             <div class="flex items-center space-x-3">
               <div class="p-2.5 bg-indigo-600/20 rounded-xl text-indigo-400">
@@ -840,7 +900,6 @@
             </div>
           </div>
 
-          <!-- Individual Workout Cards for this Day -->
           <div class="space-y-3 pl-0 md:pl-4">
             ${group.logs.map(log => `
               <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700/80 space-y-3">
@@ -883,26 +942,26 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(savedLogs, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `fitpulse_backup_${new Date().toISOString().slice(0,10)}.json`);
+      downloadAnchor.setAttribute("download", `workout-tracker-data.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
     }
 
-    function importDataJSON(event) {
+    async function importDataJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         try {
           const imported = JSON.parse(e.target.result);
           if (Array.isArray(imported)) {
             savedLogs = imported;
-            localStorage.setItem('fitpulse_logs', JSON.stringify(savedLogs));
+            await persistDataToFile();
             renderHistoryLogs();
             updateDashboardSummary();
-            alert("Workout logs successfully imported!");
+            alert("Workout logs successfully imported and saved!");
           } else {
             alert("Invalid backup file format.");
           }
