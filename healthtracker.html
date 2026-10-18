@@ -11,6 +11,9 @@
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
     /* Official System Sans-Serif Typography Stack */
     body {
@@ -87,10 +90,26 @@
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
   <!-- Main Workspace -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Direct Local File Integration Status Bar -->
+    <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-600"><i class="fa-solid fa-hard-drive text-lg"></i></div>
+        <div>
+          <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Target File Location</p>
+          <p class="text-xs font-mono text-slate-700">C:\Storage\Tracker-Data\health-tracker\health-tracker-data.json</p>
+        </div>
+      </div>
+      <div id="file-api-controls">
+        <button onclick="connectLocalFileHandle()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm flex items-center space-x-2">
+          <i class="fa-solid fa-folder-open"></i><span>Link Local JSON File</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Overview Metric Cards Header -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       
       <!-- Latest Blood Sugar -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md transition-shadow">
@@ -507,14 +526,15 @@
   <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 py-6 text-xs text-center mt-auto">
     <div class="max-w-7xl mx-auto px-4">
       <p>Clinical Health Tracker &mdash; Official System Font & Standard Physiological Thresholds.</p>
-      <p class="text-slate-500 mt-1">This application operates fully in-browser with local persistent storage. No clinical data is sent to external servers.</p>
+      <p class="text-slate-500 mt-1">This application operates with direct file persistence and local browser backup storage.</p>
     </div>
   </footer>
 
   <!-- Application Logic -->
   <script>
-    // LocalStorage Keys
+    // LocalStorage Keys & File System State
     const STORAGE_KEY = 'clinical_health_tracker_logs_v2';
+    let fileHandle = null;
 
     // Application State
     let logs = [];
@@ -536,6 +556,58 @@
       calculateBPPreview();
     };
 
+    // --- Native File System Access API Integration ---
+    async function connectLocalFileHandle() {
+      if (!window.showOpenFilePicker) {
+        alert("Your browser does not support the File System Access API. Please use Google Chrome or Microsoft Edge, or use the manual Import/Export JSON backup buttons.");
+        return;
+      }
+      try {
+        [fileHandle] = await window.showOpenFilePicker({
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }],
+          multiple: false
+        });
+        
+        // Read file contents upon successful selection
+        const file = await fileHandle.getFile();
+        const contents = await file.text();
+        if (contents.trim()) {
+          logs = JSON.parse(contents);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+        }
+        
+        document.getElementById('file-api-controls').innerHTML = `
+          <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check"></i> Linked to health-tracker-data.json
+          </span>
+        `;
+        updateMetricsAndCharts();
+        renderHistoryTable();
+        showToast("Successfully linked to local JSON data file!");
+      } catch (err) {
+        console.log("File selection cancelled or failed:", err);
+      }
+    }
+
+    async function persistDataToFile() {
+      // Backup to localStorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+
+      // If linked via File System Access API, write directly to the local file
+      if (fileHandle) {
+        try {
+          const writable = await fileHandle.createWritable();
+          await writable.write(JSON.stringify(logs, null, 2));
+          await writable.close();
+        } catch (err) {
+          console.error("Auto-save to file failed:", err);
+        }
+      }
+    }
+
     // Data Load/Save
     function loadLogsFromStorage() {
       try {
@@ -550,19 +622,11 @@
             { id: '3', category: 'SUGAR', subType: 'Post-prandial', value: 168, timestamp: getPastISO(1), status: 'High' },
             { id: '4', category: 'BP', sys: 132, dia: 84, pulse: 76, timestamp: getPastISO(0.5), status: 'High' }
           ];
-          saveLogsToStorage();
+          persistDataToFile();
         }
       } catch (e) {
         console.error("Failed to parse stored logs", e);
         logs = [];
-      }
-    }
-
-    function saveLogsToStorage() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-      } catch (e) {
-        showToast("Error saving data to local storage", "error");
       }
     }
 
@@ -574,7 +638,6 @@
 
     function setDefaultTimestamps() {
       const now = new Date();
-      // Format to yyyy-MM-ddThh:mm
       const localISO = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
       document.getElementById('sugar-timestamp').value = localISO;
       document.getElementById('bp-timestamp').value = localISO;
@@ -621,9 +684,6 @@
     }
 
     // Evaluation Rules Logic
-    // Blood Sugar:
-    // Fasting (FBG): Normal 85–110 mg/dL. < 85 is Low. > 110 is High.
-    // Post-prandial (PPBG) & Random: Normal 140–160 mg/dL. < 140 is Low. > 160 is High.
     function evaluateSugar(type, val) {
       if (val === null || val === undefined || isNaN(val) || val === '') return null;
       const num = Number(val);
@@ -632,17 +692,12 @@
         if (num > 110) return 'High';
         return 'Normal';
       } else {
-        // Post-prandial or Random
         if (num < 140) return 'Low';
         if (num > 160) return 'High';
         return 'Normal';
       }
     }
 
-    // Blood Pressure Evaluation:
-    // Normal: Systolic <= 120 AND Diastolic <= 80 AND Pulse < 90
-    // Low: Systolic < 90 OR Diastolic < 60
-    // High: Systolic > 120 OR Diastolic > 80 OR Pulse >= 90
     function evaluateBP(sys, dia, pulse) {
       if (!sys || !dia || !pulse) return null;
       const s = Number(sys);
@@ -658,7 +713,6 @@
       return 'Normal';
     }
 
-    // Live Form Preview Updates
     function calculateSugarPreview() {
       const type = document.getElementById('sugar-type').value;
       const val = document.getElementById('sugar-value').value;
@@ -727,7 +781,7 @@
     }
 
     // Form Submissions
-    function handleSugarSubmit(e) {
+    async function handleSugarSubmit(e) {
       e.preventDefault();
       const type = document.getElementById('sugar-type').value;
       const val = Number(document.getElementById('sugar-value').value);
@@ -745,7 +799,7 @@
       };
 
       logs.push(entry);
-      saveLogsToStorage();
+      await persistDataToFile();
       resetForms();
       updateMetricsAndCharts();
       renderHistoryTable();
@@ -753,7 +807,7 @@
       switchTab('dashboard');
     }
 
-    function handleBPSubmit(e) {
+    async function handleBPSubmit(e) {
       e.preventDefault();
       const sys = Number(document.getElementById('bp-systolic').value);
       const dia = Number(document.getElementById('bp-diastolic').value);
@@ -773,7 +827,7 @@
       };
 
       logs.push(entry);
-      saveLogsToStorage();
+      await persistDataToFile();
       resetForms();
       updateMetricsAndCharts();
       renderHistoryTable();
@@ -804,13 +858,7 @@
       `;
 
       container.appendChild(toast);
-      
-      // Animate in
-      setTimeout(() => {
-        toast.classList.remove('opacity-0', 'translate-y-2');
-      }, 10);
-
-      // Animate out
+      setTimeout(() => toast.classList.remove('opacity-0', 'translate-y-2'), 10);
       setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-2');
         setTimeout(() => toast.remove(), 300);
@@ -819,13 +867,11 @@
 
     // Calculations & Chart Updates
     function updateMetricsAndCharts() {
-      // Sort logs chronologically
       const sortedLogs = [...logs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
       const sugarLogs = sortedLogs.filter(l => l.category === 'SUGAR');
       const bpLogs = sortedLogs.filter(l => l.category === 'BP');
 
-      // Metric Card 1: Latest Sugar
       if (sugarLogs.length > 0) {
         const latestSugar = sugarLogs[sugarLogs.length - 1];
         document.getElementById('card-latest-sugar').textContent = `${latestSugar.value} mg/dL`;
@@ -839,7 +885,6 @@
         document.getElementById('card-latest-sugar-sub').textContent = "No recent readings";
       }
 
-      // Metric Card 2: Avg Sugar
       if (sugarLogs.length > 0) {
         const avg = Math.round(sugarLogs.reduce((acc, curr) => acc + curr.value, 0) / sugarLogs.length);
         document.getElementById('card-avg-sugar').textContent = avg;
@@ -849,7 +894,6 @@
         document.getElementById('card-sugar-count').textContent = '0 entries';
       }
 
-      // Metric Card 3: Latest BP
       if (bpLogs.length > 0) {
         const latestBP = bpLogs[bpLogs.length - 1];
         document.getElementById('card-latest-bp').textContent = `${latestBP.sys}/${latestBP.dia}`;
@@ -863,7 +907,6 @@
         document.getElementById('card-latest-bp-sub').textContent = "Pulse: -- bpm";
       }
 
-      // Metric Card 4: Avg BP
       if (bpLogs.length > 0) {
         const avgSys = Math.round(bpLogs.reduce((acc, curr) => acc + curr.sys, 0) / bpLogs.length);
         const avgDia = Math.round(bpLogs.reduce((acc, curr) => acc + curr.dia, 0) / bpLogs.length);
@@ -874,10 +917,7 @@
         document.getElementById('card-bp-count').textContent = '0 entries';
       }
 
-      // Dashboard Overview Table (Recent 5)
       renderDashboardRecentTable(sortedLogs.slice(-5).reverse());
-
-      // Render Charts
       renderCharts(sugarLogs, bpLogs);
     }
 
@@ -922,13 +962,11 @@
     }
 
     function renderCharts(sugarLogs, bpLogs) {
-      // Common Font Configuration
       const fontConfig = {
         family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         size: 11
       };
 
-      // 1. Dashboard Sugar Chart (Recent 10)
       const dashSugarData = sugarLogs.slice(-10);
       const dashSugarCtx = document.getElementById('dash-sugar-chart').getContext('2d');
       if (dashSugarChart) dashSugarChart.destroy();
@@ -959,7 +997,6 @@
         }
       });
 
-      // 2. Dashboard BP Chart (Recent 10)
       const dashBpData = bpLogs.slice(-10);
       const dashBpCtx = document.getElementById('dash-bp-chart').getContext('2d');
       if (dashBpChart) dashBpChart.destroy();
@@ -999,7 +1036,6 @@
         }
       });
 
-      // 3. Full Sugar Chart (Analytics Tab)
       const fullSugarCtx = document.getElementById('full-sugar-chart').getContext('2d');
       if (fullSugarChart) fullSugarChart.destroy();
       fullSugarChart = new Chart(fullSugarCtx, {
@@ -1040,7 +1076,6 @@
         }
       });
 
-      // 4. Full BP Chart (Analytics Tab)
       const fullBpCtx = document.getElementById('full-bp-chart').getContext('2d');
       if (fullBpChart) fullBpChart.destroy();
       fullBpChart = new Chart(fullBpCtx, {
@@ -1092,7 +1127,6 @@
       });
     }
 
-    // Filterable History Table Rendering
     function applyFilters() {
       renderHistoryTable();
     }
@@ -1102,7 +1136,6 @@
       const filterType = document.getElementById('filter-type').value;
       const filterStatus = document.getElementById('filter-status').value;
 
-      // Filter array
       let filtered = [...logs];
 
       if (filterType !== 'ALL') {
@@ -1113,11 +1146,9 @@
         filtered = filtered.filter(l => l.status === filterStatus);
       }
 
-      // Sort newest first for table
       filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
       document.getElementById('history-count-text').textContent = `Showing ${filtered.length} of ${logs.length} logs`;
-
       tbody.innerHTML = '';
 
       if (filtered.length === 0) {
@@ -1167,9 +1198,9 @@
       });
     }
 
-    function deleteLog(id) {
+    async function deleteLog(id) {
       logs = logs.filter(l => l.id !== id);
-      saveLogsToStorage();
+      await persistDataToFile();
       updateMetricsAndCharts();
       renderHistoryTable();
       showToast("Entry deleted successfully.");
@@ -1178,7 +1209,6 @@
     function clearAllData() {
       if (logs.length === 0) return;
       
-      // Inline custom confirmation replacing alert/confirm
       const confirmContainer = document.createElement('div');
       confirmContainer.className = "fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4";
       confirmContainer.innerHTML = `
@@ -1194,9 +1224,9 @@
       document.body.appendChild(confirmContainer);
 
       document.getElementById('cancel-clear-btn').onclick = () => confirmContainer.remove();
-      document.getElementById('confirm-clear-btn').onclick = () => {
+      document.getElementById('confirm-clear-btn').onclick = async () => {
         logs = [];
-        saveLogsToStorage();
+        await persistDataToFile();
         updateMetricsAndCharts();
         renderHistoryTable();
         confirmContainer.remove();
@@ -1204,7 +1234,6 @@
       };
     }
 
-    // Helper Date Formatter
     function formatDate(isoStr) {
       if (!isoStr) return '';
       const d = new Date(isoStr);
@@ -1228,7 +1257,6 @@
       });
     }
 
-    // Export & Import Handlers
     function exportCSV() {
       if (logs.length === 0) {
         showToast("No data available to export.", "error");
@@ -1271,24 +1299,24 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `clinical_health_backup_${new Date().toISOString().slice(0,10)}.json`);
+      downloadAnchor.setAttribute("download", `health-tracker-data.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
       showToast("JSON backup saved.");
     }
 
-    function importJSON(event) {
+    async function importJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         try {
           const importedLogs = JSON.parse(e.target.result);
           if (Array.isArray(importedLogs)) {
             logs = importedLogs;
-            saveLogsToStorage();
+            await persistDataToFile();
             updateMetricsAndCharts();
             renderHistoryTable();
             showToast("Backup restored successfully.");
