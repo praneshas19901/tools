@@ -276,7 +276,7 @@
   </main>
 
   <footer class="text-center text-xs text-slate-500 py-6 border-t border-slate-800 mt-auto">
-    FitPulse &copy; 2026 - Direct File Access & Local Storage Sync.
+    FitPulse &copy; 2026 - Pure JSON File Persistence Only.
   </footer>
 
   <!-- Audio alert tone for timer -->
@@ -296,10 +296,10 @@
     };
 
     let activeSession = [];
-    let savedLogs = JSON.parse(localStorage.getItem('fitpulse_logs') || '[]');
-    let userWeight = parseFloat(localStorage.getItem('fitpulse_user_weight') || '70');
+    let savedLogs = [];
+    let userWeight = 70;
 
-    let fileHandle = null; // Stores the local file handle for Solution 2
+    let fileHandle = null; 
 
     let timerMode = 'stopwatch';
     let timerInterval = null;
@@ -318,17 +318,117 @@
 
     let selectedDashboardDateISO = getTodayISOString();
 
-    document.addEventListener('DOMContentLoaded', () => {
+    window.onload = async function() {
       document.getElementById('user-weight').value = userWeight;
       document.getElementById('dashboard-date-picker').value = selectedDashboardDateISO;
       updateCalorieRates();
       autoEstimateDuration();
+
+      // Attempt to automatically restore file handle persistence from IndexedDB
+      await tryRestoreFileHandle();
+    };
+
+    // --- IndexedDB Persistence for File Handle ---
+    function openIDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('FitPulseDB_Pure', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('handles')) {
+            db.createObjectStore('handles');
+          }
+        };
+      });
+    }
+
+    async function saveHandleToIDB(handle) {
+      try {
+        const db = await openIDB();
+        const tx = db.transaction('handles', 'readwrite');
+        tx.objectStore('handles').put(handle, 'jsonFileHandle');
+        return tx.complete;
+      } catch (err) {
+        console.error("Failed to save file handle to IndexedDB", err);
+      }
+    }
+
+    async function tryRestoreFileHandle() {
+      try {
+        const db = await openIDB();
+        const tx = db.transaction('handles', 'readonly');
+        const store = tx.objectStore('handles');
+        const request = store.get('jsonFileHandle');
+
+        request.onsuccess = async function() {
+          if (request.result) {
+            fileHandle = request.result;
+            const options = { mode: 'readwrite' };
+            if ((await fileHandle.queryPermission(options)) === 'granted') {
+              await loadLogsFromFile();
+            } else {
+              document.getElementById('file-api-controls').innerHTML = `
+                <button onclick="requestExistingFilePermission()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl transition shadow-md flex items-center space-x-2 animate-pulse">
+                  <i class="fa-solid fa-lock-open"></i><span>Authorize File Sync</span>
+                </button>
+              `;
+            }
+          } else {
+            showUnlinkedState();
+          }
+        };
+      } catch (err) {
+        console.log("No persisted handle found.");
+        showUnlinkedState();
+      }
+    }
+
+    async function requestExistingFilePermission() {
+      if (!fileHandle) return;
+      const options = { mode: 'readwrite' };
+      if ((await fileHandle.requestPermission(options)) === 'granted') {
+        await loadLogsFromFile();
+        alert("File sync re-authorized successfully!");
+      } else {
+        alert("Permission denied to access local file.");
+      }
+    }
+
+    function showUnlinkedState() {
+      savedLogs = [];
       renderActiveSession();
       updateDashboardSummary();
       renderHistoryLogs();
-    });
+    }
 
-    // --- Solution 2: File System Access API Implementation ---
+    async function loadLogsFromFile() {
+      try {
+        const file = await fileHandle.getFile();
+        const contents = await file.text();
+        if (contents.trim()) {
+          savedLogs = JSON.parse(contents);
+        } else {
+          savedLogs = [];
+        }
+        onFileHandleSecured();
+        renderActiveSession();
+        updateDashboardSummary();
+        renderHistoryLogs();
+      } catch (err) {
+        console.error("Error reading linked file:", err);
+        alert("Error reading linked JSON file.");
+      }
+    }
+
+    function onFileHandleSecured() {
+      document.getElementById('file-api-controls').innerHTML = `
+        <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-check"></i> Syncing: workout-tracker-data.json
+        </span>
+      `;
+    }
+
     async function connectLocalFileHandle() {
       if (!window.showOpenFilePicker) {
         alert("Your browser does not support the File System Access API. Please use Google Chrome or Microsoft Edge.");
@@ -343,40 +443,37 @@
           multiple: false
         });
         
-        // Read file contents upon successful selection
-        const file = await fileHandle.getFile();
-        const contents = await file.text();
-        if (contents.trim()) {
-          savedLogs = JSON.parse(contents);
-          localStorage.setItem('fitpulse_logs', JSON.stringify(savedLogs));
-        }
-        
-        document.getElementById('file-api-controls').innerHTML = `
-          <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-            <i class="fa-solid fa-circle-check"></i> Linked to workout-tracker-data.json
-          </span>
-        `;
-        updateDashboardSummary();
-        renderHistoryLogs();
-        alert("Successfully linked to local JSON data file!");
+        await saveHandleToIDB(fileHandle);
+        await loadLogsFromFile();
+        alert("Successfully linked and persisted local JSON file!");
       } catch (err) {
         console.log("File selection cancelled or failed:", err);
       }
     }
 
     async function persistDataToFile() {
-      // Backup to localStorage
-      localStorage.setItem('fitpulse_logs', JSON.stringify(savedLogs));
+      if (!fileHandle) {
+        alert("Please link your local JSON file first!");
+        return;
+      }
 
-      // If linked via File System Access API, write directly to the local file
-      if (fileHandle) {
-        try {
+      try {
+        const options = { mode: 'readwrite' };
+        if ((await fileHandle.queryPermission(options)) === 'granted') {
           const writable = await fileHandle.createWritable();
           await writable.write(JSON.stringify(savedLogs, null, 2));
           await writable.close();
-        } catch (err) {
-          console.error("Auto-save to file failed:", err);
+        } else {
+          document.getElementById('file-api-controls').innerHTML = `
+            <button onclick="requestExistingFilePermission()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl transition shadow-md flex items-center space-x-2 animate-pulse">
+              <i class="fa-solid fa-lock-open"></i><span>Authorize File Sync</span>
+            </button>
+          `;
+          alert("File permission required to save updates.");
         }
+      } catch (err) {
+        console.error("Auto-save to file failed:", err);
+        alert("Failed to write to local JSON file.");
       }
     }
 
@@ -441,7 +538,6 @@
 
     function updateCalorieRates() {
       userWeight = parseFloat(document.getElementById('user-weight').value) || 70;
-      localStorage.setItem('fitpulse_user_weight', userWeight);
 
       const sel = document.getElementById('ex-type');
       sel.options[0].text = `Walking (~3.5 mph) - ${(getCalorieRatePerMin('walking')).toFixed(1)} kcal/min`;
@@ -659,7 +755,7 @@
         container.innerHTML = `
           <div class="text-center py-8 text-slate-500 text-sm">
             <i class="fa-solid fa-dumbbell text-3xl mb-2 text-slate-600"></i>
-            <p>No exercises added yet. Fill in the details on the left and click 'Add'!</p>
+            <p>${fileHandle ? "No exercises added yet. Fill in the details on the left and click 'Add'!" : "Please link your local JSON file above to begin tracking."}</p>
           </div>`;
       } else {
         container.innerHTML = activeSession.map(item => {
@@ -807,8 +903,13 @@
       document.getElementById('timer-display').innerText = formatted;
     }
 
-    // --- Logging & Automatic Persistence ---
+    // --- Logging & Direct JSON File Persistence ---
     async function saveCurrentSessionLog() {
+      if (!fileHandle) {
+        alert("Please link your local JSON file first!");
+        return;
+      }
+
       if (activeSession.length === 0) {
         alert("Please add at least one exercise before saving!");
         return;
@@ -833,7 +934,7 @@
       savedLogs.unshift(logEntry);
       await persistDataToFile();
 
-      alert("Workout log saved successfully to persistent data file!");
+      alert("Workout log saved directly to JSON file!");
       clearActiveSession();
       switchTab('history');
     }
@@ -843,6 +944,7 @@
         savedLogs = savedLogs.filter(log => log.id !== id);
         await persistDataToFile();
         renderHistoryLogs();
+        updateDashboardSummary();
       }
     }
 
@@ -860,7 +962,7 @@
         container.innerHTML = `
           <div class="bg-slate-800 rounded-2xl p-8 text-center text-slate-500 border border-slate-700/80">
             <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-600"></i>
-            <p>No workout logs found.</p>
+            <p>${fileHandle ? 'No workout logs found.' : 'Please link your JSON file above.'}</p>
           </div>`;
         return;
       }
@@ -961,7 +1063,7 @@
             await persistDataToFile();
             renderHistoryLogs();
             updateDashboardSummary();
-            alert("Workout logs successfully imported and saved!");
+            alert("Workout logs successfully imported and synced to JSON file!");
           } else {
             alert("Invalid backup file format.");
           }
@@ -970,6 +1072,7 @@
         }
       };
       reader.readAsText(file);
+      event.target.value = '';
     }
   </script>
 </body>
