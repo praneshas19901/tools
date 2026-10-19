@@ -75,7 +75,7 @@
 
     <!-- Top Status Bar & Age Group Selector -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Direct Local File Integration Status Bar -->
+      <!-- Persistent File Integration Status Bar -->
       <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-600"><i class="fa-solid fa-hard-drive text-lg"></i></div>
@@ -562,13 +562,12 @@
   <!-- Footer -->
   <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 py-6 text-xs text-center mt-auto">
     <div class="max-w-7xl mx-auto px-4">
-      <p>Clinical Health Tracker &mdash; Physician-Approved Reference Ranges & File System Integration.</p>
+      <p>Clinical Health Tracker &mdash; Pure JSON File Persistence Only.</p>
     </div>
   </footer>
 
   <!-- Application Logic -->
   <script>
-    const STORAGE_KEY = 'clinical_health_tracker_logs_v2';
     const AGE_SETTING_KEY = 'clinical_health_tracker_age_group';
     let fileHandle = null;
 
@@ -576,7 +575,6 @@
     let currentEntryType = 'sugar'; // 'sugar' | 'bp'
     let currentAgeGroup = 'adult'; // 'adolescent' | 'adult' | 'older_adult'
 
-    // Doctor-Approved Reference Thresholds by Age Group
     const DOCTOR_REFERENCES = {
       adolescent: {
         name: "Adolescent (13 - 17 years)",
@@ -603,16 +601,161 @@
     let fullSugarChart = null;
     let fullBpChart = null;
 
-    window.onload = function() {
+    window.onload = async function() {
       loadAgeGroupFromStorage();
-      loadLogsFromStorage();
       setDefaultTimestamps();
       updateReferenceDisplayUI();
+      
+      // Attempt to automatically restore file handle persistence from IndexedDB
+      await tryRestoreFileHandle();
+    };
+
+    // --- IndexedDB Persistence for File Handle ---
+    function openIDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('HealthTrackerDB_Pure', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('handles')) {
+            db.createObjectStore('handles');
+          }
+        };
+      });
+    }
+
+    async function saveHandleToIDB(handle) {
+      try {
+        const db = await openIDB();
+        const tx = db.transaction('handles', 'readwrite');
+        tx.objectStore('handles').put(handle, 'jsonFileHandle');
+        return tx.complete;
+      } catch (err) {
+        console.error("Failed to save file handle to IndexedDB", err);
+      }
+    }
+
+    async function tryRestoreFileHandle() {
+      try {
+        const db = await openIDB();
+        const tx = db.transaction('handles', 'readonly');
+        const store = tx.objectStore('handles');
+        const request = store.get('jsonFileHandle');
+
+        request.onsuccess = async function() {
+          if (request.result) {
+            fileHandle = request.result;
+            const options = { mode: 'readwrite' };
+            if ((await fileHandle.queryPermission(options)) === 'granted') {
+              await loadLogsFromFile();
+            } else {
+              document.getElementById('file-api-controls').innerHTML = `
+                <button onclick="requestExistingFilePermission()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition shadow-sm flex items-center space-x-1.5 animate-pulse">
+                  <i class="fa-solid fa-lock-open"></i><span>Authorize File Sync</span>
+                </button>
+              `;
+            }
+          } else {
+            showUnlinkedState();
+          }
+        };
+      } catch (err) {
+        console.log("No persisted handle found.");
+        showUnlinkedState();
+      }
+    }
+
+    async function requestExistingFilePermission() {
+      if (!fileHandle) return;
+      const options = { mode: 'readwrite' };
+      if ((await fileHandle.requestPermission(options)) === 'granted') {
+        await loadLogsFromFile();
+        showToast("File sync re-authorized successfully!");
+      } else {
+        showToast("Permission denied to access local file.", "error");
+      }
+    }
+
+    function showUnlinkedState() {
+      logs = [];
       updateMetricsAndCharts();
       renderHistoryTable();
-      calculateSugarPreview();
-      calculateBPPreview();
-    };
+    }
+
+    async function loadLogsFromFile() {
+      try {
+        const file = await fileHandle.getFile();
+        const contents = await file.text();
+        if (contents.trim()) {
+          logs = JSON.parse(contents);
+        } else {
+          logs = [];
+        }
+        onFileHandleSecured();
+        updateMetricsAndCharts();
+        renderHistoryTable();
+      } catch (err) {
+        console.error("Error reading linked file:", err);
+        showToast("Error reading linked JSON file.", "error");
+      }
+    }
+
+    function onFileHandleSecured() {
+      document.getElementById('file-api-controls').innerHTML = `
+        <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-check"></i> Syncing: health-tracker-data.json
+        </span>
+      `;
+    }
+
+    async function connectLocalFileHandle() {
+      if (!window.showOpenFilePicker) {
+        alert("Your browser does not support the File System Access API. Please use Google Chrome or Microsoft Edge.");
+        return;
+      }
+      try {
+        [fileHandle] = await window.showOpenFilePicker({
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }],
+          multiple: false
+        });
+        
+        await saveHandleToIDB(fileHandle);
+        await loadLogsFromFile();
+        showToast("Successfully linked and persisted local JSON file!");
+      } catch (err) {
+        console.log("File selection cancelled or failed:", err);
+      }
+    }
+
+    async function persistDataToFile() {
+      if (!fileHandle) {
+        showToast("Please link your local JSON file first!", "error");
+        return;
+      }
+
+      try {
+        const options = { mode: 'readwrite' };
+        if ((await fileHandle.queryPermission(options)) === 'granted') {
+          const writable = await fileHandle.createWritable();
+          await writable.write(JSON.stringify(logs, null, 2));
+          await writable.close();
+        } else {
+          document.getElementById('file-api-controls').innerHTML = `
+            <button onclick="requestExistingFilePermission()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition shadow-sm flex items-center space-x-1.5 animate-pulse">
+              <i class="fa-solid fa-lock-open"></i><span>Authorize File Sync</span>
+            </button>
+          `;
+          showToast("File permission required to save updates.", "error");
+        }
+      } catch (err) {
+        console.error("Auto-save to file failed:", err);
+        showToast("Failed to write to local JSON file.", "error");
+      }
+    }
 
     function loadAgeGroupFromStorage() {
       const storedAge = localStorage.getItem(AGE_SETTING_KEY);
@@ -646,7 +789,8 @@
       document.getElementById('bp-ref-range-text').textContent = `< ${ref.sysMax} / < ${ref.diaMax} mmHg`;
     }
 
-    function reEvaluateAllLogs() {
+    async function reEvaluateAllLogs() {
+      if (!fileHandle) return;
       logs.forEach(l => {
         if (l.category === 'SUGAR') {
           l.status = evaluateSugar(l.subType, l.value);
@@ -654,82 +798,7 @@
           l.status = evaluateBP(l.sys, l.dia, l.pulse);
         }
       });
-      persistDataToFile();
-    }
-
-    // --- Native File System Access API Integration ---
-    async function connectLocalFileHandle() {
-      if (!window.showOpenFilePicker) {
-        alert("Your browser does not support the File System Access API. Please use Google Chrome or Microsoft Edge.");
-        return;
-      }
-      try {
-        [fileHandle] = await window.showOpenFilePicker({
-          types: [{
-            description: 'JSON Files',
-            accept: { 'application/json': ['.json'] }
-          }],
-          multiple: false
-        });
-        
-        const file = await fileHandle.getFile();
-        const contents = await file.text();
-        if (contents.trim()) {
-          logs = JSON.parse(contents);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-        }
-        
-        document.getElementById('file-api-controls').innerHTML = `
-          <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
-            <i class="fa-solid fa-circle-check"></i> Linked to health-tracker-data.json
-          </span>
-        `;
-        updateMetricsAndCharts();
-        renderHistoryTable();
-        showToast("Successfully linked to local JSON data file!");
-      } catch (err) {
-        console.log("File selection cancelled or failed:", err);
-      }
-    }
-
-    async function persistDataToFile() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-
-      if (fileHandle) {
-        try {
-          const writable = await fileHandle.createWritable();
-          await writable.write(JSON.stringify(logs, null, 2));
-          await writable.close();
-        } catch (err) {
-          console.error("Auto-save to file failed:", err);
-        }
-      }
-    }
-
-    function loadLogsFromStorage() {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          logs = JSON.parse(stored);
-        } else {
-          logs = [
-            { id: '1', category: 'SUGAR', subType: 'Fasting', value: 92, timestamp: getPastISO(3), status: 'Normal' },
-            { id: '2', category: 'BP', sys: 118, dia: 78, pulse: 72, timestamp: getPastISO(2), status: 'Normal' },
-            { id: '3', category: 'SUGAR', subType: 'Post-prandial', value: 168, timestamp: getPastISO(1), status: 'High' },
-            { id: '4', category: 'BP', sys: 132, dia: 84, pulse: 76, timestamp: getPastISO(0.5), status: 'High' }
-          ];
-          persistDataToFile();
-        }
-      } catch (e) {
-        console.error("Failed to parse stored logs", e);
-        logs = [];
-      }
-    }
-
-    function getPastISO(daysAgo) {
-      const d = new Date();
-      d.setTime(d.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
-      return d.toISOString().slice(0, 16);
+      await persistDataToFile();
     }
 
     function setDefaultTimestamps() {
@@ -881,6 +950,11 @@
 
     async function handleSugarSubmit(e) {
       e.preventDefault();
+      if (!fileHandle) {
+        showToast("Please link your local JSON file first!", "error");
+        return;
+      }
+
       const type = document.getElementById('sugar-type').value;
       const val = Number(document.getElementById('sugar-value').value);
       const timestamp = document.getElementById('sugar-timestamp').value;
@@ -901,12 +975,17 @@
       resetForms();
       updateMetricsAndCharts();
       renderHistoryTable();
-      showToast("Blood Sugar entry saved successfully.");
+      showToast("Blood Sugar entry saved directly to JSON file.");
       switchTab('dashboard');
     }
 
     async function handleBPSubmit(e) {
       e.preventDefault();
+      if (!fileHandle) {
+        showToast("Please link your local JSON file first!", "error");
+        return;
+      }
+
       const sys = Number(document.getElementById('bp-systolic').value);
       const dia = Number(document.getElementById('bp-diastolic').value);
       const pulse = Number(document.getElementById('bp-pulse').value);
@@ -929,7 +1008,7 @@
       resetForms();
       updateMetricsAndCharts();
       renderHistoryTable();
-      showToast("Blood Pressure entry saved successfully.");
+      showToast("Blood Pressure entry saved directly to JSON file.");
       switchTab('dashboard');
     }
 
@@ -1022,7 +1101,7 @@
       tbody.innerHTML = '';
 
       if (recentLogs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-400">No logs recorded yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-400">${fileHandle ? 'No logs recorded in JSON file yet.' : 'Please link your JSON file above.'}</td></tr>`;
         return;
       }
 
@@ -1248,7 +1327,7 @@
       tbody.innerHTML = '';
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">No logs found matching selected filter criteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">${fileHandle ? 'No logs found matching selected filter criteria.' : 'Please link your JSON file above.'}</td></tr>`;
         return;
       }
 
@@ -1299,7 +1378,7 @@
       await persistDataToFile();
       updateMetricsAndCharts();
       renderHistoryTable();
-      showToast("Entry deleted successfully.");
+      showToast("Entry deleted successfully from JSON file.");
     }
 
     function clearAllData() {
@@ -1310,7 +1389,7 @@
       confirmContainer.innerHTML = `
         <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 text-slate-800 space-y-4">
           <h3 class="text-lg font-bold text-slate-900">Confirm Log Purge</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">Are you sure you want to permanently clear all recorded blood pressure and glucose entries? This action cannot be undone.</p>
+          <p class="text-xs text-slate-600 leading-relaxed">Are you sure you want to permanently clear all recorded entries from your JSON file? This action cannot be undone.</p>
           <div class="flex justify-end space-x-3 pt-2">
             <button id="cancel-clear-btn" class="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-100">Cancel</button>
             <button id="confirm-clear-btn" class="px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-700">Delete All Data</button>
@@ -1326,7 +1405,7 @@
         updateMetricsAndCharts();
         renderHistoryTable();
         confirmContainer.remove();
-        showToast("All recorded logs have been purged.");
+        showToast("All recorded logs have been purged from the JSON file.");
       };
     }
 
@@ -1415,7 +1494,7 @@
             await persistDataToFile();
             updateMetricsAndCharts();
             renderHistoryTable();
-            showToast("Backup restored successfully.");
+            showToast("JSON file imported and synced successfully.");
           } else {
             showToast("Invalid JSON structure.", "error");
           }
