@@ -244,7 +244,7 @@
                         <div class="p-12 text-center">
                             <div class="text-4xl mb-3">🍳</div>
                             <p class="text-slate-500 dark:text-slate-400 font-medium">No food entries logged for this date.</p>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Use the "Add Food / Search" button above to log meals, custom saved foods, or search USDA.</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Use the "Add Food / Search" button above to log meals, custom saved foods, or search online APIs.</p>
                         </div>
                     </template>
 
@@ -290,7 +290,7 @@
         <!-- Footer -->
         <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-4 mt-8">
             <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                NutriTrack Pro • Secure Supabase User Auth & Row Level Security
+                NutriTrack Pro • Secure Supabase User Auth & Multi-Target API Search
             </div>
         </footer>
     </div>
@@ -372,12 +372,12 @@
                     <button @click="addMode = 'custom'" :class="addMode === 'custom' ? 'bg-white dark:bg-slate-800 text-brand-600 font-semibold shadow-sm' : 'text-slate-500'" class="py-2 text-xs sm:text-sm rounded-lg transition">✏️ Quick Custom</button>
                 </div>
 
-                <!-- TAB 1: API & OFFLINE SEARCH ENGINE -->
+                <!-- TAB 1: MULTI-TARGET API & OFFLINE SEARCH ENGINE -->
                 <div x-show="addMode === 'search' && !editingEntryId" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Search Food Database & Custom Items</label>
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Search Open Food Facts, Indian Foods, USDA & Custom Items</label>
                         <div class="flex space-x-2">
-                            <input type="text" x-model="searchQuery" @input="onSearchInput()" @keydown.enter="searchFoodAPI()" placeholder="e.g. Chicken, Oats, Homemade Curry..." class="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500">
+                            <input type="text" x-model="searchQuery" @input="onSearchInput()" @keydown.enter="searchFoodAPI()" placeholder="e.g. Paneer, Haldirams, Chicken, Roti..." class="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500">
                             <button @click="searchFoodAPI()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-1">
                                 <span x-show="!isSearching">Search</span>
                                 <span x-show="isSearching">...</span>
@@ -393,7 +393,7 @@
                                     <div class="flex items-center space-x-2">
                                         <h4 class="font-semibold text-sm text-slate-800 dark:text-slate-200" x-text="item.name"></h4>
                                         <span class="text-[10px] px-1.5 py-0.5 rounded font-mono" 
-                                              :class="item.source === 'My Library' ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 font-bold' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'" 
+                                              :class="item.source === 'My Library' ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 font-bold' : (item.source === 'Open Food Facts' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-bold' : 'bg-slate-100 dark:bg-slate-700 text-slate-500')" 
                                               x-text="item.source || 'USDA'"></span>
                                     </div>
                                     <p class="text-xs text-slate-400 mt-0.5">
@@ -490,7 +490,7 @@
                 <div x-show="addMode === 'custom' || editingEntryId" class="space-y-3">
                     <div>
                         <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Food Item Name *</label>
-                        <input type="text" x-model="customFood.name" placeholder="e.g. Homemade Protein Smoothie..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none">
+                        <input type="text" x-model="customFood.name" placeholder="e.g. Homemade Dal Tadka..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -499,7 +499,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Serving Label</label>
-                            <input type="text" x-model="customFood.servingUnit" placeholder="e.g. 1 bowl, 250g" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none">
+                            <input type="text" x-model="customFood.servingUnit" placeholder="e.g. 1 katori, 250g" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none">
                         </div>
                     </div>
                     <div class="grid grid-cols-3 gap-2">
@@ -630,7 +630,10 @@
             { id: 'off_12', name: 'Roti / Chapati', calories: 297, protein: 11, carbs: 52, fat: 3.8, baseQty: 100, baseUnit: 'g', source: 'Offline' },
             { id: 'off_13', name: 'Yellow Dal (Lentil Soup)', calories: 116, protein: 9, carbs: 20, fat: 0.4, baseQty: 100, baseUnit: 'g', source: 'Offline' },
             { id: 'off_14', name: 'Greek Yogurt (Plain)', calories: 59, protein: 10, carbs: 3.6, fat: 0.4, baseQty: 100, baseUnit: 'g', source: 'Offline' },
-            { id: 'off_15', name: 'Whey Protein Powder', calories: 370, protein: 80, carbs: 6, fat: 3, baseQty: 100, baseUnit: 'g', source: 'Offline' }
+            { id: 'off_15', name: 'Whey Protein Powder', calories: 370, protein: 80, carbs: 6, fat: 3, baseQty: 100, baseUnit: 'g', source: 'Offline' },
+            { id: 'off_16', name: 'Idli', calories: 133, protein: 3.8, carbs: 28, fat: 0.5, baseQty: 100, baseUnit: 'g', source: 'Offline' },
+            { id: 'off_17', name: 'Dosa (Plain)', calories: 167, protein: 3.9, carbs: 29, fat: 4.1, baseQty: 100, baseUnit: 'g', source: 'Offline' },
+            { id: 'off_18', name: 'Biryani (Chicken)', calories: 200, protein: 9, carbs: 22, fat: 8, baseQty: 100, baseUnit: 'g', source: 'Offline' }
         ];
 
         function calorieApp() {
@@ -989,46 +992,82 @@
                     });
                 },
 
+                // Multi-Target Search (Open Food Facts + USDA API + Local DB)
                 searchFoodAPI() {
                     if (!this.searchQuery.trim()) return;
                     var self = this;
                     this.isSearching = true;
 
-                    fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=' + encodeURIComponent(this.searchQuery) + '&pageSize=10')
-                        .then(function(res) { return res.json(); })
-                        .then(function(data) {
-                            if (data.foods && data.foods.length > 0) {
-                                var usdaResults = data.foods.map(function(f) {
-                                    var getNutrient = function(id) {
-                                        var found = f.foodNutrients.find(function(n) { return n.nutrientId === id; });
-                                        return found ? Math.round(found.value * 10) / 10 : 0;
-                                    };
-                                    return {
-                                        id: 'usda_' + f.fdcId,
-                                        name: f.description,
-                                        calories: Math.round(getNutrient(1008)),
-                                        protein: getNutrient(1003),
-                                        carbs: getNutrient(1005),
-                                        fat: getNutrient(1004),
-                                        baseQty: 100,
-                                        baseUnit: 'g',
-                                        source: 'USDA API'
-                                    };
-                                });
+                    var q = encodeURIComponent(this.searchQuery);
+                    var offUrl = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + q + '&search_simple=1&action=process&json=1&page_size=6';
+                    var usdaUrl = 'https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=' + q + '&pageSize=6';
 
-                                var libMatches = self.customFoodLibrary.filter(function(i) {
-                                    return i.name.toLowerCase().includes(self.searchQuery.toLowerCase());
-                                }).map(function(i) { return Object.assign({}, i, { source: 'My Library' }); });
+                    Promise.allSettled([
+                        fetch(offUrl, { headers: { 'User-Agent': 'NutriTrackPro - GitHubPages - v3.0' } }).then(function(res) { return res.json(); }),
+                        fetch(usdaUrl).then(function(res) { return res.json(); })
+                    ]).then(function(results) {
+                        var externalResults = [];
 
-                                self.searchResults = libMatches.concat(usdaResults);
-                            }
-                            self.isSearching = false;
-                        })
-                        .catch(function(e) {
-                            console.warn('USDA API search failed, falling back to local database', e);
-                            self.onSearchInput();
-                            self.isSearching = false;
+                        // 1. Process Open Food Facts (Great for Indian packaged foods, groceries, snacks & drinks)
+                        if (results[0].status === 'fulfilled' && results[0].value && results[0].value.products) {
+                            var offProducts = results[0].value.products.map(function(p) {
+                                var nut = p.nutriments || {};
+                                var kcal = nut['energy-kcal_100g'] || nut['energy-kcal'] || 0;
+                                return {
+                                    id: 'off_' + (p._id || p.code || Math.random()),
+                                    name: p.product_name_en || p.product_name || 'Unnamed Product',
+                                    calories: Math.round(Number(kcal) || 0),
+                                    protein: Math.round((Number(nut.proteins_100g) || 0) * 10) / 10,
+                                    carbs: Math.round((Number(nut.carbohydrates_100g) || 0) * 10) / 10,
+                                    fat: Math.round((Number(nut.fat_100g) || 0) * 10) / 10,
+                                    baseQty: 100,
+                                    baseUnit: 'g',
+                                    source: 'Open Food Facts'
+                                };
+                            }).filter(function(item) { return item.name && item.calories > 0; });
+                            externalResults = externalResults.concat(offProducts);
+                        }
+
+                        // 2. Process USDA API (with automatic 429 graceful handling)
+                        if (results[1].status === 'fulfilled' && results[1].value && results[1].value.foods) {
+                            var usdaFoods = results[1].value.foods.map(function(f) {
+                                var getNutrient = function(id) {
+                                    var found = f.foodNutrients.find(function(n) { return n.nutrientId === id; });
+                                    return found ? Math.round(found.value * 10) / 10 : 0;
+                                };
+                                return {
+                                    id: 'usda_' + f.fdcId,
+                                    name: f.description,
+                                    calories: Math.round(getNutrient(1008)),
+                                    protein: getNutrient(1003),
+                                    carbs: getNutrient(1005),
+                                    fat: getNutrient(1004),
+                                    baseQty: 100,
+                                    baseUnit: 'g',
+                                    source: 'USDA API'
+                                };
+                            });
+                            externalResults = externalResults.concat(usdaFoods);
+                        }
+
+                        // 3. Match Custom Library & Offline DB items
+                        var queryLower = self.searchQuery.toLowerCase();
+                        var libMatches = self.customFoodLibrary.filter(function(i) {
+                            return i.name.toLowerCase().includes(queryLower);
+                        }).map(function(i) { return Object.assign({}, i, { source: 'My Library' }); });
+
+                        var offlineMatches = BUILTIN_FOOD_DATABASE.filter(function(i) {
+                            return i.name.toLowerCase().includes(queryLower);
                         });
+
+                        // Combine all sources cleanly
+                        self.searchResults = libMatches.concat(offlineMatches).concat(externalResults);
+                        self.isSearching = false;
+                    }).catch(function(e) {
+                        console.warn('Multi-target search encountered an error, falling back to local database', e);
+                        self.onSearchInput();
+                        self.isSearching = false;
+                    });
                 },
 
                 selectSearchFood(item) {
