@@ -477,28 +477,67 @@
         }
 
         // Calculate Total Target & Checked Completed Hours for Productive Tasks
-        function calculateProductiveMetrics(checkedSet) {
-            let totalTarget = 0;
-            let completedHours = 0;
+        // Strict Productive Metrics Calculation
+function calculateProductiveMetrics(checkedSet) {
+    let totalTarget = 0;
+    let completedHours = 0;
 
-            scheduleData.forEach(task => {
-                // If tasks-input.json has undefined isProductive, treat missing property as true for robust backward compatibility
-                const isProd = task.isProductive !== false; 
-                if (isProd) {
-                    const hours = parseDurationInHours(task.time);
-                    totalTarget += hours;
-                    if (checkedSet.has(task.id)) {
-                        completedHours += hours;
-                    }
-                }
-            });
+    scheduleData.forEach(task => {
+        // Strict boolean check: only include tasks explicitly set to true
+        if (task.isProductive === true) {
+            const hours = parseDurationInHours(task.time);
+            totalTarget += hours;
 
-            const roundTarget = Math.round(totalTarget * 100) / 100;
-            const roundCompleted = Math.round(completedHours * 100) / 100;
-            const percentage = roundTarget > 0 ? Math.min(100, Math.round((roundCompleted / roundTarget) * 100)) : 0;
-
-            return { totalTarget: roundTarget, completedHours: roundCompleted, percentage };
+            // Check using string coercion to prevent String vs Number type mismatches
+            if (checkedSet.has(String(task.id)) || checkedSet.has(task.id)) {
+                completedHours += hours;
+            }
         }
+    });
+
+    const roundTarget = Math.round(totalTarget * 100) / 100;
+    const roundCompleted = Math.round(completedHours * 100) / 100;
+    const percentage = roundTarget > 0 ? Math.min(100, Math.round((roundCompleted / roundTarget) * 100)) : 0;
+
+    return { totalTarget: roundTarget, completedHours: roundCompleted, percentage };
+}
+
+// Robust Duration Parser
+function parseDurationInHours(timeStr) {
+    if (!timeStr) return 0;
+
+    // Normalize spaces and split by dash or hyphen
+    const parts = timeStr.replace(/\u00A0/g, ' ').split(/\s*[-–—]\s*/);
+    if (parts.length !== 2) return 0;
+
+    const startMinutes = parseToMinutes(parts[0]);
+    const endMinutes = parseToMinutes(parts[1]);
+
+    if (startMinutes === null || endMinutes === null) return 0;
+
+    let diffMinutes = endMinutes - startMinutes;
+    if (diffMinutes < 0) diffMinutes += 24 * 60; // Handle midnight crossover
+
+    return diffMinutes / 60;
+}
+
+// Helper to convert time strings (12h/24h) directly into total minutes from midnight
+function parseToMinutes(str) {
+    if (!str) return null;
+    const cleaned = str.trim().toUpperCase().replace(/\./g, '');
+    const match = cleaned.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/);
+    
+    if (!match) return null;
+
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2] ? parseInt(match[2], 10) : 0;
+    const modifier = match[3];
+
+    if (modifier === 'PM' && hours < 12) hours += 12;
+    if (modifier === 'AM' && hours === 12) hours = 0;
+
+    return hours * 60 + minutes;
+}
 
         // IndexedDB helpers for persistent handle caching
         function openDB() {
