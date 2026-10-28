@@ -19,24 +19,51 @@
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar for help modal body */
+        .modal-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-scroll::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+        .modal-scroll::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 8px;
+        }
+        .modal-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-full flex flex-col transition-colors duration-300">
+<body class="bg-slate-900 text-slate-100 min-h-full flex flex-col transition-colors duration-300 relative">
 
     <!-- Header Navigation -->
-    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid fa-bolt-lightning text-lg"></i>
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-0 sm:h-20 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+            <!-- App Identity & Help Button Area -->
+            <div class="flex items-center justify-between w-full sm:w-auto space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30 flex-shrink-0">
+                        <i class="fa-solid fa-bolt-lightning text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Elite Routine Tracker</h1>
+                        <p class="text-xs text-slate-400">CI, Fitness, Finance & Continuous Growth</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Elite Routine Tracker</h1>
-                    <p class="text-xs text-slate-400">CI, Fitness, Finance & Continuous Growth</p>
+
+                <!-- Help Button Container with Sub-label (Mobile + Desktop Header Integration) -->
+                <div class="flex flex-col items-end sm:items-start pl-2">
+                    <button onclick="openHelpModal()" class="px-3 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400/50 rounded-lg text-xs font-semibold flex items-center transition shadow-sm group">
+                        <i class="fa-solid fa-circle-question mr-1.5 text-indigo-400 group-hover:rotate-12 transition-transform"></i>
+                        <span>Help & Guide</span>
+                    </button>
+                    <span class="text-[10px] text-indigo-300/70 font-medium mt-0.5 tracking-tight">Click here to understand how to use the app</span>
                 </div>
             </div>
             
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-slate-700/60 pt-2 sm:pt-0">
                 <!-- Connect / Restore Folder Button -->
                 <button onclick="connectFolder()" id="connectBtn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center shadow transition">
                     <i class="fa-solid fa-folder-open mr-1.5"></i> Connect Data Folder
@@ -48,7 +75,7 @@
                     <input type="date" id="trackerDate" class="bg-transparent text-sm text-slate-200 focus:outline-none cursor-pointer">
                 </div>
 
-                <!-- Tabs -->
+                <!-- Desktop Tabs -->
                 <nav class="hidden md:flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
                     <button onclick="switchTab('tracker')" id="tabTracker" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-600 text-white shadow">Today</button>
                     <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">History & Missed</button>
@@ -67,10 +94,22 @@
     <!-- Main Content Area -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Notification Banner -->
+        <!-- Custom Notification Banner -->
         <div id="notification" class="hidden p-4 rounded-xl text-sm font-medium shadow-lg transition-all duration-300 flex items-center justify-between">
             <span id="notificationText"></span>
             <button onclick="hideNotification()" class="text-current opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Custom Confirmation / Alert Dialog (No native alert/confirm) -->
+        <div id="customModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                <h3 id="customModalTitle" class="text-lg font-bold text-white">Confirmation</h3>
+                <p id="customModalMessage" class="text-sm text-slate-300"></p>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button id="customModalCancelBtn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-semibold transition">Cancel</button>
+                    <button id="customModalConfirmBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow transition">Confirm</button>
+                </div>
+            </div>
         </div>
 
         <!-- VIEW 1: TRACKER -->
@@ -183,13 +222,140 @@
         <div id="viewDeploy" class="hidden space-y-6">
             <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-white">File System Access & GitHub Pages</h2>
-                    <p class="text-xs text-slate-400 mt-1">This version stores your folder connection cache securely in IndexedDB so you don't have to re-select the folder path every single session.</p>
+                    <h2 class="text-2xl font-bold text-white">File System Access & GitHub Pages Deployment</h2>
+                    <p class="text-xs text-slate-400 mt-1">This application runs as a local client side static app and uses native web APIs for persistent file management.</p>
+                </div>
+
+                <div class="space-y-4 text-sm text-slate-300">
+                    <div class="bg-slate-900/80 border border-slate-700/70 p-4 rounded-xl">
+                        <h3 class="font-semibold text-indigo-300 mb-1 flex items-center"><i class="fa-brands fa-github mr-2"></i>Deploying on GitHub Pages</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Because all file management happens strictly on your local computer via your web browser, you can safely host this single HTML page on GitHub Pages, Cloudflare Pages, Netlify, or run it locally in Chrome or Edge.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
     </main>
+
+    <!-- INSTRUCTION & HELP MODAL POPUP -->
+    <div id="helpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-opacity duration-300">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="helpModalContent">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900/80 border-b border-slate-700 flex justify-between items-center sticky top-0 z-10">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl">
+                        <i class="fa-solid fa-book-open text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white">App Usage & File Access Guide</h3>
+                        <p class="text-xs text-slate-400">Everything you need to know about setting up and using Elite Tracker</p>
+                    </div>
+                </div>
+                <button onclick="closeHelpModal()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div class="p-6 overflow-y-auto space-y-6 text-slate-300 text-sm modal-scroll">
+                
+                <!-- Section 1: How to use the app -->
+                <section class="space-y-2">
+                    <h4 class="text-base font-bold text-indigo-300 flex items-center">
+                        <i class="fa-solid fa-circle-play mr-2 text-indigo-400"></i> 1. How to Use the App
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        The Elite Daily Tracker helps you manage daily routines, habit execution, and track daily goals:
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 text-xs text-slate-400 pl-2">
+                        <li><strong class="text-slate-200">Date Navigation:</strong> Pick any date using the calendar control to view or retroactively complete tasks.</li>
+                        <li><strong class="text-slate-200">Task Checklist:</strong> Check off activities as you complete them throughout your day. Progress automatically calculates metrics and pillars.</li>
+                        <li><strong class="text-slate-200">History & Missed Tasks:</strong> Open the "History & Missed" tab to analyze past dates, view overall completion percentages, and list uncompleted tasks.</li>
+                    </ul>
+                </section>
+
+                <hr class="border-slate-700/60" />
+
+                <!-- Section 2: Folder Connection & Files -->
+                <section class="space-y-3">
+                    <h4 class="text-base font-bold text-indigo-300 flex items-center">
+                        <i class="fa-solid fa-folder-tree mr-2 text-indigo-400"></i> 2. Folder Connection & Required JSON Files
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        To connect your local data directory, click <strong class="text-indigo-400 font-semibold">"Connect Data Folder"</strong> in the top header and select a local directory on your machine.
+                    </p>
+                    <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-700/70 space-y-3">
+                        <p class="text-xs font-semibold text-slate-200">The application relies on 2 main JSON files in your selected folder:</p>
+                        
+                        <div class="space-y-2">
+                            <div class="flex items-start space-x-2">
+                                <code class="bg-slate-950 text-indigo-300 px-2 py-1 rounded text-xs font-mono border border-slate-800 shrink-0">tasks-input.json</code>
+                                <p class="text-xs text-slate-400">Defines your baseline task list, schedule times, pillar categories, and activity descriptions.</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <code class="bg-slate-950 text-cyan-300 px-2 py-1 rounded text-xs font-mono border border-slate-800 shrink-0">tasks-tracker.json</code>
+                                <p class="text-xs text-slate-400">Stores checked task completion state per date (e.g., <span class="font-mono text-slate-300">{"2026-10-16": {"checkedTasks": ["task1"]}}</span>). Automatically updated whenever you check a task.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="border-slate-700/60" />
+
+                <!-- Section 3: File System Access API & Security -->
+                <section class="space-y-3">
+                    <h4 class="text-base font-bold text-indigo-300 flex items-center">
+                        <i class="fa-solid fa-shield-halved mr-2 text-indigo-400"></i> 3. File System Access API & Privacy Security
+                    </h4>
+                    <div class="space-y-2 text-xs text-slate-300 leading-relaxed">
+                        <p>
+                            This web app utilizes the modern browser <strong class="text-slate-100">File System Access API</strong> combined with <strong class="text-slate-100">IndexedDB handle caching</strong>:
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div class="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl space-y-1">
+                                <span class="font-bold text-emerald-400 flex items-center"><i class="fa-solid fa-lock mr-1.5"></i> 100% Private & Local</span>
+                                <p class="text-[11px] text-slate-400">Your data never leaves your device. No cloud server, remote database, or third-party analytics are used.</p>
+                            </div>
+                            <div class="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl space-y-1">
+                                <span class="font-bold text-indigo-400 flex items-center"><i class="fa-solid fa-key mr-1.5"></i> Explicit Permission Prompt</span>
+                                <p class="text-[11px] text-slate-400">Browsers enforce strict security prompts. The app can only read and write to the single folder you explicitly choose.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="border-slate-700/60" />
+
+                <!-- Section 4: Data Loss Warning -->
+                <section class="space-y-3">
+                    <div class="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 space-y-2">
+                        <h4 class="text-sm font-bold text-rose-400 flex items-center">
+                            <i class="fa-solid fa-triangle-exclamation mr-2 text-rose-400"></i> 4. Data Loss & File Manipulation Warning
+                        </h4>
+                        <p class="text-xs text-rose-200/90 leading-relaxed">
+                            Please handle your local JSON files with care!
+                        </p>
+                        <ul class="list-disc list-inside space-y-1 text-xs text-rose-300/80 pl-1">
+                            <li><strong>Deleting or Renaming Files:</strong> If <span class="font-mono text-rose-200">tasks-tracker.json</span> is deleted or renamed, your historical records will be permanently lost unless restored from a backup.</li>
+                            <li><strong>Manual Edits / External Programs:</strong> If another application or text editor modifies <span class="font-mono text-rose-200">tasks-tracker.json</span> or <span class="font-mono text-rose-200">tasks-input.json</span> with invalid JSON formatting, application read errors may occur.</li>
+                            <li><strong>Backup Recommendation:</strong> Regularly back up your local folder directory if keeping long-term historical routine data is critical to you.</li>
+                        </ul>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-900 border-t border-slate-700 flex justify-end">
+                <button onclick="closeHelpModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow transition flex items-center">
+                    <i class="fa-solid fa-check mr-1.5"></i> Got it, thanks!
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-slate-800/40 border-t border-slate-800 py-6 text-center text-xs text-slate-500">
@@ -250,6 +416,68 @@
             }
         }
 
+        // Help Modal Controls
+        function openHelpModal() {
+            const modal = document.getElementById('helpModal');
+            const content = document.getElementById('helpModalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeHelpModal() {
+            const modal = document.getElementById('helpModal');
+            const content = document.getElementById('helpModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Close modal when clicking outside backdrop
+        document.getElementById('helpModal').addEventListener('click', (e) => {
+            if (e.target.id === 'helpModal') {
+                closeHelpModal();
+            }
+        });
+
+        // Close modal on Escape key press
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeHelpModal();
+            }
+        });
+
+        // Custom non-alert modal helper
+        function showCustomConfirm(message, title = 'Confirmation') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('customModal');
+                const titleEl = document.getElementById('customModalTitle');
+                const msgEl = document.getElementById('customModalMessage');
+                const cancelBtn = document.getElementById('customModalCancelBtn');
+                const confirmBtn = document.getElementById('customModalConfirmBtn');
+
+                titleEl.innerText = title;
+                msgEl.innerText = message;
+                modal.classList.remove('hidden');
+
+                const cleanup = () => {
+                    modal.classList.add('hidden');
+                    cancelBtn.removeEventListener('click', onCancel);
+                    confirmBtn.removeEventListener('click', onConfirm);
+                };
+
+                const onCancel = () => { cleanup(); resolve(false); };
+                const onConfirm = () => { cleanup(); resolve(true); };
+
+                cancelBtn.addEventListener('click', onCancel);
+                confirmBtn.addEventListener('click', onConfirm);
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             const dateInput = document.getElementById('trackerDate');
             dateInput.value = currentDateStr;
@@ -268,7 +496,6 @@
                         await loadDataFromFolder();
                         setConnectedUI();
                     } else {
-                        // Permission needs re-approval (browser policy), change button to prompt click
                         setNeedsPermissionUI();
                     }
                 }
@@ -390,7 +617,7 @@
 
         async function toggleTask(taskId) {
             if (!dirHandle) {
-                alert('Please connect your local data folder first.');
+                showNotification('Please connect your local data folder first.', 'error');
                 return;
             }
 
@@ -412,7 +639,8 @@
 
         async function resetToday() {
             if (!dirHandle) return;
-            if(confirm('Are you sure you want to reset all checkboxes for this date?')) {
+            const confirmed = await showCustomConfirm('Are you sure you want to reset all checkboxes for this date?', 'Reset Date Progress');
+            if(confirmed) {
                 trackerData[currentDateStr] = { checkedTasks: [] };
                 await saveTrackerToFile();
                 renderApp();
