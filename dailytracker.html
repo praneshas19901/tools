@@ -453,9 +453,16 @@
         }
 
         // Generate combined display range string from startTime and endTime
+        function formatTimeRange(startTime, endTime) {
+            if (startTime && endTime) {
+                return `${formatTime12h(startTime)} - ${formatTime12h(endTime)}`;
+            }
+            return '';
+        }
+
         function getFormattedTimeRange(task) {
             if (task.startTime && task.endTime) {
-                return `${formatTime12h(task.startTime)} - ${formatTime12h(task.endTime)}`;
+                return formatTimeRange(task.startTime, task.endTime);
             }
             return task.time || '';
         }
@@ -473,7 +480,6 @@
                 if (diff < 0) diff += 24 * 60; // Handle wrap-around midnight
                 return diff / 60;
             }
-            // Fallback parsing if legacy string format exists
             return 0;
         }
 
