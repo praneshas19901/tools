@@ -826,11 +826,16 @@
                         </button>
                     </div>
 
-                    <!-- Target Date Info -->
-                    <div class="mt-4 flex items-center gap-2 text-xs text-slate-300 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
-                        <i class="fa-regular fa-calendar-check text-blue-400"></i>
-                        <span class="text-slate-400">Target Date:</span>
-                        <span class="font-semibold text-slate-200">${formattedDate}</span>
+                    <!-- Target Date Info & Inline Date Picker -->
+                    <div class="mt-4 flex items-center justify-between gap-2 text-xs text-slate-300 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-regular fa-calendar-check text-blue-400"></i>
+                            <span class="text-slate-400">Target Date:</span>
+                        </div>
+                        <input type="date" 
+                            value="${item.targetDate}" 
+                            onchange="updateTargetDate('${item.id}', this.value)"
+                            class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
                     </div>
                 </div>
 
@@ -872,6 +877,25 @@
         // ==========================================
         // STATE MUTATIONS WITH AUTO-SAVE
         // ==========================================
+        function updateTargetDate(id, newDateStr) {
+            if (!newDateStr) return;
+            const item = inputCatalog.find(i => i.id === id);
+            if (!item) return;
+
+            const oldDate = item.targetDate;
+            if (oldDate === newDateStr) return;
+
+            item.targetDate = newDateStr;
+
+            // Log change in notes automatically
+            appendNoteToItem(id, `📅 Target date changed from ${formatDateDisplay(oldDate)} to ${formatDateDisplay(newDateStr)}`);
+
+            renderTrackerGrid();
+            updateDashboardStats();
+            autoSaveToFolder();
+            showAlert(`Updated target date for "${item.name}"`, "success");
+        }
+
         function updateProgress(id, value) {
             let val = parseInt(value, 10);
             if (isNaN(val)) val = 0;
