@@ -220,7 +220,8 @@
 
                     <select id="filter-status" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="ALL">All Statuses</option>
-                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="UNDERWAY">Underway</option>
+                        <option value="TO_DO">To-Do</option>
                         <option value="COMPLETED">Completed</option>
                         <option value="OVERDUE">Overdue</option>
                     </select>
@@ -735,14 +736,12 @@
                 
                 const matchesType = (typeFilter === 'ALL') || (category === typeFilter);
                 
+                const currentStatus = getEffectiveStatus(item, progData.progress);
                 let matchesStatus = true;
-                const daysRemaining = calculateDaysRemaining(item.targetDate);
-                const isCompleted = progData.progress === 100;
-                const isOverdue = daysRemaining < 0 && !isCompleted;
 
-                if (statusFilter === 'COMPLETED') matchesStatus = isCompleted;
-                if (statusFilter === 'IN_PROGRESS') matchesStatus = !isCompleted && !isOverdue;
-                if (statusFilter === 'OVERDUE') matchesStatus = isOverdue;
+                if (statusFilter !== 'ALL') {
+                    matchesStatus = (currentStatus === statusFilter);
+                }
 
                 return matchesSearch && matchesType && matchesStatus;
             });
@@ -777,26 +776,51 @@
             });
         }
 
-        function createCardElement(item, prog, daysLeft) {
-            const isCompleted = prog.progress === 100;
-            const isOverdue = daysLeft < 0 && !isCompleted;
-
-            let statusBadgeClass = "bg-blue-500/10 text-blue-400 border-blue-500/20";
-            let statusText = "On Track";
-
-            if (isCompleted) {
-                statusBadgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-                statusText = "Completed";
-            } else if (isOverdue) {
-                statusBadgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
-                statusText = `Overdue (${Math.abs(daysLeft)} days)`;
-            } else if (daysLeft <= 14) {
-                statusBadgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                statusText = `Due in ${daysLeft} days`;
-            } else {
-                statusText = `${daysLeft} days left`;
+        // Helper to determine active status (manual user override or dynamic target date logic)
+        function getEffectiveStatus(item, progressVal) {
+            if (item.status) {
+                return item.status;
             }
+            if (progressVal === 100) return 'COMPLETED';
+            const daysLeft = calculateDaysRemaining(item.targetDate);
+            if (daysLeft < 0) return 'OVERDUE';
+            if (progressVal === 0) return 'TO_DO';
+            return 'UNDERWAY';
+        }
 
+        function createCardElement(item, prog, daysLeft) {
+            const effectiveStatus = getEffectiveStatus(item, prog.progress);
+            const isCompleted = effectiveStatus === 'COMPLETED';
+
+            // Config for status colors (1. Underway - Orange, 2. Overdue - Red, 3. Completed - Green, 4. To-Do - Yellow)
+            const statusConfig = {
+                'UNDERWAY': {
+                    badgeClass: "bg-orange-500/10 text-orange-400 border-orange-500/30",
+                    selectBg: "bg-orange-950/40 text-orange-300 border-orange-500/40",
+                    label: "Underway",
+                    icon: "fa-solid fa-spinner"
+                },
+                'OVERDUE': {
+                    badgeClass: "bg-rose-500/10 text-rose-400 border-rose-500/30",
+                    selectBg: "bg-rose-950/40 text-rose-300 border-rose-500/40",
+                    label: "Overdue",
+                    icon: "fa-solid fa-triangle-exclamation"
+                },
+                'COMPLETED': {
+                    badgeClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+                    selectBg: "bg-emerald-950/40 text-emerald-300 border-emerald-500/40",
+                    label: "Completed",
+                    icon: "fa-solid fa-circle-check"
+                },
+                'TO_DO': {
+                    badgeClass: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+                    selectBg: "bg-amber-950/40 text-amber-300 border-amber-500/40",
+                    label: "To-Do",
+                    icon: "fa-solid fa-list-check"
+                }
+            };
+
+            const cfg = statusConfig[effectiveStatus] || statusConfig['UNDERWAY'];
             const formattedDate = formatDateDisplay(item.targetDate);
             const notesCount = (prog.notes || []).length;
             const category = item.category || item.type || 'Certification';
@@ -810,9 +834,17 @@
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
                             ${category}
                         </span>
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusBadgeClass}">
-                            ${statusText}
-                        </span>
+                        
+                        <!-- Selectable Status Dropdown with Color Themes -->
+                        <div class="relative flex items-center gap-1.5">
+                            <i class="${cfg.icon} text-xs"></i>
+                            <select onchange="updateItemStatus('${item.id}', this.value)" class="text-xs font-semibold px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer transition ${cfg.selectBg}">
+                                <option value="UNDERWAY" class="bg-slate-900 text-orange-400" ${effectiveStatus === 'UNDERWAY' ? 'selected' : ''}>Underway</option>
+                                <option value="TO_DO" class="bg-slate-900 text-amber-400" ${effectiveStatus === 'TO_DO' ? 'selected' : ''}>To-Do</option>
+                                <option value="OVERDUE" class="bg-slate-900 text-rose-400" ${effectiveStatus === 'OVERDUE' ? 'selected' : ''}>Overdue</option>
+                                <option value="COMPLETED" class="bg-slate-900 text-emerald-400" ${effectiveStatus === 'COMPLETED' ? 'selected' : ''}>Completed</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Title & Details -->
@@ -878,6 +910,34 @@
         // ==========================================
         // STATE MUTATIONS WITH AUTO-SAVE
         // ==========================================
+        function updateItemStatus(id, newStatus) {
+            const item = inputCatalog.find(i => i.id === id);
+            if (!item) return;
+
+            const oldStatus = getEffectiveStatus(item, (progressMap[id] || {}).progress || 0);
+            if (oldStatus === newStatus) return;
+
+            // Save status override into JSON item
+            item.status = newStatus;
+
+            // If user explicitly marks status as Completed, update progress to 100%
+            if (newStatus === 'COMPLETED') {
+                if (!progressMap[id]) progressMap[id] = { progress: 100, notes: [] };
+                progressMap[id].progress = 100;
+                appendNoteToItem(id, "🎉 Marked status as Completed!");
+            } else if (newStatus === 'TO_DO' && (!progressMap[id] || progressMap[id].progress === 100)) {
+                if (!progressMap[id]) progressMap[id] = { progress: 0, notes: [] };
+                progressMap[id].progress = 0;
+            }
+
+            appendNoteToItem(id, `🏷️ Status updated to ${newStatus}`);
+
+            renderTrackerGrid();
+            updateDashboardStats();
+            autoSaveToFolder();
+            showAlert(`Status for "${item.name}" set to ${newStatus}`, "success");
+        }
+
         function updateTargetDate(id, newDateStr) {
             if (!newDateStr) return;
             const item = inputCatalog.find(i => i.id === id);
