@@ -81,32 +81,36 @@
                     </div>
                 </div>
 
-                <!-- File System API & Action Controls -->
+                <!-- File System API & Directory Connection Controls -->
                 <div class="flex items-center space-x-2 sm:space-x-3">
-                    <!-- Dynamic File API Status Badge -->
-                    <div id="file-api-status" class="hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span id="api-status-text">File Sync Ready</span>
+                    <!-- Directory Connection Status Badge -->
+                    <div id="dir-status-badge" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 border border-slate-800">
+                        <span id="dir-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                        <span id="dir-status-text" class="text-slate-400 truncate max-w-[140px] sm:max-w-[200px]">Not Connected</span>
                     </div>
 
-                    <!-- File Action Dropdown / Button Group -->
-                    <button id="btn-open-files" onclick="openFileSystemPicker()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-2">
-                        <i class="fa-solid fa-folder-open text-amber-400"></i>
-                        <span class="hidden sm:inline">Load JSON Files</span>
+                    <!-- Folder Connection Button -->
+                    <button id="btn-connect-dir" onclick="connectDirectory()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
+                        <i class="fa-solid fa-folder-open text-amber-300"></i>
+                        <span id="btn-connect-label" class="hidden sm:inline">Connect Tracker Folder</span>
                     </button>
 
-                    <button id="btn-save-files" onclick="saveToFilesystem()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 transition flex items-center gap-2">
+                    <!-- Direct Sync / Force Save Button -->
+                    <button id="btn-save-files" onclick="saveToDirectory(true)" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1.5">
                         <i class="fa-solid fa-floppy-disk"></i>
-                        <span>Save Sync</span>
+                        <span class="hidden md:inline">Sync Now</span>
                     </button>
 
                     <!-- Direct JSON Export Fallback Menu Button -->
                     <button onclick="toggleMenu('export-dropdown')" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition relative">
-                        <i class="fa-solid fa-download"></i>
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
                     <!-- Export Dropdown -->
                     <div id="export-dropdown" class="hidden absolute right-4 top-14 w-60 rounded-xl glass-panel shadow-2xl py-2 z-50 border border-slate-700">
-                        <div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Export Local Files</div>
+                        <div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Manual Options</div>
+                        <button onclick="openFallbackFileInput()" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-800 flex items-center gap-2 text-slate-200">
+                            <i class="fa-solid fa-file-import text-amber-400"></i> Import JSON Files Manually
+                        </button>
                         <button onclick="exportJSON('tracker-input.json')" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-800 flex items-center gap-2 text-slate-200">
                             <i class="fa-solid fa-file-code text-blue-400"></i> Export tracker-input.json
                         </button>
@@ -115,7 +119,7 @@
                         </button>
                         <hr class="my-1 border-slate-800">
                         <button onclick="resetToDefaults()" class="w-full text-left px-4 py-2 text-xs hover:bg-rose-950/40 text-rose-400 flex items-center gap-2">
-                            <i class="fa-solid fa-rotate-right"></i> Reset Initial Defaults
+                            <i class="fa-solid fa-trash-can"></i> Clear Local Memory
                         </button>
                     </div>
                 </div>
@@ -337,164 +341,255 @@
     <!-- Main Logic Script -->
     <script>
         // ==========================================
-        // INITIAL DATA & DEFAULT STATE (EMPTY BY DEFAULT)
+        // STATE MANAGEMENT
         // ==========================================
-        
-        // Initial catalog definition (tracker-input.json structure) - Starts empty
-        const INITIAL_INPUT_DATA = [];
-
-        // Initial tracking state (tracker-progress.json structure) - Starts empty
-        const INITIAL_PROGRESS_DATA = {};
-
-        // Application State
         let inputCatalog = [];
         let progressMap = {};
-        let fileHandles = {
-            input: null,
-            progress: null
-        };
+        let dirHandle = null;
+        let isAutoSaveEnabled = true;
+
+        // IndexedDB Helpers for persisting DirectoryHandle across browser sessions
+        const IDB_NAME = 'CertTrackerDB';
+        const IDB_STORE = 'handles';
+
+        function openIDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(IDB_STORE)) {
+                        db.createObjectStore(IDB_STORE);
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function storeDirHandle(handle) {
+            try {
+                const db = await openIDB();
+                const tx = db.transaction(IDB_STORE, 'readwrite');
+                tx.objectStore(IDB_STORE).put(handle, 'dirHandle');
+                return tx.complete;
+            } catch (err) {
+                console.warn("Could not store folder handle in IndexedDB", err);
+            }
+        }
+
+        async function getStoredDirHandle() {
+            try {
+                const db = await openIDB();
+                const tx = db.transaction(IDB_STORE, 'readonly');
+                const req = tx.objectStore(IDB_STORE).get('dirHandle');
+                return new Promise((resolve) => {
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (err) {
+                return null;
+            }
+        }
 
         // ==========================================
         // INITIALIZATION
         // ==========================================
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             loadStateFromLocalStorage();
             renderTrackerGrid();
             updateDashboardStats();
-            checkFileSystemAPISupport();
+
+            // Try restoring existing directory handle if stored
+            if ('showDirectoryPicker' in window) {
+                const savedHandle = await getStoredDirHandle();
+                if (savedHandle) {
+                    try {
+                        const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
+                        if (perm === 'granted') {
+                            dirHandle = savedHandle;
+                            await readFilesFromDirectory();
+                            updateDirBadge(true, dirHandle.name);
+                        } else {
+                            updateDirBadge(false, "Click to re-verify " + savedHandle.name);
+                        }
+                    } catch (e) {
+                        updateDirBadge(false, "Not Connected");
+                    }
+                }
+            } else {
+                showAlert("Directory Picker API not supported on this browser. Auto-save fallbacks active.", "info");
+            }
         });
 
-        function checkFileSystemAPISupport() {
-            const isSupported = 'showOpenFilePicker' in window;
-            const badge = document.getElementById('file-api-status');
-            const statusText = document.getElementById('api-status-text');
-            
-            if (isSupported) {
-                badge.classList.remove('hidden');
-                statusText.textContent = "File Sync Ready";
+        function updateDirBadge(connected, text) {
+            const dot = document.getElementById('dir-status-dot');
+            const statusText = document.getElementById('dir-status-text');
+            const btnLabel = document.getElementById('btn-connect-label');
+
+            if (connected) {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                statusText.className = "text-emerald-400 font-medium truncate max-w-[140px] sm:max-w-[200px]";
+                statusText.textContent = `Connected: ${text}`;
+                btnLabel.textContent = "Change Folder";
             } else {
-                badge.classList.remove('hidden');
-                badge.className = "hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                statusText.textContent = "JSON Sync Mode (Download Fallback)";
-            }
-        }
-
-        function loadStateFromLocalStorage() {
-            const savedInput = localStorage.getItem('cert_tracker_input');
-            const savedProgress = localStorage.getItem('cert_tracker_progress');
-
-            if (savedInput && savedProgress) {
-                try {
-                    inputCatalog = JSON.parse(savedInput);
-                    progressMap = JSON.parse(savedProgress);
-                } catch (e) {
-                    console.error("Error parsing local storage", e);
-                    useDefaultData();
-                }
-            } else {
-                useDefaultData();
-            }
-        }
-
-        function useDefaultData() {
-            inputCatalog = JSON.parse(JSON.stringify(INITIAL_INPUT_DATA));
-            progressMap = JSON.parse(JSON.stringify(INITIAL_PROGRESS_DATA));
-            saveToLocalStorage();
-        }
-
-        function saveToLocalStorage() {
-            localStorage.setItem('cert_tracker_input', JSON.stringify(inputCatalog));
-            localStorage.setItem('cert_tracker_progress', JSON.stringify(progressMap));
-        }
-
-        function resetToDefaults() {
-            if (confirm("Clear all tracked entries and start fresh with empty data?")) {
-                useDefaultData();
-                renderTrackerGrid();
-                updateDashboardStats();
-                showAlert("Cleared all entries.", "info");
-            }
-        }
-
-        function loadStateFromLocalStorage() {
-            const savedInput = localStorage.getItem('cert_tracker_input');
-            const savedProgress = localStorage.getItem('cert_tracker_progress');
-
-            if (savedInput && savedProgress) {
-                try {
-                    inputCatalog = JSON.parse(savedInput);
-                    progressMap = JSON.parse(savedProgress);
-                } catch (e) {
-                    console.error("Error parsing local storage", e);
-                    useDefaultData();
-                }
-            } else {
-                useDefaultData();
-            }
-        }
-
-        function useDefaultData() {
-            inputCatalog = JSON.parse(JSON.stringify(INITIAL_INPUT_DATA));
-            progressMap = JSON.parse(JSON.stringify(INITIAL_PROGRESS_DATA));
-            saveToLocalStorage();
-        }
-
-        function saveToLocalStorage() {
-            localStorage.setItem('cert_tracker_input', JSON.stringify(inputCatalog));
-            localStorage.setItem('cert_tracker_progress', JSON.stringify(progressMap));
-        }
-
-        function resetToDefaults() {
-            if (confirm("Reset tracking data back to original 3 certifications?")) {
-                useDefaultData();
-                renderTrackerGrid();
-                updateDashboardStats();
-                showAlert("Reset to default AZ-104, AZ-305, AZ-400 datasets.", "success");
+                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
+                statusText.className = "text-slate-400 truncate max-w-[140px] sm:max-w-[200px]";
+                statusText.textContent = text || "Not Connected";
+                btnLabel.textContent = "Connect Folder";
             }
         }
 
         // ==========================================
-        // FILE SYSTEM ACCESS API & JSON IMPORT/EXPORT
+        // DIRECTORY PICKER & FILE READ/WRITE LOGIC
         // ==========================================
-        async function openFileSystemPicker() {
-            if ('showOpenFilePicker' in window) {
+        async function connectDirectory() {
+            if (!('showDirectoryPicker' in window)) {
+                openFallbackFileInput();
+                return;
+            }
+
+            try {
+                // Prompt user to select directory (e.g. C:\Storage\Tracker-Data\cert-degree-tracker)
+                dirHandle = await window.showDirectoryPicker({
+                    mode: 'readwrite'
+                });
+
+                await storeDirHandle(dirHandle);
+                updateDirBadge(true, dirHandle.name);
+
+                // Read or initialize tracker files from folder
+                await readFilesFromDirectory();
+                showAlert(`Connected to folder: "${dirHandle.name}". Sync active!`, "success");
+
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    showAlert("Directory Access Error: " + err.message, "error");
+                }
+            }
+        }
+
+        async function readFilesFromDirectory() {
+            if (!dirHandle) return;
+
+            try {
+                // 1. Read or Create tracker-input.json
+                let inputHandle;
                 try {
-                    showAlert("Select your tracker-input.json and/or tracker-progress.json file(s)", "info");
-                    const handles = await window.showOpenFilePicker({
-                        multiple: true,
-                        types: [{
-                            description: 'JSON Files',
-                            accept: { 'application/json': ['.json'] }
-                        }]
-                    });
+                    inputHandle = await dirHandle.getFileHandle('tracker-input.json');
+                    const file = await inputHandle.getFile();
+                    const text = await file.text();
+                    inputCatalog = text ? JSON.parse(text) : [];
+                } catch (e) {
+                    // File doesn't exist, create it with empty data
+                    inputCatalog = [];
+                    await writeJSONToDirectory('tracker-input.json', inputCatalog);
+                }
 
-                    for (const handle of handles) {
-                        const file = await handle.getFile();
-                        const content = await file.text();
-                        const parsed = JSON.parse(content);
+                // 2. Read or Create tracker-progress.json
+                let progressHandle;
+                try {
+                    progressHandle = await dirHandle.getFileHandle('tracker-progress.json');
+                    const file = await progressHandle.getFile();
+                    const text = await file.text();
+                    progressMap = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    // File doesn't exist, create it with empty data
+                    progressMap = {};
+                    await writeJSONToDirectory('tracker-progress.json', progressMap);
+                }
 
-                        if (file.name.includes('input') || Array.isArray(parsed)) {
-                            fileHandles.input = handle;
-                            inputCatalog = parsed;
-                        } else if (file.name.includes('progress') || typeof parsed === 'object') {
-                            fileHandles.progress = handle;
-                            progressMap = parsed;
-                        }
+                saveToLocalStorage();
+                renderTrackerGrid();
+                updateDashboardStats();
+
+            } catch (err) {
+                console.error("Error reading directory files", err);
+                showAlert("Error reading JSON files from directory: " + err.message, "error");
+            }
+        }
+
+        async function writeJSONToDirectory(fileName, data) {
+            if (!dirHandle) return false;
+
+            try {
+                // Verify write permission if needed
+                const options = { mode: 'readwrite' };
+                if ((await dirHandle.queryPermission(options)) !== 'granted') {
+                    if ((await dirHandle.requestPermission(options)) !== 'granted') {
+                        throw new Error("Permission to write to directory was denied.");
                     }
+                }
 
-                    saveToLocalStorage();
-                    renderTrackerGrid();
-                    updateDashboardStats();
-                    showAlert("Successfully loaded and synced external JSON files!", "success");
+                const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(data, null, 2));
+                await writable.close();
+                return true;
+            } catch (err) {
+                console.error(`Failed to write ${fileName}`, err);
+                throw err;
+            }
+        }
+
+        async function saveToDirectory(manualNotice = false) {
+            saveToLocalStorage();
+
+            if (dirHandle) {
+                try {
+                    await writeJSONToDirectory('tracker-input.json', inputCatalog);
+                    await writeJSONToDirectory('tracker-progress.json', progressMap);
+
+                    if (manualNotice) {
+                        showAlert(`Saved directly to tracker files in ${dirHandle.name}!`, "success");
+                    }
                 } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        showAlert("Failed to open files: " + err.message, "error");
-                    }
+                    showAlert("Auto-save to directory failed: " + err.message, "error");
                 }
             } else {
-                // Fallback for browsers without File System Access API
-                document.getElementById('fallback-file-input').click();
+                if (manualNotice) {
+                    exportJSON('tracker-input.json');
+                    setTimeout(() => exportJSON('tracker-progress.json'), 300);
+                    showAlert("No directory connected. Exported JSON files to downloads.", "info");
+                }
             }
+        }
+
+        // Auto Save Trigger
+        function triggerAutoSave() {
+            saveToLocalStorage();
+            if (dirHandle && isAutoSaveEnabled) {
+                saveToDirectory(false);
+            }
+        }
+
+        // ==========================================
+        // LOCAL STORAGE FALLBACKS & EXPORT
+        // ==========================================
+        function loadStateFromLocalStorage() {
+            const savedInput = localStorage.getItem('cert_tracker_input');
+            const savedProgress = localStorage.getItem('cert_tracker_progress');
+
+            if (savedInput && savedProgress) {
+                try {
+                    inputCatalog = JSON.parse(savedInput);
+                    progressMap = JSON.parse(savedProgress);
+                } catch (e) {
+                    inputCatalog = [];
+                    progressMap = {};
+                }
+            } else {
+                inputCatalog = [];
+                progressMap = {};
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('cert_tracker_input', JSON.stringify(inputCatalog));
+            localStorage.setItem('cert_tracker_progress', JSON.stringify(progressMap));
+        }
+
+        function openFallbackFileInput() {
+            document.getElementById('fallback-file-input').click();
         }
 
         function handleFallbackFileInput(event) {
@@ -516,7 +611,7 @@
                         }
 
                         if (loadedCount > 0) {
-                            saveToLocalStorage();
+                            triggerAutoSave();
                             renderTrackerGrid();
                             updateDashboardStats();
                             showAlert(`Loaded file: ${file.name}`, "success");
@@ -527,40 +622,6 @@
                 };
                 reader.readAsText(file);
             });
-        }
-
-        async function saveToFilesystem() {
-            saveToLocalStorage();
-            let savedToFileSystem = false;
-
-            // Attempt to write directly using handles if available
-            if ('showSaveFilePicker' in window) {
-                try {
-                    if (fileHandles.input) {
-                        const writable = await fileHandles.input.createWritable();
-                        await writable.write(JSON.stringify(inputCatalog, null, 2));
-                        await writable.close();
-                        savedToFileSystem = true;
-                    }
-                    if (fileHandles.progress) {
-                        const writable = await fileHandles.progress.createWritable();
-                        await writable.write(JSON.stringify(progressMap, null, 2));
-                        await writable.close();
-                        savedToFileSystem = true;
-                    }
-                } catch (e) {
-                    console.warn("Could not write directly to handles, offering save picker or download", e);
-                }
-            }
-
-            if (savedToFileSystem) {
-                showAlert("Successfully saved back to open local JSON files!", "success");
-            } else {
-                // Trigger download prompts for tracker files
-                exportJSON('tracker-input.json');
-                setTimeout(() => exportJSON('tracker-progress.json'), 300);
-                showAlert("Progress saved to browser storage and JSON export generated!", "success");
-            }
         }
 
         function exportJSON(filename) {
@@ -578,149 +639,19 @@
             URL.revokeObjectURL(url);
         }
 
-        // ==========================================
-        // GRID RENDERING & DOM UPDATES
-        // ==========================================
-        function renderTrackerGrid() {
-            const grid = document.getElementById('tracker-grid');
-            const emptyState = document.getElementById('empty-state');
-            grid.innerHTML = '';
-
-            const searchVal = document.getElementById('search-input').value.toLowerCase();
-            const typeFilter = document.getElementById('filter-type').value;
-            const statusFilter = document.getElementById('filter-status').value;
-
-            const filtered = inputCatalog.filter(item => {
-                const progData = progressMap[item.id] || { progress: 0, status: 'In Progress' };
-                const matchesSearch = item.name.toLowerCase().includes(searchVal) || 
-                                      (item.provider && item.provider.toLowerCase().includes(searchVal)) ||
-                                      (item.description && item.description.toLowerCase().includes(searchVal));
-                
-                const matchesType = (typeFilter === 'ALL') || (item.type === typeFilter);
-                
-                let matchesStatus = true;
-                const daysRemaining = calculateDaysRemaining(item.targetDate);
-                const isCompleted = progData.progress === 100;
-                const isOverdue = daysRemaining < 0 && !isCompleted;
-
-                if (statusFilter === 'COMPLETED') matchesStatus = isCompleted;
-                if (statusFilter === 'IN_PROGRESS') matchesStatus = !isCompleted && !isOverdue;
-                if (statusFilter === 'OVERDUE') matchesStatus = isOverdue;
-
-                return matchesSearch && matchesType && matchesStatus;
-            });
-
-            if (filtered.length === 0) {
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('flex');
-            } else {
-                emptyState.classList.add('hidden');
-                emptyState.classList.remove('flex');
+        function resetToDefaults() {
+            if (confirm("Clear local dataset from browser memory?")) {
+                inputCatalog = [];
+                progressMap = {};
+                saveToLocalStorage();
+                renderTrackerGrid();
+                updateDashboardStats();
+                showAlert("Cleared local dataset.", "info");
             }
-
-            filtered.forEach(item => {
-                const prog = progressMap[item.id] || { progress: 0, notes: [] };
-                const daysLeft = calculateDaysRemaining(item.targetDate);
-                const card = createCardElement(item, prog, daysLeft);
-                grid.appendChild(card);
-            });
-        }
-
-        function createCardElement(item, prog, daysLeft) {
-            const isCompleted = prog.progress === 100;
-            const isOverdue = daysLeft < 0 && !isCompleted;
-
-            let statusBadgeClass = "bg-blue-500/10 text-blue-400 border-blue-500/20";
-            let statusText = "On Track";
-
-            if (isCompleted) {
-                statusBadgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-                statusText = "Completed";
-            } else if (isOverdue) {
-                statusBadgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
-                statusText = `Overdue (${Math.abs(daysLeft)} days)`;
-            } else if (daysLeft <= 14) {
-                statusBadgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                statusText = `Due in ${daysLeft} days`;
-            } else {
-                statusText = `${daysLeft} days left`;
-            }
-
-            const formattedDate = formatDateDisplay(item.targetDate);
-            const notesCount = (prog.notes || []).length;
-
-            const card = document.createElement('div');
-            card.className = "glass-panel rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition duration-300 flex flex-col justify-between space-y-4 shadow-lg";
-            card.innerHTML = `
-                <div>
-                    <!-- Header Badges -->
-                    <div class="flex items-center justify-between gap-2 mb-3">
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
-                            ${item.type || 'Certification'}
-                        </span>
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusBadgeClass}">
-                            ${statusText}
-                        </span>
-                    </div>
-
-                    <!-- Title & Details -->
-                    <div class="flex items-start justify-between gap-2">
-                        <div>
-                            <h3 class="text-lg font-bold text-white tracking-tight">${escapeHTML(item.name)}</h3>
-                            <p class="text-xs text-slate-400 mt-0.5">${escapeHTML(item.provider || 'Technical Goal')}</p>
-                        </div>
-                        <button onclick="deleteItem('${item.id}')" class="text-slate-600 hover:text-rose-400 p-1 transition" title="Delete Entry">
-                            <i class="fa-solid fa-trash-can text-xs"></i>
-                        </button>
-                    </div>
-
-                    ${item.description ? `<p class="text-xs text-slate-400 mt-2 line-clamp-2">${escapeHTML(item.description)}</p>` : ''}
-
-                    <!-- Target Date Info -->
-                    <div class="mt-4 flex items-center gap-2 text-xs text-slate-300 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
-                        <i class="fa-regular fa-calendar-check text-blue-400"></i>
-                        <span class="text-slate-400">Target Date:</span>
-                        <span class="font-semibold text-slate-200">${formattedDate}</span>
-                    </div>
-                </div>
-
-                <!-- Progress Control Section -->
-                <div class="space-y-2 pt-2 border-t border-slate-800/80">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-slate-400 font-medium">Completion Progress</span>
-                        <span class="font-extrabold ${isCompleted ? 'text-emerald-400' : 'text-blue-400'}">${prog.progress}%</span>
-                    </div>
-
-                    <!-- Interactive Progress Bar & Slider -->
-                    <div class="space-y-2">
-                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                            <div class="h-full ${isCompleted ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-blue-600 to-indigo-500'} transition-all duration-300" style="width: ${prog.progress}%"></div>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <input type="range" min="0" max="100" value="${prog.progress}" 
-                                oninput="updateProgress('${item.id}', this.value)" 
-                                class="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
-                            <input type="number" min="0" max="100" value="${prog.progress}" 
-                                onchange="updateProgress('${item.id}', this.value)" 
-                                class="w-14 bg-slate-900 border border-slate-700 text-center text-xs text-slate-200 rounded py-1 font-mono focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        </div>
-                    </div>
-
-                    <!-- Task Notes Action -->
-                    <div class="pt-2 flex items-center justify-between">
-                        <button onclick="openNotesModal('${item.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-lg text-xs font-medium text-slate-300 flex items-center gap-2 transition w-full justify-center">
-                            <i class="fa-regular fa-comment-dots text-blue-400"></i>
-                            <span>Notes & Journal (${notesCount})</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-            return card;
         }
 
         // ==========================================
-        // STATE MUTATIONS
+        // STATE MUTATIONS (AUTO-SAVES TO CONNECTED FOLDER)
         // ==========================================
         function updateProgress(id, value) {
             let val = parseInt(value, 10);
@@ -735,12 +666,12 @@
             progressMap[id].progress = val;
             progressMap[id].lastUpdated = new Date().toISOString();
 
-            // Auto log completion note if reached 100%
             if (val === 100 && oldVal !== 100) {
                 appendNoteToItem(id, "🎉 Milestone reached! Progress marked as 100% completed.");
+            } else {
+                triggerAutoSave();
             }
 
-            saveToLocalStorage();
             renderTrackerGrid();
             updateDashboardStats();
         }
@@ -760,41 +691,41 @@
             }
 
             const id = 'cert-' + Date.now();
+            const createdDate = new Date().toISOString().split('T')[0];
 
-            // 1. Add item entry into tracker-input.json model
+            // 1. New item in tracker-input.json format
             const newItem = {
                 id,
                 name,
                 type,
-                provider: provider || (type === 'Degree' ? 'University' : 'Certification Board'),
+                provider: provider || (type === 'Degree' ? 'University' : 'Technical Board'),
                 targetDate,
+                createdDate,
                 description: initialNote
             };
             inputCatalog.push(newItem);
 
-            // 2. Initialize progress & notes into tracker-progress.json model
+            // 2. New tracking entry in tracker-progress.json format
             const initialNotesList = [];
             if (initialNote) {
                 initialNotesList.push({
-                    id: 'n-' + Date.now(),
-                    date: formatCurrentTimestamp(),
+                    timestamp: new Date().toISOString(),
                     text: initialNote
                 });
             }
 
             progressMap[id] = {
                 progress,
-                status: progress === 100 ? 'Completed' : 'In Progress',
                 lastUpdated: new Date().toISOString(),
                 notes: initialNotesList
             };
 
-            saveToLocalStorage();
+            triggerAutoSave();
             renderTrackerGrid();
             updateDashboardStats();
             closeModal('add-item-modal');
             document.getElementById('add-item-form').reset();
-            showAlert(`Added "${name}" to tracker-input.json and initialized tracking!`, "success");
+            showAlert(`Added "${name}" and auto-saved to files!`, "success");
         }
 
         function deleteItem(id) {
@@ -804,72 +735,12 @@
             if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
                 inputCatalog = inputCatalog.filter(i => i.id !== id);
                 delete progressMap[id];
-                saveToLocalStorage();
+                
+                triggerAutoSave();
                 renderTrackerGrid();
                 updateDashboardStats();
                 showAlert(`Deleted "${item.name}"`, "info");
             }
-        }
-
-        // ==========================================
-        // NOTES MODAL LOGIC
-        // ==========================================
-        function openNotesModal(id) {
-            const item = inputCatalog.find(i => i.id === id);
-            if (!item) return;
-
-            document.getElementById('notes-item-id').value = id;
-            document.getElementById('notes-modal-title').textContent = item.name;
-            document.getElementById('notes-modal-subtitle').textContent = `${item.provider || item.type} • Target: ${formatDateDisplay(item.targetDate)}`;
-
-            renderNotesFeed(id);
-            openModal('notes-modal');
-        }
-
-        function renderNotesFeed(id) {
-            const container = document.getElementById('notes-list-container');
-            const prog = progressMap[id] || { notes: [] };
-            const notes = prog.notes || [];
-
-            container.innerHTML = '';
-
-            if (notes.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-slate-500 text-xs">
-                        <i class="fa-regular fa-note-sticky text-2xl mb-2 block text-slate-600"></i>
-                        No notes added yet. Record your study milestones or exam preparation thoughts below.
-                    </div>
-                `;
-                return;
-            }
-
-            notes.slice().reverse().forEach(note => {
-                const noteCard = document.createElement('div');
-                noteCard.className = "bg-slate-900/80 border border-slate-800 rounded-xl p-3 space-y-1";
-                noteCard.innerHTML = `
-                    <div class="flex items-center justify-between text-[11px] text-slate-400">
-                        <span class="font-medium text-blue-400"><i class="fa-regular fa-clock mr-1"></i>${escapeHTML(note.date)}</span>
-                        <button onclick="deleteNote('${id}', '${note.id}')" class="text-slate-600 hover:text-rose-400"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <p class="text-xs text-slate-200 whitespace-pre-wrap">${escapeHTML(note.text)}</p>
-                `;
-                container.appendChild(noteCard);
-            });
-        }
-
-        function handleAddNote(e) {
-            e.preventDefault();
-            const id = document.getElementById('notes-item-id').value;
-            const textInput = document.getElementById('note-input');
-            const text = textInput.value.trim();
-
-            if (!text) return;
-
-            appendNoteToItem(id, text);
-            textInput.value = '';
-            renderNotesFeed(id);
-            renderTrackerGrid();
-            showAlert("Note added successfully.", "success");
         }
 
         function appendNoteToItem(id, text) {
@@ -881,18 +752,19 @@
             }
 
             progressMap[id].notes.push({
-                id: 'n-' + Date.now(),
-                date: formatCurrentTimestamp(),
+                timestamp: new Date().toISOString(),
                 text
             });
 
-            saveToLocalStorage();
+            progressMap[id].lastUpdated = new Date().toISOString();
+
+            triggerAutoSave();
         }
 
-        function deleteNote(itemId, noteId) {
+        function deleteNote(itemId, timestamp) {
             if (progressMap[itemId] && progressMap[itemId].notes) {
-                progressMap[itemId].notes = progressMap[itemId].notes.filter(n => n.id !== noteId);
-                saveToLocalStorage();
+                progressMap[itemId].notes = progressMap[itemId].notes.filter(n => n.timestamp !== timestamp);
+                triggerAutoSave();
                 renderNotesFeed(itemId);
                 renderTrackerGrid();
             }
