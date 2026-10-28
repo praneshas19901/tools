@@ -81,36 +81,33 @@
                     </div>
                 </div>
 
-                <!-- File System API & Directory Connection Controls -->
+                <!-- File System API & Action Controls -->
                 <div class="flex items-center space-x-2 sm:space-x-3">
-                    <!-- Directory Connection Status Badge -->
-                    <div id="dir-status-badge" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 border border-slate-800">
-                        <span id="dir-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-                        <span id="dir-status-text" class="text-slate-400 truncate max-w-[140px] sm:max-w-[200px]">Not Connected</span>
+                    <!-- Dynamic File API Status Badge -->
+                    <div id="file-api-status" class="hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                        <span id="api-status-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span id="api-status-text">Folder Not Connected</span>
                     </div>
 
-                    <!-- Folder Connection Button -->
-                    <button id="btn-connect-dir" onclick="connectDirectory()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
-                        <i class="fa-solid fa-folder-open text-amber-300"></i>
-                        <span id="btn-connect-label" class="hidden sm:inline">Connect Tracker Folder</span>
+                    <!-- Connect Directory Button -->
+                    <button id="btn-connect-folder" onclick="connectTrackerDirectory()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
+                        <i class="fa-solid fa-folder-tree"></i>
+                        <span>Connect Folder</span>
                     </button>
 
-                    <!-- Direct Sync / Force Save Button -->
-                    <button id="btn-save-files" onclick="saveToDirectory(true)" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span class="hidden md:inline">Sync Now</span>
-                    </button>
+                    <!-- Save Indicator Badge -->
+                    <div id="save-indicator" class="hidden text-xs text-slate-400 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                        <i id="save-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+                        <span id="save-text">Saved</span>
+                    </div>
 
                     <!-- Direct JSON Export Fallback Menu Button -->
                     <button onclick="toggleMenu('export-dropdown')" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition relative">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                        <i class="fa-solid fa-download"></i>
                     </button>
                     <!-- Export Dropdown -->
                     <div id="export-dropdown" class="hidden absolute right-4 top-14 w-60 rounded-xl glass-panel shadow-2xl py-2 z-50 border border-slate-700">
-                        <div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Manual Options</div>
-                        <button onclick="openFallbackFileInput()" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-800 flex items-center gap-2 text-slate-200">
-                            <i class="fa-solid fa-file-import text-amber-400"></i> Import JSON Files Manually
-                        </button>
+                        <div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Manual Downloads</div>
                         <button onclick="exportJSON('tracker-input.json')" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-800 flex items-center gap-2 text-slate-200">
                             <i class="fa-solid fa-file-code text-blue-400"></i> Export tracker-input.json
                         </button>
@@ -119,13 +116,31 @@
                         </button>
                         <hr class="my-1 border-slate-800">
                         <button onclick="resetToDefaults()" class="w-full text-left px-4 py-2 text-xs hover:bg-rose-950/40 text-rose-400 flex items-center gap-2">
-                            <i class="fa-solid fa-trash-can"></i> Clear Local Memory
+                            <i class="fa-solid fa-rotate-right"></i> Clear Local Memory
                         </button>
                     </div>
                 </div>
             </div>
         </div>
     </header>
+
+    <!-- Folder Connection Banner (Shown when no directory handle is active) -->
+    <div id="directory-banner" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div class="glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-start sm:items-center space-x-3">
+                <div class="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 flex-shrink-0">
+                    <i class="fa-solid fa-folder-open text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-100">Connect Local Storage Folder</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Select <span class="font-mono text-blue-300">C:\Storage\Tracker-Data\cert-degree-tracker</span> (or your custom directory). Files will auto-sync on every update.</p>
+                </div>
+            </div>
+            <button onclick="connectTrackerDirectory()" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 whitespace-nowrap transition">
+                Select Folder
+            </button>
+        </div>
+    </div>
 
     <!-- Main Content Area -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -196,9 +211,11 @@
                 
                 <div class="flex items-center gap-2 w-full sm:w-auto">
                     <select id="filter-type" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="ALL">All Types</option>
-                        <option value="Certification">Certifications</option>
-                        <option value="Degree">Degrees</option>
+                        <option value="ALL">All Categories</option>
+                        <option value="Certification">Certification</option>
+                        <option value="Degree">Degree</option>
+                        <option value="Specialization">Specialization</option>
+                        <option value="Other">Other</option>
                     </select>
 
                     <select id="filter-status" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -206,6 +223,12 @@
                         <option value="IN_PROGRESS">In Progress</option>
                         <option value="COMPLETED">Completed</option>
                         <option value="OVERDUE">Overdue</option>
+                    </select>
+
+                    <select id="sort-by" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="targetDate">Sort: Target Date</option>
+                        <option value="progress">Sort: Progress %</option>
+                        <option value="name">Sort: Name</option>
                     </select>
                 </div>
             </div>
@@ -267,15 +290,17 @@
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Type</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Category</label>
                         <select id="new-type" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                             <option value="Certification">Certification</option>
                             <option value="Degree">Degree</option>
+                            <option value="Specialization">Specialization</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Provider / Vendor</label>
-                        <input type="text" id="new-provider" placeholder="e.g. Microsoft, AWS" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Provider / Institution</label>
+                        <input type="text" id="new-provider" placeholder="e.g. Microsoft, AWS, University" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                 </div>
 
@@ -392,6 +417,195 @@
         }
 
         // ==========================================
+        // RENDER GRID & UI
+        // ==========================================
+        function renderTrackerGrid() {
+            const grid = document.getElementById('tracker-grid');
+            const emptyState = document.getElementById('empty-state');
+            if (!grid) return;
+
+            const searchQuery = (document.getElementById('search-input')?.value || '').toLowerCase();
+            const filterType = document.getElementById('filter-type')?.value || 'ALL';
+            const filterStatus = document.getElementById('filter-status')?.value || 'ALL';
+
+            const filteredItems = inputCatalog.filter(item => {
+                const progObj = progressMap[item.id] || { progress: 0 };
+                const daysLeft = calculateDaysRemaining(item.targetDate);
+                const isCompleted = progObj.progress === 100;
+                const isOverdue = daysLeft < 0 && !isCompleted;
+
+                // Search Filter
+                const matchesSearch = item.name.toLowerCase().includes(searchQuery) ||
+                                      (item.provider && item.provider.toLowerCase().includes(searchQuery));
+
+                // Type Filter
+                const matchesType = filterType === 'ALL' || item.type === filterType;
+
+                // Status Filter
+                let matchesStatus = true;
+                if (filterStatus === 'COMPLETED') matchesStatus = isCompleted;
+                else if (filterStatus === 'OVERDUE') matchesStatus = isOverdue;
+                else if (filterStatus === 'IN_PROGRESS') matchesStatus = !isCompleted && !isOverdue;
+
+                return matchesSearch && matchesType && matchesStatus;
+            });
+
+            if (filteredItems.length === 0) {
+                grid.innerHTML = '';
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+
+            grid.innerHTML = filteredItems.map(item => {
+                const progObj = progressMap[item.id] || { progress: 0, notes: [] };
+                const progress = progObj.progress || 0;
+                const notesCount = (progObj.notes || []).length;
+                const daysLeft = calculateDaysRemaining(item.targetDate);
+                const isCompleted = progress === 100;
+                const isOverdue = daysLeft < 0 && !isCompleted;
+
+                let badgeClass = "bg-blue-500/10 text-blue-400 border-blue-500/30";
+                let badgeText = `${daysLeft} days remaining`;
+
+                if (isCompleted) {
+                    badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+                    badgeText = "Completed";
+                } else if (isOverdue) {
+                    badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/30";
+                    badgeText = `${Math.abs(daysLeft)} days overdue`;
+                } else if (daysLeft <= 14) {
+                    badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/30";
+                }
+
+                return `
+                <div class="glass-panel rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between relative group">
+                    <div>
+                        <!-- Header Badges & Actions -->
+                        <div class="flex items-start justify-between gap-2 mb-3">
+                            <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                                ${escapeHTML(item.type || 'Certification')}
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-md border ${badgeClass}">
+                                    ${badgeText}
+                                </span>
+                                <button onclick="deleteItem('${item.id}')" title="Delete Item" class="p-1.5 text-slate-500 hover:text-rose-400 transition rounded-lg hover:bg-rose-950/30">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Certification Title -->
+                        <h3 class="text-base font-bold text-white group-hover:text-blue-400 transition">${escapeHTML(item.name)}</h3>
+                        <p class="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+                            <i class="fa-solid fa-building-columns text-slate-500 text-[10px]"></i>
+                            <span>${escapeHTML(item.provider || 'Technical Board')}</span>
+                        </p>
+
+                        <!-- Target Date -->
+                        <div class="mt-4 flex items-center justify-between text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-regular fa-calendar text-blue-400"></i>
+                                Target Date:
+                            </span>
+                            <span class="font-semibold text-slate-200">${formatDateDisplay(item.targetDate)}</span>
+                        </div>
+
+                        <!-- Progress Bar & Slider Controls -->
+                        <div class="mt-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs font-semibold">
+                                <span class="text-slate-300">Completion Progress</span>
+                                <span class="text-blue-400 font-mono">${progress}%</span>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                                <div class="h-full bg-gradient-to-r ${isCompleted ? 'from-emerald-500 to-teal-400' : 'from-blue-600 to-indigo-500'} transition-all duration-300" style="width: ${progress}%"></div>
+                            </div>
+
+                            <!-- Interactive Slider -->
+                            <div class="flex items-center gap-3 pt-1">
+                                <input type="range" min="0" max="100" value="${progress}" 
+                                       onchange="updateProgress('${item.id}', this.value)" 
+                                       oninput="this.previousElementSibling.firstElementChild.nextElementSibling.textContent = this.value + '%'"
+                                       class="w-full accent-blue-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Note Action Button -->
+                    <div class="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between">
+                        <button onclick="openNotesModal('${item.id}')" class="text-xs text-slate-400 hover:text-blue-400 flex items-center gap-2 transition">
+                            <i class="fa-regular fa-note-sticky text-amber-400"></i>
+                            <span>Notes & Journal (${notesCount})</span>
+                        </button>
+                        <span class="text-[10px] text-slate-500 font-mono">ID: ${escapeHTML(item.id)}</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // NOTES MODAL LOGIC
+        // ==========================================
+        function openNotesModal(itemId) {
+            const item = inputCatalog.find(i => i.id === itemId);
+            if (!item) return;
+
+            document.getElementById('notes-item-id').value = itemId;
+            document.getElementById('notes-modal-title').textContent = item.name;
+            document.getElementById('notes-modal-subtitle').textContent = `Task Notes & Study Journal (${item.provider || 'Vendor'})`;
+
+            renderNotesFeed(itemId);
+            openModal('notes-modal');
+        }
+
+        function renderNotesFeed(itemId) {
+            const container = document.getElementById('notes-list-container');
+            const progObj = progressMap[itemId] || { notes: [] };
+            const notes = progObj.notes || [];
+
+            if (notes.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-500">
+                        <i class="fa-regular fa-pen-to-square text-2xl mb-2"></i>
+                        <p class="text-xs">No notes created for this item yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = notes.map(note => `
+                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 relative group">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] text-blue-400 font-mono">${formatDateDisplay(note.timestamp)}</span>
+                        <button onclick="deleteNote('${itemId}', '${note.timestamp}')" class="text-slate-600 hover:text-rose-400 transition text-xs">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-200 whitespace-pre-wrap">${escapeHTML(note.text)}</p>
+                </div>
+            `).join('');
+        }
+
+        function handleAddNote(e) {
+            e.preventDefault();
+            const itemId = document.getElementById('notes-item-id').value;
+            const text = document.getElementById('note-input').value.trim();
+
+            if (!text || !itemId) return;
+
+            appendNoteToItem(itemId, text);
+            document.getElementById('note-input').value = '';
+            renderNotesFeed(itemId);
+            renderTrackerGrid();
+            showAlert("Note added successfully!", "success");
+        }
+
+        // ==========================================
         // INITIALIZATION
         // ==========================================
         window.addEventListener('DOMContentLoaded', async () => {
@@ -473,27 +687,23 @@
 
             try {
                 // 1. Read or Create tracker-input.json
-                let inputHandle;
                 try {
-                    inputHandle = await dirHandle.getFileHandle('tracker-input.json');
+                    const inputHandle = await dirHandle.getFileHandle('tracker-input.json');
                     const file = await inputHandle.getFile();
                     const text = await file.text();
                     inputCatalog = text ? JSON.parse(text) : [];
                 } catch (e) {
-                    // File doesn't exist, create it with empty data
                     inputCatalog = [];
                     await writeJSONToDirectory('tracker-input.json', inputCatalog);
                 }
 
                 // 2. Read or Create tracker-progress.json
-                let progressHandle;
                 try {
-                    progressHandle = await dirHandle.getFileHandle('tracker-progress.json');
+                    const progressHandle = await dirHandle.getFileHandle('tracker-progress.json');
                     const file = await progressHandle.getFile();
                     const text = await file.text();
                     progressMap = text ? JSON.parse(text) : {};
                 } catch (e) {
-                    // File doesn't exist, create it with empty data
                     progressMap = {};
                     await writeJSONToDirectory('tracker-progress.json', progressMap);
                 }
@@ -512,7 +722,6 @@
             if (!dirHandle) return false;
 
             try {
-                // Verify write permission if needed
                 const options = { mode: 'readwrite' };
                 if ((await dirHandle.queryPermission(options)) !== 'granted') {
                     if ((await dirHandle.requestPermission(options)) !== 'granted') {
@@ -554,11 +763,131 @@
             }
         }
 
-        // Auto Save Trigger
         function triggerAutoSave() {
             saveToLocalStorage();
             if (dirHandle && isAutoSaveEnabled) {
                 saveToDirectory(false);
+            }
+        }
+
+        // ==========================================
+        // STATE MUTATIONS
+        // ==========================================
+        function updateProgress(id, value) {
+            let val = parseInt(value, 10);
+            if (isNaN(val)) val = 0;
+            val = Math.max(0, Math.min(100, val));
+
+            if (!progressMap[id]) {
+                progressMap[id] = { progress: 0, notes: [] };
+            }
+
+            const oldVal = progressMap[id].progress;
+            progressMap[id].progress = val;
+            progressMap[id].lastUpdated = new Date().toISOString();
+
+            if (val === 100 && oldVal !== 100) {
+                appendNoteToItem(id, "🎉 Milestone reached! Progress marked as 100% completed.");
+            } else {
+                triggerAutoSave();
+            }
+
+            renderTrackerGrid();
+            updateDashboardStats();
+        }
+
+        function handleAddNewItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-title').value.trim();
+            const type = document.getElementById('new-type').value;
+            const provider = document.getElementById('new-provider').value.trim();
+            const targetDate = document.getElementById('new-target-date').value;
+            const progress = parseInt(document.getElementById('new-progress').value, 10) || 0;
+            const initialNote = document.getElementById('new-note').value.trim();
+
+            if (!name || !targetDate) {
+                showAlert("Please fill in required fields", "error");
+                return;
+            }
+
+            const id = 'cert-' + Date.now();
+            const createdDate = new Date().toISOString().split('T')[0];
+
+            const newItem = {
+                id,
+                name,
+                type,
+                provider: provider || (type === 'Degree' ? 'University' : 'Technical Board'),
+                targetDate,
+                createdDate,
+                description: initialNote
+            };
+            inputCatalog.push(newItem);
+
+            const initialNotesList = [];
+            if (initialNote) {
+                initialNotesList.push({
+                    timestamp: new Date().toISOString(),
+                    text: initialNote
+                });
+            }
+
+            progressMap[id] = {
+                progress,
+                lastUpdated: new Date().toISOString(),
+                notes: initialNotesList
+            };
+
+            triggerAutoSave();
+            renderTrackerGrid();
+            updateDashboardStats();
+            
+            // Close modal and reset form
+            closeModal('add-item-modal');
+            document.getElementById('add-item-form').reset();
+            
+            showAlert(`Certification saved successfully! Saved "${name}" to tracker files.`, "success");
+        }
+
+        function deleteItem(id) {
+            const item = inputCatalog.find(i => i.id === id);
+            if (!item) return;
+
+            if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
+                inputCatalog = inputCatalog.filter(i => i.id !== id);
+                delete progressMap[id];
+                
+                triggerAutoSave();
+                renderTrackerGrid();
+                updateDashboardStats();
+                showAlert(`Deleted "${item.name}"`, "info");
+            }
+        }
+
+        function appendNoteToItem(id, text) {
+            if (!progressMap[id]) {
+                progressMap[id] = { progress: 0, notes: [] };
+            }
+            if (!progressMap[id].notes) {
+                progressMap[id].notes = [];
+            }
+
+            progressMap[id].notes.push({
+                timestamp: new Date().toISOString(),
+                text
+            });
+
+            progressMap[id].lastUpdated = new Date().toISOString();
+
+            triggerAutoSave();
+        }
+
+        function deleteNote(itemId, timestamp) {
+            if (progressMap[itemId] && progressMap[itemId].notes) {
+                progressMap[itemId].notes = progressMap[itemId].notes.filter(n => n.timestamp !== timestamp);
+                triggerAutoSave();
+                renderNotesFeed(itemId);
+                renderTrackerGrid();
             }
         }
 
@@ -651,126 +980,6 @@
         }
 
         // ==========================================
-        // STATE MUTATIONS (AUTO-SAVES TO CONNECTED FOLDER)
-        // ==========================================
-        function updateProgress(id, value) {
-            let val = parseInt(value, 10);
-            if (isNaN(val)) val = 0;
-            val = Math.max(0, Math.min(100, val));
-
-            if (!progressMap[id]) {
-                progressMap[id] = { progress: 0, notes: [] };
-            }
-
-            const oldVal = progressMap[id].progress;
-            progressMap[id].progress = val;
-            progressMap[id].lastUpdated = new Date().toISOString();
-
-            if (val === 100 && oldVal !== 100) {
-                appendNoteToItem(id, "🎉 Milestone reached! Progress marked as 100% completed.");
-            } else {
-                triggerAutoSave();
-            }
-
-            renderTrackerGrid();
-            updateDashboardStats();
-        }
-
-        function handleAddNewItem(e) {
-            e.preventDefault();
-            const name = document.getElementById('new-title').value.trim();
-            const type = document.getElementById('new-type').value;
-            const provider = document.getElementById('new-provider').value.trim();
-            const targetDate = document.getElementById('new-target-date').value;
-            const progress = parseInt(document.getElementById('new-progress').value, 10) || 0;
-            const initialNote = document.getElementById('new-note').value.trim();
-
-            if (!name || !targetDate) {
-                showAlert("Please fill in required fields", "error");
-                return;
-            }
-
-            const id = 'cert-' + Date.now();
-            const createdDate = new Date().toISOString().split('T')[0];
-
-            // 1. New item in tracker-input.json format
-            const newItem = {
-                id,
-                name,
-                type,
-                provider: provider || (type === 'Degree' ? 'University' : 'Technical Board'),
-                targetDate,
-                createdDate,
-                description: initialNote
-            };
-            inputCatalog.push(newItem);
-
-            // 2. New tracking entry in tracker-progress.json format
-            const initialNotesList = [];
-            if (initialNote) {
-                initialNotesList.push({
-                    timestamp: new Date().toISOString(),
-                    text: initialNote
-                });
-            }
-
-            progressMap[id] = {
-                progress,
-                lastUpdated: new Date().toISOString(),
-                notes: initialNotesList
-            };
-
-            triggerAutoSave();
-            renderTrackerGrid();
-            updateDashboardStats();
-            closeModal('add-item-modal');
-            document.getElementById('add-item-form').reset();
-            showAlert(`Added "${name}" and auto-saved to files!`, "success");
-        }
-
-        function deleteItem(id) {
-            const item = inputCatalog.find(i => i.id === id);
-            if (!item) return;
-
-            if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
-                inputCatalog = inputCatalog.filter(i => i.id !== id);
-                delete progressMap[id];
-                
-                triggerAutoSave();
-                renderTrackerGrid();
-                updateDashboardStats();
-                showAlert(`Deleted "${item.name}"`, "info");
-            }
-        }
-
-        function appendNoteToItem(id, text) {
-            if (!progressMap[id]) {
-                progressMap[id] = { progress: 0, notes: [] };
-            }
-            if (!progressMap[id].notes) {
-                progressMap[id].notes = [];
-            }
-
-            progressMap[id].notes.push({
-                timestamp: new Date().toISOString(),
-                text
-            });
-
-            progressMap[id].lastUpdated = new Date().toISOString();
-
-            triggerAutoSave();
-        }
-
-        function deleteNote(itemId, timestamp) {
-            if (progressMap[itemId] && progressMap[itemId].notes) {
-                progressMap[itemId].notes = progressMap[itemId].notes.filter(n => n.timestamp !== timestamp);
-                triggerAutoSave();
-                renderNotesFeed(itemId);
-                renderTrackerGrid();
-            }
-        }
-
-        // ==========================================
         // DASHBOARD STATS
         // ==========================================
         function updateDashboardStats() {
@@ -808,7 +1017,6 @@
             const target = new Date(targetDateStr);
             const now = new Date();
             
-            // Clear time portion for date diff calculation
             target.setHours(0, 0, 0, 0);
             now.setHours(0, 0, 0, 0);
 
@@ -821,13 +1029,6 @@
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return dateStr;
             return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-        }
-
-        function formatCurrentTimestamp() {
-            const d = new Date();
-            const date = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-            const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return `${date} ${time}`;
         }
 
         function escapeHTML(str) {
