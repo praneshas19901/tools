@@ -99,7 +99,7 @@
                     </div>
                     <div class="flex items-center space-x-2 text-xs text-slate-400">
                         <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
-                        <span>Productive Target: <strong class="text-slate-200">11.25 Hours</strong></span>
+                        <span>Productive Target: <strong id="productiveTargetText" class="text-slate-200">0 Hours</strong></span>
                     </div>
                 </div>
 
@@ -213,6 +213,7 @@
                                 <th class="py-3 px-4">Time</th>
                                 <th class="py-3 px-4">Activity</th>
                                 <th class="py-3 px-4">Category</th>
+                                <th class="py-3 px-4">Type</th>
                                 <th class="py-3 px-4">Flags</th>
                                 <th class="py-3 px-4 text-right">Actions</th>
                             </tr>
@@ -351,17 +352,25 @@
                         class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Category</label>
-                        <input type="text" id="taskCategory" placeholder="e.g. Health, CI, Finance" required
-                            class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Category</label>
+                    <input type="text" id="taskCategory" placeholder="e.g. Health, CI, Finance" required
+                        class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- Productive & Special Checkboxes -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div class="flex items-center">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="taskIsProductive" checked class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <span class="text-xs text-slate-300 font-medium">Productive Activity</span>
+                        </label>
                     </div>
-                    
-                    <div class="flex items-center pt-6">
+
+                    <div class="flex items-center">
                         <label class="flex items-center space-x-2 cursor-pointer">
                             <input type="checkbox" id="taskIsSpecial" class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
-                            <span class="text-xs text-slate-300 font-medium">Flag Special (e.g., F&O / Stocks)</span>
+                            <span class="text-xs text-slate-300 font-medium">Flag Special (e.g. F&O/Stocks)</span>
                         </label>
                     </div>
                 </div>
@@ -396,11 +405,11 @@
 
         // Default seed schedule for fresh folders
         const DEFAULT_SCHEDULE = [
-            { id: 'task-1', time: '06:00 AM - 07:00 AM', activity: 'Morning Workout & Physical Training', desc: 'Cardio exercise and weight lifting routine', category: 'Health', isSpecial: false },
-            { id: 'task-2', time: '07:30 AM - 08:30 AM', activity: 'German Language Learning', desc: 'Duolingo & vocabulary practice for A2 proficiency', category: 'Lang', isSpecial: false },
-            { id: 'task-3', time: '09:00 AM - 12:00 PM', activity: 'DevOps & Cloud Engineering Focus', desc: 'Kubernetes, Terraform, & CI/CD pipeline development', category: 'CI', isSpecial: false },
-            { id: 'task-4', time: '01:00 PM - 03:30 PM', activity: 'Stock Market & Equity Options Analysis', desc: 'Review market trends, technicals, and investments', category: 'Finance', isSpecial: true },
-            { id: 'task-5', time: '04:00 PM - 06:00 PM', activity: 'Technical Content & System Architecture', desc: 'Video editing, documentation, and cloud architecture study', category: 'CI', isSpecial: false }
+            { id: 'task-1', time: '06:00 AM - 07:00 AM', activity: 'Morning Workout & Physical Training', desc: 'Cardio exercise and weight lifting routine', category: 'Health', isProductive: true, isSpecial: false },
+            { id: 'task-2', time: '07:30 AM - 08:30 AM', activity: 'German Language Learning', desc: 'Duolingo & vocabulary practice for A2 proficiency', category: 'Lang', isProductive: true, isSpecial: false },
+            { id: 'task-3', time: '09:00 AM - 12:00 PM', activity: 'DevOps & Cloud Engineering Focus', desc: 'Kubernetes, Terraform, & CI/CD pipeline development', category: 'CI', isProductive: true, isSpecial: false },
+            { id: 'task-4', time: '01:00 PM - 03:30 PM', activity: 'Stock Market & Equity Options Analysis', desc: 'Review market trends, technicals, and investments', category: 'Finance', isProductive: true, isSpecial: true },
+            { id: 'task-5', time: '04:00 PM - 06:00 PM', activity: 'Technical Content & System Architecture', desc: 'Video editing, documentation, and cloud architecture study', category: 'CI', isProductive: true, isSpecial: false }
         ];
 
         function getLocalDateString(date) {
@@ -408,6 +417,48 @@
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
+        }
+
+        // Time string parser to calculate productive hours dynamically
+        function parseDurationInHours(timeStr) {
+            if (!timeStr) return 0;
+            const parts = timeStr.split('-').map(p => p.trim());
+            if (parts.length !== 2) return 0;
+
+            const start = parseTimeString(parts[0]);
+            const end = parseTimeString(parts[1]);
+
+            if (start === null || end === null) return 0;
+            let diff = (end - start) / (1000 * 60 * 60);
+            if (diff < 0) diff += 24; // Handle wrap-around midnight
+            return diff;
+        }
+
+        function parseTimeString(str) {
+            const match = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+            if (!match) return null;
+
+            let hours = parseInt(match[1], 10);
+            const minutes = parseInt(match[2], 10);
+            const modifier = match[3] ? match[3].toUpperCase() : null;
+
+            if (modifier === 'PM' && hours < 12) hours += 12;
+            if (modifier === 'AM' && hours === 12) hours = 0;
+
+            const date = new Date();
+            date.setHours(hours, minutes, 0, 0);
+            return date.getTime();
+        }
+
+        function calculateTotalProductiveHours() {
+            let totalHours = 0;
+            scheduleData.forEach(task => {
+                const isProd = task.isProductive !== undefined ? task.isProductive : true; // Default true for legacy items
+                if (isProd) {
+                    totalHours += parseDurationInHours(task.time);
+                }
+            });
+            return Math.round(totalHours * 100) / 100;
         }
 
         // IndexedDB helpers for persistent handle caching
@@ -658,6 +709,10 @@
                 sundayBanner.classList.add('hidden');
             }
 
+            // Update Dynamic Productive Target Hours
+            const productiveHours = calculateTotalProductiveHours();
+            document.getElementById('productiveTargetText').innerText = `${productiveHours} Hours`;
+
             if (scheduleData.length === 0) {
                 document.getElementById('scheduleList').innerHTML = `
                     <div class="p-8 text-center text-slate-400">
@@ -673,6 +728,8 @@
             let html = '';
             scheduleData.forEach(item => {
                 const isChecked = checkedSet.has(item.id);
+                const isProd = item.isProductive !== undefined ? item.isProductive : true;
+
                 html += `
                     <div class="p-4 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-700/20 transition-all ${isChecked ? 'bg-slate-900/30 opacity-60' : ''}">
                         <div class="flex items-start sm:items-center space-x-4">
@@ -682,6 +739,7 @@
                                 <div class="flex items-center space-x-2 flex-wrap gap-y-1">
                                     <span class="font-mono text-xs font-semibold px-2.5 py-1 bg-slate-900 border border-slate-700 text-indigo-300 rounded-lg">${item.time}</span>
                                     <h4 class="font-semibold text-slate-100 text-base ${isChecked ? 'line-through text-slate-400' : ''}">${item.activity}</h4>
+                                    ${!isProd ? '<span class="px-2 py-0.5 bg-slate-700/50 text-slate-400 border border-slate-600 text-[10px] font-medium rounded-full"><i class="fa-solid fa-mug-hot mr-1"></i>Non-Productive</span>' : ''}
                                     ${item.isSpecial ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-medium rounded-full"><i class="fa-solid fa-chart-pie mr-1"></i>Includes F&O/Stocks</span>' : ''}
                                 </div>
                                 <p class="text-xs text-slate-400 mt-1">${item.desc}</p>
@@ -782,7 +840,7 @@
             if (scheduleData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="py-8 text-center text-slate-400">
+                        <td colspan="7" class="py-8 text-center text-slate-400">
                             No tasks available. Click <strong class="text-indigo-400">"Add New Task"</strong> to create one.
                         </td>
                     </tr>
@@ -792,6 +850,7 @@
 
             let html = '';
             scheduleData.forEach((task, index) => {
+                const isProd = task.isProductive !== undefined ? task.isProductive : true;
                 html += `
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 font-mono text-xs text-slate-400">
@@ -814,6 +873,9 @@
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-900 border border-slate-700 text-slate-300">
                                 ${task.category}
                             </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            ${isProd ? '<span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 text-[10px] rounded-full">Productive</span>' : '<span class="px-2 py-0.5 bg-slate-700/50 text-slate-400 border border-slate-600 text-[10px] rounded-full">Non-Productive</span>'}
                         </td>
                         <td class="py-3 px-4">
                             ${task.isSpecial ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] rounded-full">Special</span>' : '<span class="text-xs text-slate-500">-</span>'}
@@ -853,11 +915,13 @@
                     document.getElementById('taskActivity').value = task.activity;
                     document.getElementById('taskDesc').value = task.desc || '';
                     document.getElementById('taskCategory').value = task.category;
+                    document.getElementById('taskIsProductive').checked = task.isProductive !== undefined ? task.isProductive : true;
                     document.getElementById('taskIsSpecial').checked = !!task.isSpecial;
                 }
             } else {
                 title.innerText = 'Add New Task';
                 document.getElementById('taskForm').reset();
+                document.getElementById('taskIsProductive').checked = true;
                 editId.value = '';
             }
 
@@ -882,16 +946,17 @@
             const activity = document.getElementById('taskActivity').value.trim();
             const desc = document.getElementById('taskDesc').value.trim();
             const category = document.getElementById('taskCategory').value.trim();
+            const isProductive = document.getElementById('taskIsProductive').checked;
             const isSpecial = document.getElementById('taskIsSpecial').checked;
 
             if (editId) {
                 const index = scheduleData.findIndex(t => t.id === editId);
                 if (index > -1) {
-                    scheduleData[index] = { id: editId, time, activity, desc, category, isSpecial };
+                    scheduleData[index] = { id: editId, time, activity, desc, category, isProductive, isSpecial };
                 }
             } else {
                 const newId = 'task-' + Date.now();
-                scheduleData.push({ id: newId, time, activity, desc, category, isSpecial });
+                scheduleData.push({ id: newId, time, activity, desc, category, isProductive, isSpecial });
             }
 
             await saveScheduleToFile();
