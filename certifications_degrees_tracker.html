@@ -337,64 +337,14 @@
     <!-- Main Logic Script -->
     <script>
         // ==========================================
-        // INITIAL DATA & DEFAULT STATE
+        // INITIAL DATA & DEFAULT STATE (EMPTY BY DEFAULT)
         // ==========================================
         
-        // Initial catalog definition as requested (tracker-input.json structure)
-        const INITIAL_INPUT_DATA = [
-            {
-                id: "cert-az-104",
-                name: "AZ-104",
-                type: "Certification",
-                provider: "Microsoft Azure",
-                targetDate: "2026-11-10",
-                description: "Microsoft Certified: Azure Administrator Associate"
-            },
-            {
-                id: "cert-az-305",
-                name: "AZ-305",
-                type: "Certification",
-                provider: "Microsoft Azure",
-                targetDate: "2026-11-18",
-                description: "Designing Microsoft Azure Infrastructure Solutions"
-            },
-            {
-                id: "cert-az-400",
-                name: "AZ-400",
-                type: "Certification",
-                provider: "Microsoft Azure",
-                targetDate: "2026-11-30",
-                description: "Designing and Implementing Microsoft DevOps Solutions"
-            }
-        ];
+        // Initial catalog definition (tracker-input.json structure) - Starts empty
+        const INITIAL_INPUT_DATA = [];
 
-        // Initial tracking state (tracker-progress.json structure)
-        const INITIAL_PROGRESS_DATA = {
-            "cert-az-104": {
-                progress: 0,
-                status: "In Progress",
-                lastUpdated: new Date().toISOString(),
-                notes: [
-                    { id: "n1", date: "2026-10-28 09:00", text: "Certification created and target set to 10 Nov 2026." }
-                ]
-            },
-            "cert-az-305": {
-                progress: 0,
-                status: "In Progress",
-                lastUpdated: new Date().toISOString(),
-                notes: [
-                    { id: "n2", date: "2026-10-28 09:00", text: "Certification created and target set to 18 Nov 2026." }
-                ]
-            },
-            "cert-az-400": {
-                progress: 0,
-                status: "In Progress",
-                lastUpdated: new Date().toISOString(),
-                notes: [
-                    { id: "n3", date: "2026-10-28 09:00", text: "Certification created and target set to 30 Nov 2026." }
-                ]
-            }
-        };
+        // Initial tracking state (tracker-progress.json structure) - Starts empty
+        const INITIAL_PROGRESS_DATA = {};
 
         // Application State
         let inputCatalog = [];
@@ -421,11 +371,48 @@
             
             if (isSupported) {
                 badge.classList.remove('hidden');
-                statusText.textContent = "File System API Ready";
+                statusText.textContent = "File Sync Ready";
             } else {
                 badge.classList.remove('hidden');
                 badge.className = "hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20";
                 statusText.textContent = "JSON Sync Mode (Download Fallback)";
+            }
+        }
+
+        function loadStateFromLocalStorage() {
+            const savedInput = localStorage.getItem('cert_tracker_input');
+            const savedProgress = localStorage.getItem('cert_tracker_progress');
+
+            if (savedInput && savedProgress) {
+                try {
+                    inputCatalog = JSON.parse(savedInput);
+                    progressMap = JSON.parse(savedProgress);
+                } catch (e) {
+                    console.error("Error parsing local storage", e);
+                    useDefaultData();
+                }
+            } else {
+                useDefaultData();
+            }
+        }
+
+        function useDefaultData() {
+            inputCatalog = JSON.parse(JSON.stringify(INITIAL_INPUT_DATA));
+            progressMap = JSON.parse(JSON.stringify(INITIAL_PROGRESS_DATA));
+            saveToLocalStorage();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('cert_tracker_input', JSON.stringify(inputCatalog));
+            localStorage.setItem('cert_tracker_progress', JSON.stringify(progressMap));
+        }
+
+        function resetToDefaults() {
+            if (confirm("Clear all tracked entries and start fresh with empty data?")) {
+                useDefaultData();
+                renderTrackerGrid();
+                updateDashboardStats();
+                showAlert("Cleared all entries.", "info");
             }
         }
 
@@ -773,6 +760,8 @@
             }
 
             const id = 'cert-' + Date.now();
+
+            // 1. Add item entry into tracker-input.json model
             const newItem = {
                 id,
                 name,
@@ -781,9 +770,9 @@
                 targetDate,
                 description: initialNote
             };
-
             inputCatalog.push(newItem);
 
+            // 2. Initialize progress & notes into tracker-progress.json model
             const initialNotesList = [];
             if (initialNote) {
                 initialNotesList.push({
@@ -805,7 +794,7 @@
             updateDashboardStats();
             closeModal('add-item-modal');
             document.getElementById('add-item-form').reset();
-            showAlert(`Added ${name} to your tracking board.`, "success");
+            showAlert(`Added "${name}" to tracker-input.json and initialized tracking!`, "success");
         }
 
         function deleteItem(id) {
