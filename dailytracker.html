@@ -222,7 +222,7 @@
                         <thead>
                             <tr class="border-b border-slate-700 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-900/40">
                                 <th class="py-3 px-4">Order</th>
-                                <th class="py-3 px-4">Time</th>
+                                <th class="py-3 px-4">Time Range</th>
                                 <th class="py-3 px-4">Activity</th>
                                 <th class="py-3 px-4">Category</th>
                                 <th class="py-3 px-4">Type</th>
@@ -346,10 +346,18 @@
             <form id="taskForm" onsubmit="saveTaskForm(event)" class="p-6 space-y-4">
                 <input type="hidden" id="editTaskId">
                 
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Time Range / Time</label>
-                    <input type="text" id="taskTime" placeholder="e.g. 06:00 AM - 07:00 AM" required
-                        class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                <!-- Time Selector Inputs -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Start Time</label>
+                        <input type="time" id="taskStartTime" required
+                            class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">End Time</label>
+                        <input type="time" id="taskEndTime" required
+                            class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
                 </div>
 
                 <div>
@@ -415,13 +423,13 @@
         const DB_NAME = 'EliteTrackerDB';
         const STORE_NAME = 'handles';
 
-        // Default seed schedule for fresh folders
+        // Default seed schedule using startTime and endTime for precision
         const DEFAULT_SCHEDULE = [
-            { id: 'task-1', time: '06:00 AM - 07:00 AM', activity: 'Morning Workout & Physical Training', desc: 'Cardio exercise and weight lifting routine', category: 'Health', isProductive: true, isSpecial: false },
-            { id: 'task-2', time: '07:30 AM - 08:30 AM', activity: 'German Language Learning', desc: 'Duolingo & vocabulary practice for A2 proficiency', category: 'Lang', isProductive: true, isSpecial: false },
-            { id: 'task-3', time: '09:00 AM - 12:00 PM', activity: 'DevOps & Cloud Engineering Focus', desc: 'Kubernetes, Terraform, & CI/CD pipeline development', category: 'CI', isProductive: true, isSpecial: false },
-            { id: 'task-4', time: '01:00 PM - 03:30 PM', activity: 'Stock Market & Equity Options Analysis', desc: 'Review market trends, technicals, and investments', category: 'Finance', isProductive: true, isSpecial: true },
-            { id: 'task-5', time: '04:00 PM - 06:00 PM', activity: 'Technical Content & System Architecture', desc: 'Video editing, documentation, and cloud architecture study', category: 'CI', isProductive: true, isSpecial: false }
+            { id: 'task-1', startTime: '06:00', endTime: '07:00', time: '6:00 AM - 7:00 AM', activity: 'Morning Workout & Physical Training', desc: 'Cardio exercise and weight lifting routine', category: 'Health', isProductive: true, isSpecial: false },
+            { id: 'task-2', startTime: '07:30', endTime: '08:30', time: '7:30 AM - 8:30 AM', activity: 'German Language Learning', desc: 'Duolingo & vocabulary practice for A2 proficiency', category: 'Lang', isProductive: true, isSpecial: false },
+            { id: 'task-3', startTime: '09:00', endTime: '12:00', time: '9:00 AM - 12:00 PM', activity: 'DevOps & Cloud Engineering Focus', desc: 'Kubernetes, Terraform, & CI/CD pipeline development', category: 'CI', isProductive: true, isSpecial: false },
+            { id: 'task-4', startTime: '13:00', endTime: '15:30', time: '1:00 PM - 3:30 PM', activity: 'Stock Market & Equity Options Analysis', desc: 'Review market trends, technicals, and investments', category: 'Finance', isProductive: true, isSpecial: true },
+            { id: 'task-5', startTime: '16:00', endTime: '18:00', time: '4:00 PM - 6:00 PM', activity: 'Technical Content & System Architecture', desc: 'Video editing, documentation, and cloud architecture study', category: 'CI', isProductive: true, isSpecial: false }
         ];
 
         function getLocalDateString(date) {
@@ -431,113 +439,66 @@
             return `${year}-${month}-${day}`;
         }
 
-        // Time string parser to calculate durations dynamically with broad format support (12hr/24hr)
-        function parseDurationInHours(timeStr) {
-            if (!timeStr) return 0;
-            const parts = timeStr.split('-').map(p => p.trim());
-            if (parts.length !== 2) return 0;
-
-            const start = parseTimeString(parts[0]);
-            const end = parseTimeString(parts[1]);
-
-            if (start === null || end === null) return 0;
-            let diff = (end - start) / (1000 * 60 * 60);
-            if (diff < 0) diff += 24; // Handle wrap-around midnight
-            return diff;
+        // Helper to format 24h time string (e.g., "06:00") to 12h AM/PM format (e.g., "6:00 AM")
+        function formatTime12h(time24) {
+            if (!time24) return '';
+            const parts = time24.split(':');
+            if (parts.length < 2) return time24;
+            let h = parseInt(parts[0], 10);
+            const m = parts[1];
+            const modifier = h >= 12 ? 'PM' : 'AM';
+            h = h % 12;
+            h = h ? h : 12; // the hour '0' should be '12'
+            return `${h}:${m} ${modifier}`;
         }
 
-        function parseTimeString(str) {
-            // Match 12-hour format with AM/PM (e.g., 06:00 AM, 6:00am, 12:30 PM)
-            const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-            if (match12) {
-                let hours = parseInt(match12[1], 10);
-                const minutes = parseInt(match12[2], 10);
-                const modifier = match12[3] ? match12[3].toUpperCase() : null;
-
-                if (modifier === 'PM' && hours < 12) hours += 12;
-                if (modifier === 'AM' && hours === 12) hours = 0;
-
-                const date = new Date();
-                date.setHours(hours, minutes, 0, 0);
-                return date.getTime();
+        // Generate combined display range string from startTime and endTime
+        function getFormattedTimeRange(task) {
+            if (task.startTime && task.endTime) {
+                return `${formatTime12h(task.startTime)} - ${formatTime12h(task.endTime)}`;
             }
+            return task.time || '';
+        }
 
-            // Match 24-hour format (e.g., 06:00, 18:30)
-            const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
-            if (match24) {
-                let hours = parseInt(match24[1], 10);
-                const minutes = parseInt(match24[2], 10);
-
-                const date = new Date();
-                date.setHours(hours, minutes, 0, 0);
-                return date.getTime();
+        // Accurate duration calculation using start and end time inputs
+        function calculateTaskDurationHours(task) {
+            if (task.startTime && task.endTime) {
+                const [startH, startM] = task.startTime.split(':').map(Number);
+                const [endH, endM] = task.endTime.split(':').map(Number);
+                
+                let startMinutes = startH * 60 + startM;
+                let endMinutes = endH * 60 + endM;
+                
+                let diff = endMinutes - startMinutes;
+                if (diff < 0) diff += 24 * 60; // Handle wrap-around midnight
+                return diff / 60;
             }
-
-            return null;
+            // Fallback parsing if legacy string format exists
+            return 0;
         }
 
         // Calculate Total Target & Checked Completed Hours for Productive Tasks
-        // Strict Productive Metrics Calculation
-function calculateProductiveMetrics(checkedSet) {
-    let totalTarget = 0;
-    let completedHours = 0;
+        function calculateProductiveMetrics(checkedSet) {
+            let totalTarget = 0;
+            let completedHours = 0;
 
-    scheduleData.forEach(task => {
-        // Strict boolean check: only include tasks explicitly set to true
-        if (task.isProductive === true) {
-            const hours = parseDurationInHours(task.time);
-            totalTarget += hours;
+            scheduleData.forEach(task => {
+                if (task.isProductive === true) {
+                    const hours = calculateTaskDurationHours(task);
+                    totalTarget += hours;
 
-            // Check using string coercion to prevent String vs Number type mismatches
-            if (checkedSet.has(String(task.id)) || checkedSet.has(task.id)) {
-                completedHours += hours;
-            }
+                    if (checkedSet.has(String(task.id)) || checkedSet.has(task.id)) {
+                        completedHours += hours;
+                    }
+                }
+            });
+
+            const roundTarget = Math.round(totalTarget * 100) / 100;
+            const roundCompleted = Math.round(completedHours * 100) / 100;
+            const percentage = roundTarget > 0 ? Math.min(100, Math.round((roundCompleted / roundTarget) * 100)) : 0;
+
+            return { totalTarget: roundTarget, completedHours: roundCompleted, percentage };
         }
-    });
-
-    const roundTarget = Math.round(totalTarget * 100) / 100;
-    const roundCompleted = Math.round(completedHours * 100) / 100;
-    const percentage = roundTarget > 0 ? Math.min(100, Math.round((roundCompleted / roundTarget) * 100)) : 0;
-
-    return { totalTarget: roundTarget, completedHours: roundCompleted, percentage };
-}
-
-// Robust Duration Parser
-function parseDurationInHours(timeStr) {
-    if (!timeStr) return 0;
-
-    // Normalize spaces and split by dash or hyphen
-    const parts = timeStr.replace(/\u00A0/g, ' ').split(/\s*[-–—]\s*/);
-    if (parts.length !== 2) return 0;
-
-    const startMinutes = parseToMinutes(parts[0]);
-    const endMinutes = parseToMinutes(parts[1]);
-
-    if (startMinutes === null || endMinutes === null) return 0;
-
-    let diffMinutes = endMinutes - startMinutes;
-    if (diffMinutes < 0) diffMinutes += 24 * 60; // Handle midnight crossover
-
-    return diffMinutes / 60;
-}
-
-// Helper to convert time strings (12h/24h) directly into total minutes from midnight
-function parseToMinutes(str) {
-    if (!str) return null;
-    const cleaned = str.trim().toUpperCase().replace(/\./g, '');
-    const match = cleaned.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/);
-    
-    if (!match) return null;
-
-    let hours = parseInt(match[1], 10);
-    const minutes = match[2] ? parseInt(match[2], 10) : 0;
-    const modifier = match[3];
-
-    if (modifier === 'PM' && hours < 12) hours += 12;
-    if (modifier === 'AM' && hours === 12) hours = 0;
-
-    return hours * 60 + minutes;
-}
 
         // IndexedDB helpers for persistent handle caching
         function openDB() {
@@ -584,7 +545,6 @@ function parseToMinutes(str) {
                 renderApp();
             });
 
-            // Attempt to automatically restore folder connection from IndexedDB on startup
             try {
                 const savedHandle = await getHandleFromDB();
                 if (savedHandle) {
@@ -645,19 +605,16 @@ function parseToMinutes(str) {
             if (!dirHandle) return;
 
             try {
-                // 1. Read or initialize tasks-input.json
                 try {
                     const taskFileHandle = await dirHandle.getFileHandle('tasks-input.json', { create: false });
                     const taskFile = await taskFileHandle.getFile();
                     const taskText = await taskFile.text();
                     scheduleData = JSON.parse(taskText);
                 } catch (e) {
-                    // Create tasks-input.json with default seed schedule if missing
                     scheduleData = DEFAULT_SCHEDULE;
                     await saveScheduleToFile();
                 }
 
-                // 2. Read or initialize tasks-tracker.json
                 try {
                     const trackerFileHandle = await dirHandle.getFileHandle('tasks-tracker.json', { create: false });
                     const trackerFile = await trackerFileHandle.getFile();
@@ -808,7 +765,8 @@ function parseToMinutes(str) {
             let html = '';
             scheduleData.forEach(item => {
                 const isChecked = checkedSet.has(item.id);
-                const isProd = item.isProductive !== false;
+                const isProd = item.isProductive === true;
+                const displayTime = getFormattedTimeRange(item);
 
                 html += `
                     <div class="p-4 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-700/20 transition-all ${isChecked ? 'bg-slate-900/30 opacity-60' : ''}">
@@ -817,7 +775,7 @@ function parseToMinutes(str) {
                                 class="w-5 h-5 mt-0.5 sm:mt-0 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900 cursor-pointer">
                             <div>
                                 <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-                                    <span class="font-mono text-xs font-semibold px-2.5 py-1 bg-slate-900 border border-slate-700 text-indigo-300 rounded-lg">${item.time}</span>
+                                    <span class="font-mono text-xs font-semibold px-2.5 py-1 bg-slate-900 border border-slate-700 text-indigo-300 rounded-lg">${displayTime}</span>
                                     <h4 class="font-semibold text-slate-100 text-base ${isChecked ? 'line-through text-slate-400' : ''}">${item.activity}</h4>
                                     ${!isProd ? '<span class="px-2 py-0.5 bg-slate-700/50 text-slate-400 border border-slate-600 text-[10px] font-medium rounded-full"><i class="fa-solid fa-mug-hot mr-1"></i>Non-Productive</span>' : ''}
                                     ${item.isSpecial ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-medium rounded-full"><i class="fa-solid fa-chart-pie mr-1"></i>Includes F&O/Stocks</span>' : ''}
@@ -900,7 +858,7 @@ function parseToMinutes(str) {
                                     <div class="flex flex-wrap gap-1.5">
                                         ${uncompletedItems.map(item => `
                                             <span class="px-2.5 py-1 bg-rose-500/10 text-rose-300 border border-rose-500/30 text-xs rounded-lg">
-                                                <i class="fa-solid fa-xmark mr-1"></i>${item.time} - ${item.activity}
+                                                <i class="fa-solid fa-xmark mr-1"></i>${getFormattedTimeRange(item)} - ${item.activity}
                                             </span>
                                         `).join('')}
                                     </div>
@@ -930,7 +888,8 @@ function parseToMinutes(str) {
 
             let html = '';
             scheduleData.forEach((task, index) => {
-                const isProd = task.isProductive !== false;
+                const isProd = task.isProductive === true;
+                const displayTime = getFormattedTimeRange(task);
                 html += `
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 font-mono text-xs text-slate-400">
@@ -944,7 +903,7 @@ function parseToMinutes(str) {
                                 <span class="ml-1">${index + 1}</span>
                             </div>
                         </td>
-                        <td class="py-3 px-4 font-mono text-xs text-indigo-300">${task.time}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-indigo-300">${displayTime}</td>
                         <td class="py-3 px-4">
                             <div class="font-medium text-slate-200">${task.activity}</div>
                             <div class="text-xs text-slate-400">${task.desc || ''}</div>
@@ -991,11 +950,12 @@ function parseToMinutes(str) {
                 const task = scheduleData.find(t => t.id === taskId);
                 if (task) {
                     editId.value = task.id;
-                    document.getElementById('taskTime').value = task.time;
+                    document.getElementById('taskStartTime').value = task.startTime || '';
+                    document.getElementById('taskEndTime').value = task.endTime || '';
                     document.getElementById('taskActivity').value = task.activity;
                     document.getElementById('taskDesc').value = task.desc || '';
                     document.getElementById('taskCategory').value = task.category;
-                    document.getElementById('taskIsProductive').checked = task.isProductive !== false;
+                    document.getElementById('taskIsProductive').checked = task.isProductive === true;
                     document.getElementById('taskIsSpecial').checked = !!task.isSpecial;
                 }
             } else {
@@ -1022,21 +982,25 @@ function parseToMinutes(str) {
         async function saveTaskForm(e) {
             e.preventDefault();
             const editId = document.getElementById('editTaskId').value;
-            const time = document.getElementById('taskTime').value.trim();
+            const startTime = document.getElementById('taskStartTime').value;
+            const endTime = document.getElementById('taskEndTime').value;
             const activity = document.getElementById('taskActivity').value.trim();
             const desc = document.getElementById('taskDesc').value.trim();
             const category = document.getElementById('taskCategory').value.trim();
             const isProductive = document.getElementById('taskIsProductive').checked;
             const isSpecial = document.getElementById('taskIsSpecial').checked;
 
+            // Generate formatted time display string
+            const timeStr = formatTimeRange(startTime, endTime);
+
             if (editId) {
                 const index = scheduleData.findIndex(t => t.id === editId);
                 if (index > -1) {
-                    scheduleData[index] = { id: editId, time, activity, desc, category, isProductive, isSpecial };
+                    scheduleData[index] = { id: editId, startTime, endTime, time: timeStr, activity, desc, category, isProductive, isSpecial };
                 }
             } else {
                 const newId = 'task-' + Date.now();
-                scheduleData.push({ id: newId, time, activity, desc, category, isProductive, isSpecial });
+                scheduleData.push({ id: newId, startTime, endTime, time: timeStr, activity, desc, category, isProductive, isSpecial });
             }
 
             await saveScheduleToFile();
