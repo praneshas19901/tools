@@ -19,55 +19,36 @@
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        /* Custom scrollbar for help modal body */
-        .modal-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-        .modal-scroll::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 8px;
-        }
-        .modal-scroll::-webkit-scrollbar-thumb {
-            background: rgba(99, 102, 241, 0.5);
-            border-radius: 8px;
-        }
-        .modal-scroll::-webkit-scrollbar-thumb:hover {
-            background: rgba(99, 102, 241, 0.8);
-        }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-full flex flex-col transition-colors duration-300 relative">
+<body class="bg-slate-900 text-slate-100 min-h-full flex flex-col transition-colors duration-300">
 
     <!-- Header Navigation -->
-    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-0 sm:h-20 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
-            <!-- App Identity & Help Button Area -->
-            <div class="flex items-center justify-between w-full sm:w-auto space-x-4">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30 flex-shrink-0">
-                        <i class="fa-solid fa-bolt-lightning text-xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Elite Routine Tracker</h1>
-                        <p class="text-xs text-slate-400">CI, Fitness, Finance & Continuous Growth</p>
-                    </div>
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-bolt-lightning text-lg"></i>
                 </div>
-
-                <!-- Help Button Container with Sub-label (Mobile + Desktop Header Integration) -->
-                <div class="flex flex-col items-end sm:items-start pl-2">
-                    <button onclick="openHelpModal()" class="px-3 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400/50 rounded-lg text-xs font-semibold flex items-center transition shadow-sm group">
-                        <i class="fa-solid fa-circle-question mr-1.5 text-indigo-400 group-hover:rotate-12 transition-transform"></i>
-                        <span>Help & Guide</span>
-                    </button>
-                    <span class="text-[10px] text-indigo-300/70 font-medium mt-0.5 tracking-tight">Click here to understand how to use the app</span>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Elite Routine Tracker</h1>
+                    <p class="text-xs text-slate-400">CI, Fitness, Finance & Continuous Growth</p>
                 </div>
             </div>
             
-            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-slate-700/60 pt-2 sm:pt-0">
+            <div class="flex items-center space-x-3">
                 <!-- Connect / Restore Folder Button -->
                 <button onclick="connectFolder()" id="connectBtn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center shadow transition">
                     <i class="fa-solid fa-folder-open mr-1.5"></i> Connect Data Folder
                 </button>
+
+                <!-- Help Button Container -->
+                <div class="flex flex-col items-center">
+                    <button onclick="openHelpModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 rounded-lg text-xs font-semibold flex items-center shadow transition">
+                        <i class="fa-solid fa-circle-question mr-1.5 text-indigo-400"></i> Help & Guide
+                    </button>
+                    <span class="text-[9px] text-slate-400 mt-0.5 font-medium hidden lg:inline">Click here to understand how to use the app</span>
+                </div>
 
                 <!-- Date Picker -->
                 <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 shadow-inner">
@@ -75,10 +56,11 @@
                     <input type="date" id="trackerDate" class="bg-transparent text-sm text-slate-200 focus:outline-none cursor-pointer">
                 </div>
 
-                <!-- Desktop Tabs -->
+                <!-- Tabs -->
                 <nav class="hidden md:flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
                     <button onclick="switchTab('tracker')" id="tabTracker" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-600 text-white shadow">Today</button>
                     <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">History & Missed</button>
+                    <button onclick="switchTab('manage')" id="tabManage" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">Manage Tasks</button>
                     <button onclick="switchTab('deploy')" id="tabDeploy" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">GitHub Pages Guide</button>
                 </nav>
             </div>
@@ -87,6 +69,7 @@
         <div class="md:hidden flex justify-around bg-slate-900/90 border-t border-slate-800 py-2">
             <button onclick="switchTab('tracker')" id="mobTabTracker" class="text-xs font-medium text-indigo-400 flex flex-col items-center"><i class="fa-solid fa-list-check mb-1"></i>Tracker</button>
             <button onclick="switchTab('history')" id="mobTabHistory" class="text-xs font-medium text-slate-400 flex flex-col items-center"><i class="fa-solid fa-chart-line mb-1"></i>History</button>
+            <button onclick="switchTab('manage')" id="mobTabManage" class="text-xs font-medium text-slate-400 flex flex-col items-center"><i class="fa-solid fa-sliders mb-1"></i>Manage</button>
             <button onclick="switchTab('deploy')" id="mobTabDeploy" class="text-xs font-medium text-slate-400 flex flex-col items-center"><i class="fa-brands fa-github mb-1"></i>Deploy</button>
         </div>
     </header>
@@ -94,22 +77,10 @@
     <!-- Main Content Area -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Custom Notification Banner -->
+        <!-- Notification Banner -->
         <div id="notification" class="hidden p-4 rounded-xl text-sm font-medium shadow-lg transition-all duration-300 flex items-center justify-between">
             <span id="notificationText"></span>
             <button onclick="hideNotification()" class="text-current opacity-70 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-
-        <!-- Custom Confirmation / Alert Dialog (No native alert/confirm) -->
-        <div id="customModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-            <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                <h3 id="customModalTitle" class="text-lg font-bold text-white">Confirmation</h3>
-                <p id="customModalMessage" class="text-sm text-slate-300"></p>
-                <div class="flex justify-end space-x-3 pt-2">
-                    <button id="customModalCancelBtn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-semibold transition">Cancel</button>
-                    <button id="customModalConfirmBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow transition">Confirm</button>
-                </div>
-            </div>
         </div>
 
         <!-- VIEW 1: TRACKER -->
@@ -218,142 +189,193 @@
             </div>
         </div>
 
-        <!-- VIEW 3: GITHUB PAGES DEPLOYMENT GUIDE -->
+        <!-- VIEW 3: MANAGE TASKS (ADD, EDIT, DELETE, REORDER) -->
+        <div id="viewManage" class="hidden space-y-6">
+            <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center">
+                            <i class="fa-solid fa-sliders text-indigo-400 mr-2"></i> Task Schedule Management
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Add, edit, delete, or reorder tasks in <code class="text-indigo-300">tasks-input.json</code>.</p>
+                    </div>
+                    <button onclick="openTaskModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center shadow transition">
+                        <i class="fa-solid fa-plus mr-1.5"></i> Add New Task
+                    </button>
+                </div>
+
+                <!-- Management Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-900/40">
+                                <th class="py-3 px-4">Order</th>
+                                <th class="py-3 px-4">Time</th>
+                                <th class="py-3 px-4">Activity</th>
+                                <th class="py-3 px-4">Category</th>
+                                <th class="py-3 px-4">Flags</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="manageTaskTableBody" class="divide-y divide-slate-700/60 text-sm">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: GITHUB PAGES DEPLOYMENT GUIDE -->
         <div id="viewDeploy" class="hidden space-y-6">
             <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-white">File System Access & GitHub Pages Deployment</h2>
-                    <p class="text-xs text-slate-400 mt-1">This application runs as a local client side static app and uses native web APIs for persistent file management.</p>
-                </div>
-
-                <div class="space-y-4 text-sm text-slate-300">
-                    <div class="bg-slate-900/80 border border-slate-700/70 p-4 rounded-xl">
-                        <h3 class="font-semibold text-indigo-300 mb-1 flex items-center"><i class="fa-brands fa-github mr-2"></i>Deploying on GitHub Pages</h3>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            Because all file management happens strictly on your local computer via your web browser, you can safely host this single HTML page on GitHub Pages, Cloudflare Pages, Netlify, or run it locally in Chrome or Edge.
-                        </p>
-                    </div>
+                    <h2 class="text-2xl font-bold text-white">File System Access & GitHub Pages</h2>
+                    <p class="text-xs text-slate-400 mt-1">This version stores your folder connection cache securely in IndexedDB so you don't have to re-select the folder path every single session.</p>
                 </div>
             </div>
         </div>
 
     </main>
 
-    <!-- INSTRUCTION & HELP MODAL POPUP -->
-    <div id="helpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-opacity duration-300">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="helpModalContent">
-            
+    <!-- HELP MODAL POPUP -->
+    <div id="helpModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="helpModalCard">
             <!-- Modal Header -->
-            <div class="px-6 py-4 bg-slate-900/80 border-b border-slate-700 flex justify-between items-center sticky top-0 z-10">
-                <div class="flex items-center space-x-3">
-                    <div class="p-2 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl">
-                        <i class="fa-solid fa-book-open text-lg"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg text-white">App Usage & File Access Guide</h3>
-                        <p class="text-xs text-slate-400">Everything you need to know about setting up and using Elite Tracker</p>
-                    </div>
+            <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-info text-indigo-400 text-xl"></i>
+                    <h3 class="text-lg font-bold text-white">App Instructions & File Access Guide</h3>
                 </div>
-                <button onclick="closeHelpModal()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700 transition">
+                <button onclick="closeHelpModal()" class="text-slate-400 hover:text-white transition">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-
+            
             <!-- Modal Body (Scrollable) -->
-            <div class="p-6 overflow-y-auto space-y-6 text-slate-300 text-sm modal-scroll">
-                
-                <!-- Section 1: How to use the app -->
+            <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
+                <!-- How to use -->
                 <section class="space-y-2">
-                    <h4 class="text-base font-bold text-indigo-300 flex items-center">
-                        <i class="fa-solid fa-circle-play mr-2 text-indigo-400"></i> 1. How to Use the App
+                    <h4 class="font-bold text-slate-100 text-base flex items-center text-indigo-400">
+                        <i class="fa-solid fa-play mr-2"></i> How to Use the App
                     </h4>
-                    <p class="text-xs text-slate-300 leading-relaxed">
-                        The Elite Daily Tracker helps you manage daily routines, habit execution, and track daily goals:
-                    </p>
-                    <ul class="list-disc list-inside space-y-1 text-xs text-slate-400 pl-2">
-                        <li><strong class="text-slate-200">Date Navigation:</strong> Pick any date using the calendar control to view or retroactively complete tasks.</li>
-                        <li><strong class="text-slate-200">Task Checklist:</strong> Check off activities as you complete them throughout your day. Progress automatically calculates metrics and pillars.</li>
-                        <li><strong class="text-slate-200">History & Missed Tasks:</strong> Open the "History & Missed" tab to analyze past dates, view overall completion percentages, and list uncompleted tasks.</li>
+                    <p>1. Connect or select a local working folder using the <strong class="text-white">Connect Data Folder</strong> button.</p>
+                    <p>2. Complete daily schedule items using the checkboxes on the <strong class="text-white">Today</strong> tab.</p>
+                    <p>3. Use the date selector to navigate past days or jump back to present execution schedules.</p>
+                    <p>4. Check overall performance, completion averages, and uncompleted items under the <strong class="text-white">History & Missed</strong> tab.</p>
+                    <p>5. Manage tasks dynamically in the <strong class="text-white">Manage Tasks</strong> tab to add, edit, delete, or reorder your schedule.</p>
+                </section>
+
+                <hr class="border-slate-700">
+
+                <!-- Folder Connection & Files Used -->
+                <section class="space-y-2">
+                    <h4 class="font-bold text-slate-100 text-base flex items-center text-cyan-400">
+                        <i class="fa-solid fa-folder-tree mr-2"></i> Folder Connection & JSON Files
+                    </h4>
+                    <p>When you select a local folder, if the required JSON files don't already exist, the app automatically creates default files in that folder for you:</p>
+                    <ul class="list-disc list-inside space-y-1 pl-2 text-slate-300">
+                        <li><code class="bg-slate-900 px-1.5 py-0.5 rounded text-indigo-300">tasks-input.json</code>: Contains standard daily routine activities, times, and categories.</li>
+                        <li><code class="bg-slate-900 px-1.5 py-0.5 rounded text-cyan-300">tasks-tracker.json</code>: Stores historical task completions keyed by date.</li>
                     </ul>
                 </section>
 
-                <hr class="border-slate-700/60" />
+                <hr class="border-slate-700">
 
-                <!-- Section 2: Folder Connection & Files -->
-                <section class="space-y-3">
-                    <h4 class="text-base font-bold text-indigo-300 flex items-center">
-                        <i class="fa-solid fa-folder-tree mr-2 text-indigo-400"></i> 2. Folder Connection & Required JSON Files
+                <!-- File System Access API & Security -->
+                <section class="space-y-2">
+                    <h4 class="font-bold text-slate-100 text-base flex items-center text-emerald-400">
+                        <i class="fa-solid fa-shield-halved mr-2"></i> File System API & Security Model
                     </h4>
-                    <p class="text-xs text-slate-300 leading-relaxed">
-                        To connect your local data directory, click <strong class="text-indigo-400 font-semibold">"Connect Data Folder"</strong> in the top header and select a local directory on your machine.
-                    </p>
-                    <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-700/70 space-y-3">
-                        <p class="text-xs font-semibold text-slate-200">The application relies on 2 main JSON files in your selected folder:</p>
-                        
-                        <div class="space-y-2">
-                            <div class="flex items-start space-x-2">
-                                <code class="bg-slate-950 text-indigo-300 px-2 py-1 rounded text-xs font-mono border border-slate-800 shrink-0">tasks-input.json</code>
-                                <p class="text-xs text-slate-400">Defines your baseline task list, schedule times, pillar categories, and activity descriptions.</p>
-                            </div>
-                            <div class="flex items-start space-x-2">
-                                <code class="bg-slate-950 text-cyan-300 px-2 py-1 rounded text-xs font-mono border border-slate-800 shrink-0">tasks-tracker.json</code>
-                                <p class="text-xs text-slate-400">Stores checked task completion state per date (e.g., <span class="font-mono text-slate-300">{"2026-10-16": {"checkedTasks": ["task1"]}}</span>). Automatically updated whenever you check a task.</p>
-                            </div>
-                        </div>
-                    </div>
+                    <p>This web application utilizes the modern browser <strong>File System Access API</strong>. Here is what you should know regarding security:</p>
+                    <ul class="list-disc list-inside space-y-1.5 pl-2">
+                        <li><strong>100% Local & Offline:</strong> All readings and writes are done strictly on your device. No data is transmitted to external servers.</li>
+                        <li><strong>Sandboxed Permissions:</strong> The web browser requires explicit user permission before granting access to read or write in any directory.</li>
+                        <li><strong>Session Caching:</strong> Directory handles are securely retained in local IndexedDB to allow seamless access when returning to the app without picking the path again.</li>
+                    </ul>
                 </section>
 
-                <hr class="border-slate-700/60" />
+                <hr class="border-slate-700">
 
-                <!-- Section 3: File System Access API & Security -->
-                <section class="space-y-3">
-                    <h4 class="text-base font-bold text-indigo-300 flex items-center">
-                        <i class="fa-solid fa-shield-halved mr-2 text-indigo-400"></i> 3. File System Access API & Privacy Security
+                <!-- Data Loss Warning -->
+                <section class="space-y-2 bg-rose-500/10 border border-rose-500/30 p-4 rounded-xl text-rose-200">
+                    <h4 class="font-bold text-rose-400 text-base flex items-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i> Caution: External Modifications & Data Loss
                     </h4>
-                    <div class="space-y-2 text-xs text-slate-300 leading-relaxed">
-                        <p>
-                            This web app utilizes the modern browser <strong class="text-slate-100">File System Access API</strong> combined with <strong class="text-slate-100">IndexedDB handle caching</strong>:
-                        </p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                            <div class="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl space-y-1">
-                                <span class="font-bold text-emerald-400 flex items-center"><i class="fa-solid fa-lock mr-1.5"></i> 100% Private & Local</span>
-                                <p class="text-[11px] text-slate-400">Your data never leaves your device. No cloud server, remote database, or third-party analytics are used.</p>
-                            </div>
-                            <div class="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl space-y-1">
-                                <span class="font-bold text-indigo-400 flex items-center"><i class="fa-solid fa-key mr-1.5"></i> Explicit Permission Prompt</span>
-                                <p class="text-[11px] text-slate-400">Browsers enforce strict security prompts. The app can only read and write to the single folder you explicitly choose.</p>
-                            </div>
-                        </div>
-                    </div>
+                    <p>Since data resides in standard JSON files on your hard drive:</p>
+                    <ul class="list-disc list-inside space-y-1 mt-1">
+                        <li>If <code class="text-rose-300">tasks-tracker.json</code> or <code class="text-rose-300">tasks-input.json</code> is deleted, overwritten, or moved manually or by another application, <strong>permanent data loss can occur</strong>.</li>
+                        <li>Invalid syntax introduced when manually editing JSON files outside this app will prevent the tracker from loading correctly.</li>
+                    </ul>
                 </section>
-
-                <hr class="border-slate-700/60" />
-
-                <!-- Section 4: Data Loss Warning -->
-                <section class="space-y-3">
-                    <div class="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 space-y-2">
-                        <h4 class="text-sm font-bold text-rose-400 flex items-center">
-                            <i class="fa-solid fa-triangle-exclamation mr-2 text-rose-400"></i> 4. Data Loss & File Manipulation Warning
-                        </h4>
-                        <p class="text-xs text-rose-200/90 leading-relaxed">
-                            Please handle your local JSON files with care!
-                        </p>
-                        <ul class="list-disc list-inside space-y-1 text-xs text-rose-300/80 pl-1">
-                            <li><strong>Deleting or Renaming Files:</strong> If <span class="font-mono text-rose-200">tasks-tracker.json</span> is deleted or renamed, your historical records will be permanently lost unless restored from a backup.</li>
-                            <li><strong>Manual Edits / External Programs:</strong> If another application or text editor modifies <span class="font-mono text-rose-200">tasks-tracker.json</span> or <span class="font-mono text-rose-200">tasks-input.json</span> with invalid JSON formatting, application read errors may occur.</li>
-                            <li><strong>Backup Recommendation:</strong> Regularly back up your local folder directory if keeping long-term historical routine data is critical to you.</li>
-                        </ul>
-                    </div>
-                </section>
-
             </div>
 
             <!-- Modal Footer -->
-            <div class="px-6 py-4 bg-slate-900 border-t border-slate-700 flex justify-end">
-                <button onclick="closeHelpModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow transition flex items-center">
-                    <i class="fa-solid fa-check mr-1.5"></i> Got it, thanks!
+            <div class="px-6 py-4 border-t border-slate-700 flex justify-end bg-slate-800/50">
+                <button onclick="closeHelpModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow transition">
+                    Got it!
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ADD / EDIT TASK MODAL POPUP -->
+    <div id="taskModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="taskModalCard">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 id="taskModalTitle" class="text-lg font-bold text-white">Add New Task</h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Form -->
+            <form id="taskForm" onsubmit="saveTaskForm(event)" class="p-6 space-y-4">
+                <input type="hidden" id="editTaskId">
+                
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Time Range / Time</label>
+                    <input type="text" id="taskTime" placeholder="e.g. 06:00 AM - 07:00 AM" required
+                        class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Activity Name</label>
+                    <input type="text" id="taskActivity" placeholder="e.g. Morning Workout & Fitness" required
+                        class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Description</label>
+                    <textarea id="taskDesc" rows="2" placeholder="Brief details or notes for this task..."
+                        class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Category</label>
+                        <input type="text" id="taskCategory" placeholder="e.g. Health, CI, Finance" required
+                            class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    
+                    <div class="flex items-center pt-6">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="taskIsSpecial" class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <span class="text-xs text-slate-300 font-medium">Flag Special (e.g., F&O / Stocks)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="pt-4 border-t border-slate-700 flex justify-end space-x-3">
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-semibold transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow transition">
+                        Save Task
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -371,6 +393,15 @@
 
         const DB_NAME = 'EliteTrackerDB';
         const STORE_NAME = 'handles';
+
+        // Default seed schedule for fresh folders
+        const DEFAULT_SCHEDULE = [
+            { id: 'task-1', time: '06:00 AM - 07:00 AM', activity: 'Morning Workout & Physical Training', desc: 'Cardio exercise and weight lifting routine', category: 'Health', isSpecial: false },
+            { id: 'task-2', time: '07:30 AM - 08:30 AM', activity: 'German Language Learning', desc: 'Duolingo & vocabulary practice for A2 proficiency', category: 'Lang', isSpecial: false },
+            { id: 'task-3', time: '09:00 AM - 12:00 PM', activity: 'DevOps & Cloud Engineering Focus', desc: 'Kubernetes, Terraform, & CI/CD pipeline development', category: 'CI', isSpecial: false },
+            { id: 'task-4', time: '01:00 PM - 03:30 PM', activity: 'Stock Market & Equity Options Analysis', desc: 'Review market trends, technicals, and investments', category: 'Finance', isSpecial: true },
+            { id: 'task-5', time: '04:00 PM - 06:00 PM', activity: 'Technical Content & System Architecture', desc: 'Video editing, documentation, and cloud architecture study', category: 'CI', isSpecial: false }
+        ];
 
         function getLocalDateString(date) {
             const year = date.getFullYear();
@@ -414,68 +445,6 @@
             } catch (err) {
                 return null;
             }
-        }
-
-        // Help Modal Controls
-        function openHelpModal() {
-            const modal = document.getElementById('helpModal');
-            const content = document.getElementById('helpModalContent');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
-
-        function closeHelpModal() {
-            const modal = document.getElementById('helpModal');
-            const content = document.getElementById('helpModalContent');
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
-        }
-
-        // Close modal when clicking outside backdrop
-        document.getElementById('helpModal').addEventListener('click', (e) => {
-            if (e.target.id === 'helpModal') {
-                closeHelpModal();
-            }
-        });
-
-        // Close modal on Escape key press
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeHelpModal();
-            }
-        });
-
-        // Custom non-alert modal helper
-        function showCustomConfirm(message, title = 'Confirmation') {
-            return new Promise((resolve) => {
-                const modal = document.getElementById('customModal');
-                const titleEl = document.getElementById('customModalTitle');
-                const msgEl = document.getElementById('customModalMessage');
-                const cancelBtn = document.getElementById('customModalCancelBtn');
-                const confirmBtn = document.getElementById('customModalConfirmBtn');
-
-                titleEl.innerText = title;
-                msgEl.innerText = message;
-                modal.classList.remove('hidden');
-
-                const cleanup = () => {
-                    modal.classList.add('hidden');
-                    cancelBtn.removeEventListener('click', onCancel);
-                    confirmBtn.removeEventListener('click', onConfirm);
-                };
-
-                const onCancel = () => { cleanup(); resolve(false); };
-                const onConfirm = () => { cleanup(); resolve(true); };
-
-                cancelBtn.addEventListener('click', onCancel);
-                confirmBtn.addEventListener('click', onConfirm);
-            });
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -547,13 +516,19 @@
             if (!dirHandle) return;
 
             try {
-                // 1. Read tasks-input.json
-                const taskFileHandle = await dirHandle.getFileHandle('tasks-input.json', { create: false });
-                const taskFile = await taskFileHandle.getFile();
-                const taskText = await taskFile.text();
-                scheduleData = JSON.parse(taskText);
+                // 1. Read or initialize tasks-input.json
+                try {
+                    const taskFileHandle = await dirHandle.getFileHandle('tasks-input.json', { create: false });
+                    const taskFile = await taskFileHandle.getFile();
+                    const taskText = await taskFile.text();
+                    scheduleData = JSON.parse(taskText);
+                } catch (e) {
+                    // Create tasks-input.json with default seed schedule if missing
+                    scheduleData = DEFAULT_SCHEDULE;
+                    await saveScheduleToFile();
+                }
 
-                // 2. Read tasks-tracker.json
+                // 2. Read or initialize tasks-tracker.json
                 try {
                     const trackerFileHandle = await dirHandle.getFileHandle('tasks-tracker.json', { create: false });
                     const trackerFile = await trackerFileHandle.getFile();
@@ -570,6 +545,18 @@
             }
         }
 
+        async function saveScheduleToFile() {
+            if (!dirHandle) return;
+            try {
+                const scheduleFileHandle = await dirHandle.getFileHandle('tasks-input.json', { create: true });
+                const writable = await scheduleFileHandle.createWritable();
+                await writable.write(JSON.stringify(scheduleData, null, 2));
+                await writable.close();
+            } catch (err) {
+                showNotification('Error saving tasks-input.json: ' + err.message, 'error');
+            }
+        }
+
         async function saveTrackerToFile() {
             if (!dirHandle) return;
             try {
@@ -578,13 +565,13 @@
                 await writable.write(JSON.stringify(trackerData, null, 2));
                 await writable.close();
             } catch (err) {
-                showNotification('Error saving to tasks-tracker.json: ' + err.message, 'error');
+                showNotification('Error saving tasks-tracker.json: ' + err.message, 'error');
             }
         }
 
         // Tab Switcher
         function switchTab(tab) {
-            ['tracker', 'history', 'deploy'].forEach(t => {
+            ['tracker', 'history', 'manage', 'deploy'].forEach(t => {
                 document.getElementById(`view${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
                 const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
                 if(btn) {
@@ -612,12 +599,14 @@
 
             if(tab === 'history') {
                 renderHistoryView();
+            } else if(tab === 'manage') {
+                renderManageView();
             }
         }
 
         async function toggleTask(taskId) {
             if (!dirHandle) {
-                showNotification('Please connect your local data folder first.', 'error');
+                alert('Please connect your local data folder first.');
                 return;
             }
 
@@ -639,8 +628,7 @@
 
         async function resetToday() {
             if (!dirHandle) return;
-            const confirmed = await showCustomConfirm('Are you sure you want to reset all checkboxes for this date?', 'Reset Date Progress');
-            if(confirmed) {
+            if(confirm('Are you sure you want to reset all checkboxes for this date?')) {
                 trackerData[currentDateStr] = { checkedTasks: [] };
                 await saveTrackerToFile();
                 renderApp();
@@ -787,6 +775,185 @@
 
             document.getElementById('historyListContainer').innerHTML = containerHtml;
         }
+
+        // TASK MANAGEMENT RENDERING & ACTIONS
+        function renderManageView() {
+            const tbody = document.getElementById('manageTaskTableBody');
+            if (scheduleData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400">
+                            No tasks available. Click <strong class="text-indigo-400">"Add New Task"</strong> to create one.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            scheduleData.forEach((task, index) => {
+                html += `
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-4 font-mono text-xs text-slate-400">
+                            <div class="flex items-center space-x-1">
+                                <button onclick="moveTask(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30 cursor-not-allowed text-slate-500"' : 'class="text-indigo-400 hover:text-indigo-300"'} title="Move Up">
+                                    <i class="fa-solid fa-arrow-up text-xs"></i>
+                                </button>
+                                <button onclick="moveTask(${index}, 1)" ${index === scheduleData.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed text-slate-500"' : 'class="text-indigo-400 hover:text-indigo-300"'} title="Move Down">
+                                    <i class="fa-solid fa-arrow-down text-xs"></i>
+                                </button>
+                                <span class="ml-1">${index + 1}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 font-mono text-xs text-indigo-300">${task.time}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium text-slate-200">${task.activity}</div>
+                            <div class="text-xs text-slate-400">${task.desc || ''}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-900 border border-slate-700 text-slate-300">
+                                ${task.category}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            ${task.isSpecial ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] rounded-full">Special</span>' : '<span class="text-xs text-slate-500">-</span>'}
+                        </td>
+                        <td class="py-3 px-4 text-right space-x-2">
+                            <button onclick="openTaskModal('${task.id}')" class="p-1.5 text-indigo-400 hover:text-indigo-300 transition" title="Edit Task">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteTask('${task.id}')" class="p-1.5 text-rose-400 hover:text-rose-300 transition" title="Delete Task">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function openTaskModal(taskId = null) {
+            if (!dirHandle) {
+                alert('Please connect your local data folder first.');
+                return;
+            }
+
+            const modal = document.getElementById('taskModal');
+            const card = document.getElementById('taskModalCard');
+            const title = document.getElementById('taskModalTitle');
+            const editId = document.getElementById('editTaskId');
+
+            if (taskId) {
+                title.innerText = 'Edit Task';
+                const task = scheduleData.find(t => t.id === taskId);
+                if (task) {
+                    editId.value = task.id;
+                    document.getElementById('taskTime').value = task.time;
+                    document.getElementById('taskActivity').value = task.activity;
+                    document.getElementById('taskDesc').value = task.desc || '';
+                    document.getElementById('taskCategory').value = task.category;
+                    document.getElementById('taskIsSpecial').checked = !!task.isSpecial;
+                }
+            } else {
+                title.innerText = 'Add New Task';
+                document.getElementById('taskForm').reset();
+                editId.value = '';
+            }
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closeTaskModal() {
+            const modal = document.getElementById('taskModal');
+            const card = document.getElementById('taskModalCard');
+
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        async function saveTaskForm(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editTaskId').value;
+            const time = document.getElementById('taskTime').value.trim();
+            const activity = document.getElementById('taskActivity').value.trim();
+            const desc = document.getElementById('taskDesc').value.trim();
+            const category = document.getElementById('taskCategory').value.trim();
+            const isSpecial = document.getElementById('taskIsSpecial').checked;
+
+            if (editId) {
+                const index = scheduleData.findIndex(t => t.id === editId);
+                if (index > -1) {
+                    scheduleData[index] = { id: editId, time, activity, desc, category, isSpecial };
+                }
+            } else {
+                const newId = 'task-' + Date.now();
+                scheduleData.push({ id: newId, time, activity, desc, category, isSpecial });
+            }
+
+            await saveScheduleToFile();
+            closeTaskModal();
+            renderManageView();
+            renderApp();
+            showNotification('Tasks saved successfully!', 'success');
+        }
+
+        async function deleteTask(taskId) {
+            if (!confirm('Are you sure you want to delete this task?')) return;
+
+            scheduleData = scheduleData.filter(t => t.id !== taskId);
+            await saveScheduleToFile();
+            renderManageView();
+            renderApp();
+            showNotification('Task deleted successfully.', 'info');
+        }
+
+        async function moveTask(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= scheduleData.length) return;
+
+            const temp = scheduleData[index];
+            scheduleData[index] = scheduleData[newIndex];
+            scheduleData[newIndex] = temp;
+
+            await saveScheduleToFile();
+            renderManageView();
+            renderApp();
+        }
+
+        function openHelpModal() {
+            const modal = document.getElementById('helpModal');
+            const card = document.getElementById('helpModalCard');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closeHelpModal() {
+            const modal = document.getElementById('helpModal');
+            const card = document.getElementById('helpModalCard');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        document.getElementById('helpModal').addEventListener('click', (e) => {
+            if (e.target.id === 'helpModal') closeHelpModal();
+        });
+
+        document.getElementById('taskModal').addEventListener('click', (e) => {
+            if (e.target.id === 'taskModal') closeTaskModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeHelpModal();
+                closeTaskModal();
+            }
+        });
 
         function switchToDate(dateStr) {
             currentDateStr = dateStr;
