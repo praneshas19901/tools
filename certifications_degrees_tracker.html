@@ -220,7 +220,7 @@
 
                     <select id="filter-status" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="ALL">All Statuses</option>
-                        <option value="Underway">Underway (Orange)</option>
+                        <option value="Underway">Underway (Sky Blue)</option>
                         <option value="Overdue">Overdue (Red)</option>
                         <option value="Completed">Completed (Green)</option>
                         <option value="To-Do">To-Do (Purple)</option>
@@ -314,7 +314,7 @@
                         <label class="block text-xs font-medium text-slate-300 mb-1">Initial Status</label>
                         <select id="new-status" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                             <option value="AUTO">Auto (Calculated)</option>
-                            <option value="Underway">Underway (Orange)</option>
+                            <option value="Underway">Underway (Sky Blue)</option>
                             <option value="Overdue">Overdue (Red)</option>
                             <option value="Completed">Completed (Green)</option>
                             <option value="To-Do">To-Do (Purple)</option>
@@ -380,17 +380,17 @@
         let dirHandle = null;
 
         // Color definitions map according to target specs:
-        // 1. Underway - Stronger Orange tint card & badge
+        // 1. Underway - Vibrant Sky Blue / Cyan tint card & badge
         // 2. Overdue - Stronger Red tint card & badge
         // 3. Completed - Stronger Green tint card & badge
         // 4. To-Do - Stronger Purple tint card & badge
         const STATUS_THEMES = {
             'Underway': {
-                cardBg: 'bg-amber-950/60 border-amber-500/60 hover:border-amber-400 shadow-lg shadow-amber-950/50',
-                badge: 'bg-amber-500/30 text-amber-200 border-amber-400/50',
-                text: 'text-amber-400',
-                progressBg: 'bg-gradient-to-r from-amber-500 to-orange-400',
-                icon: 'fa-solid fa-spinner animate-spin text-amber-300'
+                cardBg: 'bg-sky-950/60 border-sky-500/60 hover:border-sky-400 shadow-lg shadow-sky-950/50',
+                badge: 'bg-sky-500/30 text-sky-200 border-sky-400/50',
+                text: 'text-sky-300',
+                progressBg: 'bg-gradient-to-r from-sky-500 to-indigo-400',
+                icon: 'fa-solid fa-spinner animate-spin text-sky-300'
             },
             'Overdue': {
                 cardBg: 'bg-rose-950/60 border-rose-500/60 hover:border-rose-400 shadow-lg shadow-rose-950/50',
@@ -859,7 +859,7 @@
                                     onchange="updateItemStatus('${item.id}', this.value)"
                                     class="bg-transparent text-current font-bold text-xs focus:outline-none cursor-pointer pr-1">
                                     <option value="AUTO" class="bg-slate-900 text-slate-200" ${manualStatus === 'AUTO' ? 'selected' : ''}>Auto (${calcStatus})</option>
-                                    <option value="Underway" class="bg-slate-900 text-amber-400 font-semibold" ${manualStatus === 'Underway' ? 'selected' : ''}>Underway (Orange)</option>
+                                    <option value="Underway" class="bg-slate-900 text-sky-400 font-semibold" ${manualStatus === 'Underway' ? 'selected' : ''}>Underway (Sky Blue)</option>
                                     <option value="Overdue" class="bg-slate-900 text-rose-400 font-semibold" ${manualStatus === 'Overdue' ? 'selected' : ''}>Overdue (Red)</option>
                                     <option value="Completed" class="bg-slate-900 text-emerald-400 font-semibold" ${manualStatus === 'Completed' ? 'selected' : ''}>Completed (Green)</option>
                                     <option value="To-Do" class="bg-slate-900 text-purple-400 font-semibold" ${manualStatus === 'To-Do' ? 'selected' : ''}>To-Do (Purple)</option>
