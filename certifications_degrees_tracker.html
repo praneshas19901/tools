@@ -371,6 +371,53 @@
         let dirHandle = null;
 
         // ==========================================
+        // INDEXEDDB DIRECTORY HANDLE PERSISTENCE
+        // ==========================================
+        const DB_NAME = 'CertTrackPro_DB';
+        const STORE_NAME = 'handles_store';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function storeDirHandle(handle) {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).put(handle, 'trackerDirHandle');
+                return tx.complete;
+            } catch (err) {
+                console.warn('Failed to store directory handle in IndexedDB', err);
+            }
+        }
+
+        async function getStoredDirHandle() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                return new Promise((resolve) => {
+                    const req = store.get('trackerDirHandle');
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (err) {
+                console.warn('Failed to retrieve directory handle from IndexedDB', err);
+                return null;
+            }
+        }
+
+        // ==========================================
         // INITIALIZATION
         // ==========================================
         window.addEventListener('DOMContentLoaded', async () => {
@@ -509,6 +556,19 @@
                 if (err.name !== 'AbortError') {
                     showAlert("Directory Access Error: " + err.message, "error");
                 }
+            }
+        }
+
+        async function readFilesFromDirectory() {
+            if (!dirHandle) return;
+            try {
+                inputCatalog = await readOrCreateJSONFile(dirHandle, 'tracker-input.json', []);
+                progressMap = await readOrCreateJSONFile(dirHandle, 'tracker-progress.json', {});
+                renderTrackerGrid();
+                updateDashboardStats();
+            } catch (err) {
+                console.error("Error reading tracker files from directory:", err);
+                showAlert("Error reading JSON files from directory", "error");
             }
         }
 
