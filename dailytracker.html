@@ -374,7 +374,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div class="flex items-center">
                         <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" id="taskIsProductive" checked class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                            <input type="checkbox" id="taskIsProductive" class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
                             <span class="text-xs text-slate-300 font-medium">Productive Activity</span>
                         </label>
                     </div>
@@ -431,7 +431,7 @@
             return `${year}-${month}-${day}`;
         }
 
-        // Time string parser to calculate durations dynamically
+        // Time string parser to calculate durations dynamically with broad format support (12hr/24hr)
         function parseDurationInHours(timeStr) {
             if (!timeStr) return 0;
             const parts = timeStr.split('-').map(p => p.trim());
@@ -447,19 +447,33 @@
         }
 
         function parseTimeString(str) {
-            const match = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-            if (!match) return null;
+            // Match 12-hour format with AM/PM (e.g., 06:00 AM, 6:00am, 12:30 PM)
+            const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+            if (match12) {
+                let hours = parseInt(match12[1], 10);
+                const minutes = parseInt(match12[2], 10);
+                const modifier = match12[3] ? match12[3].toUpperCase() : null;
 
-            let hours = parseInt(match[1], 10);
-            const minutes = parseInt(match[2], 10);
-            const modifier = match[3] ? match[3].toUpperCase() : null;
+                if (modifier === 'PM' && hours < 12) hours += 12;
+                if (modifier === 'AM' && hours === 12) hours = 0;
 
-            if (modifier === 'PM' && hours < 12) hours += 12;
-            if (modifier === 'AM' && hours === 12) hours = 0;
+                const date = new Date();
+                date.setHours(hours, minutes, 0, 0);
+                return date.getTime();
+            }
 
-            const date = new Date();
-            date.setHours(hours, minutes, 0, 0);
-            return date.getTime();
+            // Match 24-hour format (e.g., 06:00, 18:30)
+            const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
+            if (match24) {
+                let hours = parseInt(match24[1], 10);
+                const minutes = parseInt(match24[2], 10);
+
+                const date = new Date();
+                date.setHours(hours, minutes, 0, 0);
+                return date.getTime();
+            }
+
+            return null;
         }
 
         // Calculate Total Target & Checked Completed Hours for Productive Tasks
@@ -468,7 +482,8 @@
             let completedHours = 0;
 
             scheduleData.forEach(task => {
-                const isProd = task.isProductive !== undefined ? task.isProductive : true; // Default true
+                // If tasks-input.json has undefined isProductive, treat missing property as true for robust backward compatibility
+                const isProd = task.isProductive !== false; 
                 if (isProd) {
                     const hours = parseDurationInHours(task.time);
                     totalTarget += hours;
@@ -736,7 +751,7 @@
             const record = trackerData[currentDateStr] || { checkedTasks: [] };
             const checkedSet = new Set(record.checkedTasks);
 
-            // Update Dynamic Productive Target Hours Progress Bar
+            // Update Dynamic Productive Target Hours Progress Bar & Numbers
             const prodMetrics = calculateProductiveMetrics(checkedSet);
             document.getElementById('prodTargetPercent').innerText = `${prodMetrics.percentage}%`;
             document.getElementById('prodProgressBar').style.width = `${prodMetrics.percentage}%`;
@@ -754,7 +769,7 @@
             let html = '';
             scheduleData.forEach(item => {
                 const isChecked = checkedSet.has(item.id);
-                const isProd = item.isProductive !== undefined ? item.isProductive : true;
+                const isProd = item.isProductive !== false;
 
                 html += `
                     <div class="p-4 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-700/20 transition-all ${isChecked ? 'bg-slate-900/30 opacity-60' : ''}">
@@ -876,7 +891,7 @@
 
             let html = '';
             scheduleData.forEach((task, index) => {
-                const isProd = task.isProductive !== undefined ? task.isProductive : true;
+                const isProd = task.isProductive !== false;
                 html += `
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 font-mono text-xs text-slate-400">
@@ -941,7 +956,7 @@
                     document.getElementById('taskActivity').value = task.activity;
                     document.getElementById('taskDesc').value = task.desc || '';
                     document.getElementById('taskCategory').value = task.category;
-                    document.getElementById('taskIsProductive').checked = task.isProductive !== undefined ? task.isProductive : true;
+                    document.getElementById('taskIsProductive').checked = task.isProductive !== false;
                     document.getElementById('taskIsSpecial').checked = !!task.isSpecial;
                 }
             } else {
