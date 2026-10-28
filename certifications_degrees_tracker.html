@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cert & Degree Progress Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- App Brand Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-blue-400 bg-clip-text text-transparent">
+                            CertTrack Pro
+                        </h1>
+                        <p class="text-xs text-slate-400 hidden sm:block">Technical Certifications & Degree Tracker</p>
+                    </div>
+                </div>
+
+                <!-- File System API & Action Controls -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Dynamic File API Status Badge -->
+                    <div id="file-api-status" class="hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="api-status-text">File Sync Ready</span>
+                    </div>
+
+                    <!-- File Action Dropdown / Button Group -->
+                    <button id="btn-open-files" onclick="openFileSystemPicker()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-folder-open text-amber-400"></i>
+                        <span class="hidden sm:inline">Load JSON Files</span>
+                    </button>
+
+                    <button id="btn-save-files" onclick="saveToFilesystem()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 transition flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Save Sync</span>
+                    </button>
+
+                    <!-- Direct JSON Export Fallback Menu Button -->
+                    <button onclick="toggleMenu('export-dropdown')" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition relative">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
+                    <!-- Export Dropdown -->
+                    <div id="export-dropdown" class="hidden absolute right-4 top-14 w-60 rounded-xl glass-panel shadow-2xl py-2 z-50 border border-slate-700">
+                        <div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Export Local Files</div>
+                        <button onclick="exportJSON('tracker-input.json')" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-800 flex items-center gap-2 text-slate-200">
+                            <i class="fa-solid fa-file-code text-blue-400"></i> Export tracker-input.json
+                        </button>
+                        <button onclick="exportJSON('tracker-progress.json')" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-800 flex items-center gap-2 text-slate-200">
+                            <i class="fa-solid fa-file-lines text-emerald-400"></i> Export tracker-progress.json
+                        </button>
+                        <hr class="my-1 border-slate-800">
+                        <button onclick="resetToDefaults()" class="w-full text-left px-4 py-2 text-xs hover:bg-rose-950/40 text-rose-400 flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-right"></i> Reset Initial Defaults
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Top Notification Banner -->
+        <div id="alert-banner" class="hidden rounded-xl p-4 transition-all duration-300 flex items-center justify-between border">
+            <div class="flex items-center space-x-3">
+                <i id="alert-icon" class="text-lg"></i>
+                <span id="alert-message" class="text-sm font-medium"></span>
+            </div>
+            <button onclick="hideAlert()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Dashboard Analytics Overview -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-panel p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase text-slate-400">Total Tracked</span>
+                    <i class="fa-solid fa-list-check text-blue-400"></i>
+                </div>
+                <div class="mt-2 flex items-baseline">
+                    <span id="stat-total" class="text-2xl font-extrabold text-white">0</span>
+                    <span class="ml-2 text-xs text-slate-400">items</span>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase text-slate-400">Avg Progress</span>
+                    <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                </div>
+                <div class="mt-2 flex items-baseline">
+                    <span id="stat-avg-progress" class="text-2xl font-extrabold text-white">0%</span>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase text-slate-400">Completed</span>
+                    <i class="fa-solid fa-award text-amber-400"></i>
+                </div>
+                <div class="mt-2 flex items-baseline">
+                    <span id="stat-completed" class="text-2xl font-extrabold text-white">0</span>
+                    <span class="ml-2 text-xs text-slate-400">achieved</span>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase text-slate-400">Upcoming Deadlines</span>
+                    <i class="fa-solid fa-clock text-rose-400"></i>
+                </div>
+                <div class="mt-2 flex items-baseline">
+                    <span id="stat-upcoming" class="text-2xl font-extrabold text-white">0</span>
+                    <span class="ml-2 text-xs text-slate-400">&lt; 30 days</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controls & Filters Header -->
+        <section class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 glass-panel p-4 rounded-xl">
+            <!-- Search and Category Filters -->
+            <div class="flex flex-1 flex-col sm:flex-row items-center gap-3">
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="search-input" oninput="renderTrackerGrid()" placeholder="Search certs or degrees..." class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <select id="filter-type" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="ALL">All Types</option>
+                        <option value="Certification">Certifications</option>
+                        <option value="Degree">Degrees</option>
+                    </select>
+
+                    <select id="filter-status" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="ALL">All Statuses</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="OVERDUE">Overdue</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Create New Certification / Degree Button -->
+            <button onclick="openModal('add-item-modal')" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-lg shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 transition">
+                <i class="fa-solid fa-plus"></i>
+                <span>Add Certification / Degree</span>
+            </button>
+        </section>
+
+        <!-- Certifications Grid Display -->
+        <section id="tracker-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cards populated dynamically via JavaScript -->
+        </section>
+
+        <!-- Empty State Component -->
+        <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center glass-panel rounded-xl">
+            <div class="w-16 h-16 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-500 mb-4">
+                <i class="fa-solid fa-folder-open text-2xl"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-200">No Tracked Items Found</h3>
+            <p class="text-xs text-slate-400 max-w-sm mt-1">There are no certifications matching your current filters or loaded files.</p>
+            <button onclick="resetFilters()" class="mt-4 px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg font-medium transition">
+                Reset Filters
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 glass-panel py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>
+                <span>Synced Files: </span>
+                <span class="font-mono text-slate-400">tracker-input.json</span> & <span class="font-mono text-slate-400">tracker-progress.json</span>
+            </div>
+            <div>
+                <span>CertTrack Pro &copy; 2026 - Optimized for GitHub Pages</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ADD NEW ITEM MODAL -->
+    <div id="add-item-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-square-plus text-blue-400"></i>
+                    <span>Add New Tracked Item</span>
+                </h3>
+                <button onclick="closeModal('add-item-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="add-item-form" onsubmit="handleAddNewItem(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Title / Certification Name *</label>
+                    <input type="text" id="new-title" required placeholder="e.g. AZ-500 Security Engineer" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Type</label>
+                        <select id="new-type" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="Certification">Certification</option>
+                            <option value="Degree">Degree</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Provider / Vendor</label>
+                        <input type="text" id="new-provider" placeholder="e.g. Microsoft, AWS" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Target Date *</label>
+                        <input type="date" id="new-target-date" required class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Initial Progress (%)</label>
+                        <input type="number" id="new-progress" min="0" max="100" value="0" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Initial Note / Description</label>
+                    <textarea id="new-note" rows="2" placeholder="Optional notes on learning goals or study roadmap..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('add-item-modal')" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-800 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-md shadow-blue-600/30">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NOTES LOG MODAL -->
+    <div id="notes-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel border border-slate-700 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 id="notes-modal-title" class="text-base font-bold text-white">Task Notes & Preparation Journal</h3>
+                    <p id="notes-modal-subtitle" class="text-xs text-slate-400">Item Notes</p>
+                </div>
+                <button onclick="closeModal('notes-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Notes List Feed -->
+            <div id="notes-list-container" class="p-6 overflow-y-auto flex-1 space-y-3">
+                <!-- Notes will be populated dynamically -->
+            </div>
+
+            <!-- Add Note Form -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900/60">
+                <form id="add-note-form" onsubmit="handleAddNote(event)" class="space-y-3">
+                    <input type="hidden" id="notes-item-id">
+                    <textarea id="note-input" rows="2" required placeholder="Write a note or progress log entry..." class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Append Note</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden HTML File Input Fallback -->
+    <input type="file" id="fallback-file-input" multiple accept=".json" class="hidden" onchange="handleFallbackFileInput(event)">
+
+    <!-- Main Logic Script -->
+    <script>
+        // ==========================================
+        // INITIAL DATA & DEFAULT STATE
+        // ==========================================
+        
+        // Initial catalog definition as requested (tracker-input.json structure)
+        const INITIAL_INPUT_DATA = [
+            {
+                id: "cert-az-104",
+                name: "AZ-104",
+                type: "Certification",
+                provider: "Microsoft Azure",
+                targetDate: "2026-11-10",
+                description: "Microsoft Certified: Azure Administrator Associate"
+            },
+            {
+                id: "cert-az-305",
+                name: "AZ-305",
+                type: "Certification",
+                provider: "Microsoft Azure",
+                targetDate: "2026-11-18",
+                description: "Designing Microsoft Azure Infrastructure Solutions"
+            },
+            {
+                id: "cert-az-400",
+                name: "AZ-400",
+                type: "Certification",
+                provider: "Microsoft Azure",
+                targetDate: "2026-11-30",
+                description: "Designing and Implementing Microsoft DevOps Solutions"
+            }
+        ];
+
+        // Initial tracking state (tracker-progress.json structure)
+        const INITIAL_PROGRESS_DATA = {
+            "cert-az-104": {
+                progress: 0,
+                status: "In Progress",
+                lastUpdated: new Date().toISOString(),
+                notes: [
+                    { id: "n1", date: "2026-10-28 09:00", text: "Certification created and target set to 10 Nov 2026." }
+                ]
+            },
+            "cert-az-305": {
+                progress: 0,
+                status: "In Progress",
+                lastUpdated: new Date().toISOString(),
+                notes: [
+                    { id: "n2", date: "2026-10-28 09:00", text: "Certification created and target set to 18 Nov 2026." }
+                ]
+            },
+            "cert-az-400": {
+                progress: 0,
+                status: "In Progress",
+                lastUpdated: new Date().toISOString(),
+                notes: [
+                    { id: "n3", date: "2026-10-28 09:00", text: "Certification created and target set to 30 Nov 2026." }
+                ]
+            }
+        };
+
+        // Application State
+        let inputCatalog = [];
+        let progressMap = {};
+        let fileHandles = {
+            input: null,
+            progress: null
+        };
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStateFromLocalStorage();
+            renderTrackerGrid();
+            updateDashboardStats();
+            checkFileSystemAPISupport();
+        });
+
+        function checkFileSystemAPISupport() {
+            const isSupported = 'showOpenFilePicker' in window;
+            const badge = document.getElementById('file-api-status');
+            const statusText = document.getElementById('api-status-text');
+            
+            if (isSupported) {
+                badge.classList.remove('hidden');
+                statusText.textContent = "File System API Ready";
+            } else {
+                badge.classList.remove('hidden');
+                badge.className = "hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                statusText.textContent = "JSON Sync Mode (Download Fallback)";
+            }
+        }
+
+        function loadStateFromLocalStorage() {
+            const savedInput = localStorage.getItem('cert_tracker_input');
+            const savedProgress = localStorage.getItem('cert_tracker_progress');
+
+            if (savedInput && savedProgress) {
+                try {
+                    inputCatalog = JSON.parse(savedInput);
+                    progressMap = JSON.parse(savedProgress);
+                } catch (e) {
+                    console.error("Error parsing local storage", e);
+                    useDefaultData();
+                }
+            } else {
+                useDefaultData();
+            }
+        }
+
+        function useDefaultData() {
+            inputCatalog = JSON.parse(JSON.stringify(INITIAL_INPUT_DATA));
+            progressMap = JSON.parse(JSON.stringify(INITIAL_PROGRESS_DATA));
+            saveToLocalStorage();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('cert_tracker_input', JSON.stringify(inputCatalog));
+            localStorage.setItem('cert_tracker_progress', JSON.stringify(progressMap));
+        }
+
+        function resetToDefaults() {
+            if (confirm("Reset tracking data back to original 3 certifications?")) {
+                useDefaultData();
+                renderTrackerGrid();
+                updateDashboardStats();
+                showAlert("Reset to default AZ-104, AZ-305, AZ-400 datasets.", "success");
+            }
+        }
+
+        // ==========================================
+        // FILE SYSTEM ACCESS API & JSON IMPORT/EXPORT
+        // ==========================================
+        async function openFileSystemPicker() {
+            if ('showOpenFilePicker' in window) {
+                try {
+                    showAlert("Select your tracker-input.json and/or tracker-progress.json file(s)", "info");
+                    const handles = await window.showOpenFilePicker({
+                        multiple: true,
+                        types: [{
+                            description: 'JSON Files',
+                            accept: { 'application/json': ['.json'] }
+                        }]
+                    });
+
+                    for (const handle of handles) {
+                        const file = await handle.getFile();
+                        const content = await file.text();
+                        const parsed = JSON.parse(content);
+
+                        if (file.name.includes('input') || Array.isArray(parsed)) {
+                            fileHandles.input = handle;
+                            inputCatalog = parsed;
+                        } else if (file.name.includes('progress') || typeof parsed === 'object') {
+                            fileHandles.progress = handle;
+                            progressMap = parsed;
+                        }
+                    }
+
+                    saveToLocalStorage();
+                    renderTrackerGrid();
+                    updateDashboardStats();
+                    showAlert("Successfully loaded and synced external JSON files!", "success");
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        showAlert("Failed to open files: " + err.message, "error");
+                    }
+                }
+            } else {
+                // Fallback for browsers without File System Access API
+                document.getElementById('fallback-file-input').click();
+            }
+        }
+
+        function handleFallbackFileInput(event) {
+            const files = event.target.files;
+            if (!files.length) return;
+
+            let loadedCount = 0;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        if (file.name.includes('input') || Array.isArray(parsed)) {
+                            inputCatalog = parsed;
+                            loadedCount++;
+                        } else if (file.name.includes('progress') || typeof parsed === 'object') {
+                            progressMap = parsed;
+                            loadedCount++;
+                        }
+
+                        if (loadedCount > 0) {
+                            saveToLocalStorage();
+                            renderTrackerGrid();
+                            updateDashboardStats();
+                            showAlert(`Loaded file: ${file.name}`, "success");
+                        }
+                    } catch (err) {
+                        showAlert(`Error reading file ${file.name}: ${err.message}`, "error");
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        async function saveToFilesystem() {
+            saveToLocalStorage();
+            let savedToFileSystem = false;
+
+            // Attempt to write directly using handles if available
+            if ('showSaveFilePicker' in window) {
+                try {
+                    if (fileHandles.input) {
+                        const writable = await fileHandles.input.createWritable();
+                        await writable.write(JSON.stringify(inputCatalog, null, 2));
+                        await writable.close();
+                        savedToFileSystem = true;
+                    }
+                    if (fileHandles.progress) {
+                        const writable = await fileHandles.progress.createWritable();
+                        await writable.write(JSON.stringify(progressMap, null, 2));
+                        await writable.close();
+                        savedToFileSystem = true;
+                    }
+                } catch (e) {
+                    console.warn("Could not write directly to handles, offering save picker or download", e);
+                }
+            }
+
+            if (savedToFileSystem) {
+                showAlert("Successfully saved back to open local JSON files!", "success");
+            } else {
+                // Trigger download prompts for tracker files
+                exportJSON('tracker-input.json');
+                setTimeout(() => exportJSON('tracker-progress.json'), 300);
+                showAlert("Progress saved to browser storage and JSON export generated!", "success");
+            }
+        }
+
+        function exportJSON(filename) {
+            let data = (filename === 'tracker-input.json') ? inputCatalog : progressMap;
+            const str = JSON.stringify(data, null, 2);
+            const blob = new Blob([str], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ==========================================
+        // GRID RENDERING & DOM UPDATES
+        // ==========================================
+        function renderTrackerGrid() {
+            const grid = document.getElementById('tracker-grid');
+            const emptyState = document.getElementById('empty-state');
+            grid.innerHTML = '';
+
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const typeFilter = document.getElementById('filter-type').value;
+            const statusFilter = document.getElementById('filter-status').value;
+
+            const filtered = inputCatalog.filter(item => {
+                const progData = progressMap[item.id] || { progress: 0, status: 'In Progress' };
+                const matchesSearch = item.name.toLowerCase().includes(searchVal) || 
+                                      (item.provider && item.provider.toLowerCase().includes(searchVal)) ||
+                                      (item.description && item.description.toLowerCase().includes(searchVal));
+                
+                const matchesType = (typeFilter === 'ALL') || (item.type === typeFilter);
+                
+                let matchesStatus = true;
+                const daysRemaining = calculateDaysRemaining(item.targetDate);
+                const isCompleted = progData.progress === 100;
+                const isOverdue = daysRemaining < 0 && !isCompleted;
+
+                if (statusFilter === 'COMPLETED') matchesStatus = isCompleted;
+                if (statusFilter === 'IN_PROGRESS') matchesStatus = !isCompleted && !isOverdue;
+                if (statusFilter === 'OVERDUE') matchesStatus = isOverdue;
+
+                return matchesSearch && matchesType && matchesStatus;
+            });
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            filtered.forEach(item => {
+                const prog = progressMap[item.id] || { progress: 0, notes: [] };
+                const daysLeft = calculateDaysRemaining(item.targetDate);
+                const card = createCardElement(item, prog, daysLeft);
+                grid.appendChild(card);
+            });
+        }
+
+        function createCardElement(item, prog, daysLeft) {
+            const isCompleted = prog.progress === 100;
+            const isOverdue = daysLeft < 0 && !isCompleted;
+
+            let statusBadgeClass = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+            let statusText = "On Track";
+
+            if (isCompleted) {
+                statusBadgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                statusText = "Completed";
+            } else if (isOverdue) {
+                statusBadgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                statusText = `Overdue (${Math.abs(daysLeft)} days)`;
+            } else if (daysLeft <= 14) {
+                statusBadgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                statusText = `Due in ${daysLeft} days`;
+            } else {
+                statusText = `${daysLeft} days left`;
+            }
+
+            const formattedDate = formatDateDisplay(item.targetDate);
+            const notesCount = (prog.notes || []).length;
+
+            const card = document.createElement('div');
+            card.className = "glass-panel rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition duration-300 flex flex-col justify-between space-y-4 shadow-lg";
+            card.innerHTML = `
+                <div>
+                    <!-- Header Badges -->
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+                            ${item.type || 'Certification'}
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusBadgeClass}">
+                            ${statusText}
+                        </span>
+                    </div>
+
+                    <!-- Title & Details -->
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <h3 class="text-lg font-bold text-white tracking-tight">${escapeHTML(item.name)}</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">${escapeHTML(item.provider || 'Technical Goal')}</p>
+                        </div>
+                        <button onclick="deleteItem('${item.id}')" class="text-slate-600 hover:text-rose-400 p-1 transition" title="Delete Entry">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+
+                    ${item.description ? `<p class="text-xs text-slate-400 mt-2 line-clamp-2">${escapeHTML(item.description)}</p>` : ''}
+
+                    <!-- Target Date Info -->
+                    <div class="mt-4 flex items-center gap-2 text-xs text-slate-300 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
+                        <i class="fa-regular fa-calendar-check text-blue-400"></i>
+                        <span class="text-slate-400">Target Date:</span>
+                        <span class="font-semibold text-slate-200">${formattedDate}</span>
+                    </div>
+                </div>
+
+                <!-- Progress Control Section -->
+                <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400 font-medium">Completion Progress</span>
+                        <span class="font-extrabold ${isCompleted ? 'text-emerald-400' : 'text-blue-400'}">${prog.progress}%</span>
+                    </div>
+
+                    <!-- Interactive Progress Bar & Slider -->
+                    <div class="space-y-2">
+                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div class="h-full ${isCompleted ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-blue-600 to-indigo-500'} transition-all duration-300" style="width: ${prog.progress}%"></div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <input type="range" min="0" max="100" value="${prog.progress}" 
+                                oninput="updateProgress('${item.id}', this.value)" 
+                                class="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            <input type="number" min="0" max="100" value="${prog.progress}" 
+                                onchange="updateProgress('${item.id}', this.value)" 
+                                class="w-14 bg-slate-900 border border-slate-700 text-center text-xs text-slate-200 rounded py-1 font-mono focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Task Notes Action -->
+                    <div class="pt-2 flex items-center justify-between">
+                        <button onclick="openNotesModal('${item.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-lg text-xs font-medium text-slate-300 flex items-center gap-2 transition w-full justify-center">
+                            <i class="fa-regular fa-comment-dots text-blue-400"></i>
+                            <span>Notes & Journal (${notesCount})</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // ==========================================
+        // STATE MUTATIONS
+        // ==========================================
+        function updateProgress(id, value) {
+            let val = parseInt(value, 10);
+            if (isNaN(val)) val = 0;
+            val = Math.max(0, Math.min(100, val));
+
+            if (!progressMap[id]) {
+                progressMap[id] = { progress: 0, notes: [] };
+            }
+
+            const oldVal = progressMap[id].progress;
+            progressMap[id].progress = val;
+            progressMap[id].lastUpdated = new Date().toISOString();
+
+            // Auto log completion note if reached 100%
+            if (val === 100 && oldVal !== 100) {
+                appendNoteToItem(id, "🎉 Milestone reached! Progress marked as 100% completed.");
+            }
+
+            saveToLocalStorage();
+            renderTrackerGrid();
+            updateDashboardStats();
+        }
+
+        function handleAddNewItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-title').value.trim();
+            const type = document.getElementById('new-type').value;
+            const provider = document.getElementById('new-provider').value.trim();
+            const targetDate = document.getElementById('new-target-date').value;
+            const progress = parseInt(document.getElementById('new-progress').value, 10) || 0;
+            const initialNote = document.getElementById('new-note').value.trim();
+
+            if (!name || !targetDate) {
+                showAlert("Please fill in required fields", "error");
+                return;
+            }
+
+            const id = 'cert-' + Date.now();
+            const newItem = {
+                id,
+                name,
+                type,
+                provider: provider || (type === 'Degree' ? 'University' : 'Certification Board'),
+                targetDate,
+                description: initialNote
+            };
+
+            inputCatalog.push(newItem);
+
+            const initialNotesList = [];
+            if (initialNote) {
+                initialNotesList.push({
+                    id: 'n-' + Date.now(),
+                    date: formatCurrentTimestamp(),
+                    text: initialNote
+                });
+            }
+
+            progressMap[id] = {
+                progress,
+                status: progress === 100 ? 'Completed' : 'In Progress',
+                lastUpdated: new Date().toISOString(),
+                notes: initialNotesList
+            };
+
+            saveToLocalStorage();
+            renderTrackerGrid();
+            updateDashboardStats();
+            closeModal('add-item-modal');
+            document.getElementById('add-item-form').reset();
+            showAlert(`Added ${name} to your tracking board.`, "success");
+        }
+
+        function deleteItem(id) {
+            const item = inputCatalog.find(i => i.id === id);
+            if (!item) return;
+
+            if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
+                inputCatalog = inputCatalog.filter(i => i.id !== id);
+                delete progressMap[id];
+                saveToLocalStorage();
+                renderTrackerGrid();
+                updateDashboardStats();
+                showAlert(`Deleted "${item.name}"`, "info");
+            }
+        }
+
+        // ==========================================
+        // NOTES MODAL LOGIC
+        // ==========================================
+        function openNotesModal(id) {
+            const item = inputCatalog.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('notes-item-id').value = id;
+            document.getElementById('notes-modal-title').textContent = item.name;
+            document.getElementById('notes-modal-subtitle').textContent = `${item.provider || item.type} • Target: ${formatDateDisplay(item.targetDate)}`;
+
+            renderNotesFeed(id);
+            openModal('notes-modal');
+        }
+
+        function renderNotesFeed(id) {
+            const container = document.getElementById('notes-list-container');
+            const prog = progressMap[id] || { notes: [] };
+            const notes = prog.notes || [];
+
+            container.innerHTML = '';
+
+            if (notes.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-xs">
+                        <i class="fa-regular fa-note-sticky text-2xl mb-2 block text-slate-600"></i>
+                        No notes added yet. Record your study milestones or exam preparation thoughts below.
+                    </div>
+                `;
+                return;
+            }
+
+            notes.slice().reverse().forEach(note => {
+                const noteCard = document.createElement('div');
+                noteCard.className = "bg-slate-900/80 border border-slate-800 rounded-xl p-3 space-y-1";
+                noteCard.innerHTML = `
+                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                        <span class="font-medium text-blue-400"><i class="fa-regular fa-clock mr-1"></i>${escapeHTML(note.date)}</span>
+                        <button onclick="deleteNote('${id}', '${note.id}')" class="text-slate-600 hover:text-rose-400"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <p class="text-xs text-slate-200 whitespace-pre-wrap">${escapeHTML(note.text)}</p>
+                `;
+                container.appendChild(noteCard);
+            });
+        }
+
+        function handleAddNote(e) {
+            e.preventDefault();
+            const id = document.getElementById('notes-item-id').value;
+            const textInput = document.getElementById('note-input');
+            const text = textInput.value.trim();
+
+            if (!text) return;
+
+            appendNoteToItem(id, text);
+            textInput.value = '';
+            renderNotesFeed(id);
+            renderTrackerGrid();
+            showAlert("Note added successfully.", "success");
+        }
+
+        function appendNoteToItem(id, text) {
+            if (!progressMap[id]) {
+                progressMap[id] = { progress: 0, notes: [] };
+            }
+            if (!progressMap[id].notes) {
+                progressMap[id].notes = [];
+            }
+
+            progressMap[id].notes.push({
+                id: 'n-' + Date.now(),
+                date: formatCurrentTimestamp(),
+                text
+            });
+
+            saveToLocalStorage();
+        }
+
+        function deleteNote(itemId, noteId) {
+            if (progressMap[itemId] && progressMap[itemId].notes) {
+                progressMap[itemId].notes = progressMap[itemId].notes.filter(n => n.id !== noteId);
+                saveToLocalStorage();
+                renderNotesFeed(itemId);
+                renderTrackerGrid();
+            }
+        }
+
+        // ==========================================
+        // DASHBOARD STATS
+        // ==========================================
+        function updateDashboardStats() {
+            const total = inputCatalog.length;
+            let sumProgress = 0;
+            let completed = 0;
+            let upcoming = 0;
+
+            inputCatalog.forEach(item => {
+                const prog = progressMap[item.id] || { progress: 0 };
+                sumProgress += prog.progress;
+                if (prog.progress === 100) {
+                    completed++;
+                }
+
+                const daysLeft = calculateDaysRemaining(item.targetDate);
+                if (daysLeft >= 0 && daysLeft <= 30 && prog.progress < 100) {
+                    upcoming++;
+                }
+            });
+
+            const avg = total > 0 ? Math.round(sumProgress / total) : 0;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-avg-progress').textContent = `${avg}%`;
+            document.getElementById('stat-completed').textContent = completed;
+            document.getElementById('stat-upcoming').textContent = upcoming;
+        }
+
+        // ==========================================
+        // UTILITIES
+        // ==========================================
+        function calculateDaysRemaining(targetDateStr) {
+            if (!targetDateStr) return 0;
+            const target = new Date(targetDateStr);
+            const now = new Date();
+            
+            // Clear time portion for date diff calculation
+            target.setHours(0, 0, 0, 0);
+            now.setHours(0, 0, 0, 0);
+
+            const diffTime = target - now;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        function formatDateDisplay(dateStr) {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function formatCurrentTimestamp() {
+            const d = new Date();
+            const date = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `${date} ${time}`;
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function toggleMenu(menuId) {
+            const el = document.getElementById(menuId);
+            el.classList.toggle('hidden');
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-type').value = 'ALL';
+            document.getElementById('filter-status').value = 'ALL';
+            renderTrackerGrid();
+        }
+
+        function showAlert(msg, type = "info") {
+            const banner = document.getElementById('alert-banner');
+            const icon = document.getElementById('alert-icon');
+            const message = document.getElementById('alert-message');
+
+            message.textContent = msg;
+
+            banner.className = "rounded-xl p-4 transition-all duration-300 flex items-center justify-between border ";
+            
+            if (type === "success") {
+                banner.classList.add("bg-emerald-500/10", "border-emerald-500/30", "text-emerald-300");
+                icon.className = "fa-solid fa-circle-check text-emerald-400";
+            } else if (type === "error") {
+                banner.classList.add("bg-rose-500/10", "border-rose-500/30", "text-rose-300");
+                icon.className = "fa-solid fa-circle-exclamation text-rose-400";
+            } else {
+                banner.classList.add("bg-blue-500/10", "border-blue-500/30", "text-blue-300");
+                icon.className = "fa-solid fa-circle-info text-blue-400";
+            }
+
+            banner.classList.remove('hidden');
+            setTimeout(() => {
+                hideAlert();
+            }, 5000);
+        }
+
+        function hideAlert() {
+            document.getElementById('alert-banner').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
