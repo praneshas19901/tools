@@ -133,7 +133,7 @@
                 </div>
                 <div>
                     <h3 id="banner-title" class="text-sm font-bold text-slate-100">Connect Local Storage Folder</h3>
-                    <p id="banner-desc" class="text-xs text-slate-400 mt-0.5">Select <span class="font-mono text-blue-300">C:\Storage\Tracker-Data\cert-degree-tracker</span> (or your custom directory). Files will auto-sync on every update.</p>
+                    <p id="banner-desc" class="text-xs text-slate-400 mt-0.5">Select your storage directory. Files (<span class="font-mono text-blue-300">tracker-input.json</span> & <span class="font-mono text-blue-300">tracker-progress.json</span>) will auto-sync on every update.</p>
                 </div>
             </div>
             <button id="banner-btn" onclick="connectTrackerDirectory()" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 whitespace-nowrap transition">
@@ -180,7 +180,7 @@
             <div class="glass-panel p-4 rounded-xl border border-slate-800">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-semibold uppercase text-slate-400">Completed</span>
-                    <i class="fa-solid fa-award text-amber-400"></i>
+                    <i class="fa-solid fa-award text-emerald-400"></i>
                 </div>
                 <div class="mt-2 flex items-baseline">
                     <span id="stat-completed" class="text-2xl font-extrabold text-white">0</span>
@@ -190,12 +190,12 @@
 
             <div class="glass-panel p-4 rounded-xl border border-slate-800">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase text-slate-400">Upcoming Deadlines</span>
-                    <i class="fa-solid fa-clock text-rose-400"></i>
+                    <span class="text-xs font-semibold uppercase text-slate-400">Overdue / Warning</span>
+                    <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
                 </div>
                 <div class="mt-2 flex items-baseline">
                     <span id="stat-upcoming" class="text-2xl font-extrabold text-white">0</span>
-                    <span class="ml-2 text-xs text-slate-400">&lt; 30 days</span>
+                    <span class="ml-2 text-xs text-slate-400">need action</span>
                 </div>
             </div>
         </section>
@@ -220,10 +220,10 @@
 
                     <select id="filter-status" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="ALL">All Statuses</option>
-                        <option value="UNDERWAY">Underway</option>
-                        <option value="TO_DO">To-Do</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="OVERDUE">Overdue</option>
+                        <option value="Underway">Underway (Orange)</option>
+                        <option value="Overdue">Overdue (Red)</option>
+                        <option value="Completed">Completed (Green)</option>
+                        <option value="To-Do">To-Do (Yellow)</option>
                     </select>
 
                     <select id="sort-by" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -311,9 +311,20 @@
                         <input type="date" id="new-target-date" required class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Initial Progress (%)</label>
-                        <input type="number" id="new-progress" min="0" max="100" value="0" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Initial Status</label>
+                        <select id="new-status" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="AUTO">Auto (Calculated)</option>
+                            <option value="Underway">Underway (Orange)</option>
+                            <option value="Overdue">Overdue (Red)</option>
+                            <option value="Completed">Completed (Green)</option>
+                            <option value="To-Do">To-Do (Yellow)</option>
+                        </select>
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Initial Progress (%)</label>
+                    <input type="number" id="new-progress" min="0" max="100" value="0" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
 
                 <div>
@@ -361,15 +372,86 @@
         </div>
     </div>
 
-    <!-- Hidden HTML File Input Fallback -->
-    <input type="file" id="fallback-file-input" multiple accept=".json" class="hidden" onchange="handleFallbackFileInput(event)">
-
     <!-- Main Logic Script -->
     <script>
         // Application State
         let inputCatalog = [];
         let progressMap = {};
         let dirHandle = null;
+
+        // Color definitions map according to target specs:
+        // 1. Underway - Orange tint card & badge
+        // 2. Overdue - Red tint card & badge
+        // 3. Completed - Green tint card & badge
+        // 4. To-Do - Yellow tint card & badge
+        const STATUS_THEMES = {
+            'Underway': {
+                cardBg: 'bg-amber-950/20 border-amber-500/40 hover:border-amber-500/70 shadow-amber-950/30',
+                badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                text: 'text-amber-400',
+                progressBg: 'bg-gradient-to-r from-amber-500 to-orange-400',
+                icon: 'fa-solid fa-spinner animate-spin text-amber-400'
+            },
+            'Overdue': {
+                cardBg: 'bg-rose-950/25 border-rose-500/40 hover:border-rose-500/70 shadow-rose-950/30',
+                badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                text: 'text-rose-400',
+                progressBg: 'bg-gradient-to-r from-rose-600 to-red-400',
+                icon: 'fa-solid fa-circle-exclamation text-rose-400'
+            },
+            'Completed': {
+                cardBg: 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-500/70 shadow-emerald-950/30',
+                badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                text: 'text-emerald-400',
+                progressBg: 'bg-gradient-to-r from-emerald-500 to-teal-400',
+                icon: 'fa-solid fa-circle-check text-emerald-400'
+            },
+            'To-Do': {
+                cardBg: 'bg-yellow-950/20 border-yellow-500/40 hover:border-yellow-500/70 shadow-yellow-950/30',
+                badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+                text: 'text-yellow-400',
+                progressBg: 'bg-gradient-to-r from-yellow-500 to-amber-300',
+                icon: 'fa-regular fa-clock text-yellow-400'
+            }
+        };
+
+        // Category Badge Highlighting Styles & Icons
+        const CATEGORY_STYLES = {
+            'Certification': {
+                badge: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/40 font-bold',
+                icon: 'fa-solid fa-certificate'
+            },
+            'Degree': {
+                badge: 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-sm shadow-purple-500/40 font-bold',
+                icon: 'fa-solid fa-graduation-cap'
+            },
+            'Specialization': {
+                badge: 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-sm shadow-cyan-500/40 font-bold',
+                icon: 'fa-solid fa-award'
+            },
+            'Other': {
+                badge: 'bg-slate-700 text-slate-100 border border-slate-600 shadow-sm font-bold',
+                icon: 'fa-solid fa-bookmark'
+            }
+        };
+
+        // Calculate status dynamically based on progress and target date
+        function getCalculatedStatus(item, progress) {
+            const daysLeft = calculateDaysRemaining(item.targetDate);
+            if (progress === 100) return 'Completed';
+            if (daysLeft < 0) return 'Overdue';
+            if (progress > 0) return 'Underway';
+            return 'To-Do';
+        }
+
+        // Get effective status (Manual Override vs Dynamic Calculation)
+        function getEffectiveStatus(item, progData) {
+            const manualStatus = progData?.status || item?.status;
+            if (manualStatus && manualStatus !== 'AUTO' && STATUS_THEMES[manualStatus]) {
+                return manualStatus;
+            }
+            return getCalculatedStatus(item, progData?.progress || 0);
+        }
 
         // ==========================================
         // INDEXEDDB DIRECTORY HANDLE PERSISTENCE
@@ -437,7 +519,7 @@
                             await readFilesFromDirectory();
                             updateConnectionUI(true, dirHandle.name);
                         } else {
-                            dirHandle = savedHandle; // Keep handle reference so user can grant permission with 1 click
+                            dirHandle = savedHandle;
                             updateConnectionUI(false, dirHandle.name, true);
                         }
                     } catch (e) {
@@ -463,7 +545,6 @@
             const bannerBtn = document.getElementById('banner-btn');
 
             if (isConnected) {
-                // Header badge
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
                 if (statusText) {
                     statusText.className = "text-emerald-400 font-medium truncate max-w-[150px] sm:max-w-[200px]";
@@ -471,7 +552,6 @@
                 }
                 if (btnLabel) btnLabel.textContent = "Change Folder";
 
-                // Banner
                 if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
                 if (bannerIconBg) bannerIconBg.className = "p-2.5 bg-emerald-600/20 text-emerald-400 rounded-xl border border-emerald-500/30 flex-shrink-0";
                 if (bannerIcon) bannerIcon.className = "fa-solid fa-folder-check text-xl";
@@ -482,7 +562,6 @@
                     bannerBtn.className = "px-4 py-2 text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg whitespace-nowrap transition border border-slate-700";
                 }
             } else if (needsPermission) {
-                // Header badge
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
                 if (statusText) {
                     statusText.className = "text-amber-400 font-medium truncate max-w-[150px] sm:max-w-[200px]";
@@ -490,7 +569,6 @@
                 }
                 if (btnLabel) btnLabel.textContent = "Re-authorize Access";
 
-                // Banner
                 if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-amber-500/30 bg-amber-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
                 if (bannerIconBg) bannerIconBg.className = "p-2.5 bg-amber-600/20 text-amber-400 rounded-xl border border-amber-500/30 flex-shrink-0";
                 if (bannerIcon) bannerIcon.className = "fa-solid fa-lock text-xl";
@@ -501,7 +579,6 @@
                     bannerBtn.className = "px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-lg shadow-lg shadow-amber-600/30 whitespace-nowrap transition";
                 }
             } else {
-                // Header badge
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-slate-500";
                 if (statusText) {
                     statusText.className = "text-slate-400";
@@ -509,12 +586,11 @@
                 }
                 if (btnLabel) btnLabel.textContent = "Connect Folder";
 
-                // Banner
                 if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
                 if (bannerIconBg) bannerIconBg.className = "p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 flex-shrink-0";
                 if (bannerIcon) bannerIcon.className = "fa-solid fa-folder-open text-xl";
                 if (bannerTitle) bannerTitle.textContent = "Connect Local Storage Folder";
-                if (bannerDesc) bannerDesc.innerHTML = 'Select <span class="font-mono text-blue-300">C:\\Storage\\Tracker-Data\\cert-degree-tracker</span> (or your custom directory). Files will auto-sync on every update.';
+                if (bannerDesc) bannerDesc.innerHTML = 'Select your directory to auto-sync <span class="font-mono text-blue-300">tracker-input.json</span> and <span class="font-mono text-blue-300">tracker-progress.json</span>.';
                 if (bannerBtn) {
                     bannerBtn.textContent = "Select Folder";
                     bannerBtn.className = "px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 whitespace-nowrap transition";
@@ -527,12 +603,11 @@
         // ==========================================
         async function connectTrackerDirectory() {
             if (!('showDirectoryPicker' in window)) {
-                openFallbackFileInput();
+                showAlert("Directory Picker is not supported in this browser. You can use manual exports.", "info");
                 return;
             }
 
             try {
-                // If handle exists but needs permission re-verification
                 if (dirHandle) {
                     const perm = await dirHandle.requestPermission({ mode: 'readwrite' });
                     if (perm === 'granted') {
@@ -543,11 +618,7 @@
                     }
                 }
 
-                // Prompt user to select directory (e.g. C:\Storage\Tracker-Data\cert-degree-tracker)
-                dirHandle = await window.showDirectoryPicker({
-                    mode: 'readwrite'
-                });
-
+                dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
                 await storeDirHandle(dirHandle);
                 await readFilesFromDirectory();
                 updateConnectionUI(true, dirHandle.name);
@@ -582,7 +653,6 @@
                 if (content.trim().length > 0) {
                     return JSON.parse(content);
                 } else {
-                    // Initialize empty file
                     await writeJSONToFileHandle(fileHandle, defaultData);
                     return defaultData;
                 }
@@ -603,11 +673,9 @@
             showSaveIndicator("Saving...", "saving");
 
             try {
-                // Write tracker-input.json
                 const inputHandle = await dirHandle.getFileHandle('tracker-input.json', { create: true });
                 await writeJSONToFileHandle(inputHandle, inputCatalog);
 
-                // Write tracker-progress.json
                 const progressHandle = await dirHandle.getFileHandle('tracker-progress.json', { create: true });
                 await writeJSONToFileHandle(progressHandle, progressMap);
 
@@ -623,25 +691,6 @@
             const writable = await fileHandle.createWritable();
             await writable.write(JSON.stringify(data, null, 2));
             await writable.close();
-        }
-
-        function updateConnectionUI(isConnected, folderName = '') {
-            const statusBadge = document.getElementById('file-api-status');
-            const statusDot = document.getElementById('api-status-dot');
-            const statusText = document.getElementById('api-status-text');
-            const banner = document.getElementById('directory-banner');
-
-            if (isConnected) {
-                statusBadge.className = "hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-                statusText.textContent = `Connected: ${folderName}`;
-                banner.classList.add('hidden');
-            } else {
-                statusBadge.className = "hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700";
-                statusDot.className = "w-2 h-2 rounded-full bg-slate-500";
-                statusText.textContent = "Folder Not Connected";
-                banner.classList.remove('hidden');
-            }
         }
 
         function showSaveIndicator(msg, type) {
@@ -679,8 +728,17 @@
                     progressMap = {};
                 }
             } else {
-                inputCatalog = [];
-                progressMap = {};
+                // Populate initial dummy data if empty to showcase app
+                inputCatalog = [
+                    { id: 'cert-1', name: 'AWS Certified Solutions Architect', category: 'Certification', provider: 'Amazon Web Services', targetDate: '2026-11-15', createdDate: '2026-01-10', status: 'AUTO' },
+                    { id: 'cert-2', name: 'MSc Computer Science', category: 'Degree', provider: 'University', targetDate: '2026-05-30', createdDate: '2025-09-01', status: 'Underway' },
+                    { id: 'cert-3', name: 'Certified Information Systems Security Professional (CISSP)', category: 'Certification', provider: '(ISC)²', targetDate: '2026-02-01', createdDate: '2025-10-01', status: 'AUTO' }
+                ];
+                progressMap = {
+                    'cert-1': { progress: 65, status: 'Underway', notes: [{ timestamp: '2026-02-10 14:00', text: 'Completed practice exam #2 with 82%' }] },
+                    'cert-2': { progress: 85, status: 'Underway', notes: [{ timestamp: '2026-01-20 10:00', text: 'Submitted thesis dissertation draft' }] },
+                    'cert-3': { progress: 20, status: 'Overdue', notes: [{ timestamp: '2025-11-01 11:30', text: 'Reviewing domain 3 cryptography concepts' }] }
+                };
             }
         }
 
@@ -736,12 +794,8 @@
                 
                 const matchesType = (typeFilter === 'ALL') || (category === typeFilter);
                 
-                const currentStatus = getEffectiveStatus(item, progData.progress);
-                let matchesStatus = true;
-
-                if (statusFilter !== 'ALL') {
-                    matchesStatus = (currentStatus === statusFilter);
-                }
+                const effectiveStatus = getEffectiveStatus(item, progData);
+                const matchesStatus = (statusFilter === 'ALL') || (effectiveStatus === statusFilter);
 
                 return matchesSearch && matchesType && matchesStatus;
             });
@@ -776,74 +830,41 @@
             });
         }
 
-        // Helper to determine active status (manual user override or dynamic target date logic)
-        function getEffectiveStatus(item, progressVal) {
-            if (item.status) {
-                return item.status;
-            }
-            if (progressVal === 100) return 'COMPLETED';
-            const daysLeft = calculateDaysRemaining(item.targetDate);
-            if (daysLeft < 0) return 'OVERDUE';
-            if (progressVal === 0) return 'TO_DO';
-            return 'UNDERWAY';
-        }
-
         function createCardElement(item, prog, daysLeft) {
-            const effectiveStatus = getEffectiveStatus(item, prog.progress);
-            const isCompleted = effectiveStatus === 'COMPLETED';
+            const effectiveStatus = getEffectiveStatus(item, prog);
+            const calcStatus = getCalculatedStatus(item, prog.progress);
+            const manualStatus = prog.status || item.status || 'AUTO';
+            const theme = STATUS_THEMES[effectiveStatus] || STATUS_THEMES['Underway'];
 
-            // Config for status colors (1. Underway - Orange, 2. Overdue - Red, 3. Completed - Green, 4. To-Do - Yellow)
-            const statusConfig = {
-                'UNDERWAY': {
-                    badgeClass: "bg-orange-500/10 text-orange-400 border-orange-500/30",
-                    selectBg: "bg-orange-950/40 text-orange-300 border-orange-500/40",
-                    label: "Underway",
-                    icon: "fa-solid fa-spinner"
-                },
-                'OVERDUE': {
-                    badgeClass: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-                    selectBg: "bg-rose-950/40 text-rose-300 border-rose-500/40",
-                    label: "Overdue",
-                    icon: "fa-solid fa-triangle-exclamation"
-                },
-                'COMPLETED': {
-                    badgeClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-                    selectBg: "bg-emerald-950/40 text-emerald-300 border-emerald-500/40",
-                    label: "Completed",
-                    icon: "fa-solid fa-circle-check"
-                },
-                'TO_DO': {
-                    badgeClass: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-                    selectBg: "bg-amber-950/40 text-amber-300 border-amber-500/40",
-                    label: "To-Do",
-                    icon: "fa-solid fa-list-check"
-                }
-            };
-
-            const cfg = statusConfig[effectiveStatus] || statusConfig['UNDERWAY'];
-            const formattedDate = formatDateDisplay(item.targetDate);
-            const notesCount = (prog.notes || []).length;
             const category = item.category || item.type || 'Certification';
+            const catStyle = CATEGORY_STYLES[category] || CATEGORY_STYLES['Other'];
+            const notesCount = (prog.notes || []).length;
 
             const card = document.createElement('div');
-            card.className = "glass-panel rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition duration-300 flex flex-col justify-between space-y-4 shadow-lg";
+            card.className = `backdrop-blur-md rounded-2xl p-5 border transition-all duration-300 flex flex-col justify-between space-y-4 shadow-xl ${theme.cardBg}`;
             card.innerHTML = `
                 <div>
                     <!-- Header Badges -->
                     <div class="flex items-center justify-between gap-2 mb-3">
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
-                            ${category}
+                        <span class="px-3 py-1 rounded-lg text-[11px] tracking-wide uppercase ${catStyle.badge} flex items-center gap-1.5">
+                            <i class="${catStyle.icon}"></i>
+                            <span>${category}</span>
                         </span>
-                        
-                        <!-- Selectable Status Dropdown with Color Themes -->
+
+                        <!-- Selectable Status Dropdown -->
                         <div class="relative flex items-center gap-1.5">
-                            <i class="${cfg.icon} text-xs"></i>
-                            <select onchange="updateItemStatus('${item.id}', this.value)" class="text-xs font-semibold px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer transition ${cfg.selectBg}">
-                                <option value="UNDERWAY" class="bg-slate-900 text-orange-400" ${effectiveStatus === 'UNDERWAY' ? 'selected' : ''}>Underway</option>
-                                <option value="TO_DO" class="bg-slate-900 text-amber-400" ${effectiveStatus === 'TO_DO' ? 'selected' : ''}>To-Do</option>
-                                <option value="OVERDUE" class="bg-slate-900 text-rose-400" ${effectiveStatus === 'OVERDUE' ? 'selected' : ''}>Overdue</option>
-                                <option value="COMPLETED" class="bg-slate-900 text-emerald-400" ${effectiveStatus === 'COMPLETED' ? 'selected' : ''}>Completed</option>
-                            </select>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border ${theme.badge} flex items-center gap-1.5 transition">
+                                <i class="${theme.icon}"></i>
+                                <select 
+                                    onchange="updateItemStatus('${item.id}', this.value)"
+                                    class="bg-transparent text-current font-bold text-xs focus:outline-none cursor-pointer pr-1">
+                                    <option value="AUTO" class="bg-slate-900 text-slate-200" ${manualStatus === 'AUTO' ? 'selected' : ''}>Auto (${calcStatus})</option>
+                                    <option value="Underway" class="bg-slate-900 text-amber-400 font-semibold" ${manualStatus === 'Underway' ? 'selected' : ''}>Underway (Orange)</option>
+                                    <option value="Overdue" class="bg-slate-900 text-rose-400 font-semibold" ${manualStatus === 'Overdue' ? 'selected' : ''}>Overdue (Red)</option>
+                                    <option value="Completed" class="bg-slate-900 text-emerald-400 font-semibold" ${manualStatus === 'Completed' ? 'selected' : ''}>Completed (Green)</option>
+                                    <option value="To-Do" class="bg-slate-900 text-yellow-400 font-semibold" ${manualStatus === 'To-Do' ? 'selected' : ''}>To-Do (Yellow)</option>
+                                </select>
+                            </span>
                         </div>
                     </div>
 
@@ -853,22 +874,25 @@
                             <h3 class="text-lg font-bold text-white tracking-tight">${escapeHTML(item.name)}</h3>
                             <p class="text-xs text-slate-400 mt-0.5">${escapeHTML(item.provider || 'Target Goal')}</p>
                         </div>
-                        <button onclick="deleteItem('${item.id}')" class="text-slate-600 hover:text-rose-400 p-1 transition" title="Delete Entry">
+                        <button onclick="deleteItem('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Delete Entry">
                             <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                     </div>
 
                     <!-- Target Date Info & Inline Date Picker -->
-                    <div class="mt-4 flex items-center justify-between gap-2 text-xs text-slate-300 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
+                    <div class="mt-4 flex items-center justify-between gap-2 text-xs text-slate-300 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
                         <div class="flex items-center gap-2">
                             <i class="fa-regular fa-calendar-check text-blue-400"></i>
-                            <span class="text-slate-400">Target Date:</span>
+                            <span class="text-slate-400">Target:</span>
+                            <span class="text-xs ${daysLeft < 0 && effectiveStatus !== 'Completed' ? 'text-rose-400 font-semibold' : 'text-slate-300'}">
+                                (${daysLeft < 0 ? Math.abs(daysLeft) + ' days ago' : daysLeft + ' days left'})
+                            </span>
                         </div>
                         <input type="date" 
                             value="${item.targetDate}" 
                             onclick="this.showPicker && this.showPicker()"
                             onchange="updateTargetDate('${item.id}', this.value)"
-                            class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans cursor-pointer hover:border-slate-500">
+                            class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans cursor-pointer hover:border-slate-500">
                     </div>
                 </div>
 
@@ -876,13 +900,13 @@
                 <div class="space-y-2 pt-2 border-t border-slate-800/80">
                     <div class="flex items-center justify-between text-xs">
                         <span class="text-slate-400 font-medium">Completion Progress</span>
-                        <span class="font-extrabold ${isCompleted ? 'text-emerald-400' : 'text-blue-400'}">${prog.progress}%</span>
+                        <span class="font-extrabold ${theme.text}">${prog.progress}%</span>
                     </div>
 
                     <!-- Interactive Progress Bar & Slider -->
                     <div class="space-y-2">
-                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                            <div class="h-full ${isCompleted ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-blue-600 to-indigo-500'} transition-all duration-300" style="width: ${prog.progress}%"></div>
+                        <div class="w-full bg-slate-950/80 rounded-full h-2 overflow-hidden border border-slate-800/80">
+                            <div class="h-full ${theme.progressBg} transition-all duration-300" style="width: ${prog.progress}%"></div>
                         </div>
 
                         <div class="flex items-center gap-3">
@@ -897,7 +921,7 @@
 
                     <!-- Task Notes Action -->
                     <div class="pt-2 flex items-center justify-between">
-                        <button onclick="openNotesModal('${item.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-lg text-xs font-medium text-slate-300 flex items-center gap-2 transition w-full justify-center">
+                        <button onclick="openNotesModal('${item.id}')" class="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 rounded-lg text-xs font-medium text-slate-300 flex items-center gap-2 transition w-full justify-center">
                             <i class="fa-regular fa-comment-dots text-blue-400"></i>
                             <span>Notes & Journal (${notesCount})</span>
                         </button>
@@ -908,34 +932,27 @@
         }
 
         // ==========================================
-        // STATE MUTATIONS WITH AUTO-SAVE
+        // STATE MUTATIONS WITH AUTO-SAVE & STATUS UPDATES
         // ==========================================
         function updateItemStatus(id, newStatus) {
             const item = inputCatalog.find(i => i.id === id);
             if (!item) return;
 
-            const oldStatus = getEffectiveStatus(item, (progressMap[id] || {}).progress || 0);
-            if (oldStatus === newStatus) return;
-
-            // Save status override into JSON item
+            // Sync status on both progress object and input catalog item for full persistence
+            if (!progressMap[id]) {
+                progressMap[id] = { progress: 0, notes: [] };
+            }
+            
+            progressMap[id].status = newStatus;
             item.status = newStatus;
 
-            // If user explicitly marks status as Completed, update progress to 100%
-            if (newStatus === 'COMPLETED') {
-                if (!progressMap[id]) progressMap[id] = { progress: 100, notes: [] };
-                progressMap[id].progress = 100;
-                appendNoteToItem(id, "🎉 Marked status as Completed!");
-            } else if (newStatus === 'TO_DO' && (!progressMap[id] || progressMap[id].progress === 100)) {
-                if (!progressMap[id]) progressMap[id] = { progress: 0, notes: [] };
-                progressMap[id].progress = 0;
-            }
-
-            appendNoteToItem(id, `🏷️ Status updated to ${newStatus}`);
+            const displayLabel = newStatus === 'AUTO' ? `Auto (${getCalculatedStatus(item, progressMap[id].progress)})` : newStatus;
+            appendNoteToItem(id, `🏷️ Status changed to "${displayLabel}"`);
 
             renderTrackerGrid();
             updateDashboardStats();
             autoSaveToFolder();
-            showAlert(`Status for "${item.name}" set to ${newStatus}`, "success");
+            showAlert(`Updated status for "${item.name}" to ${displayLabel}`, "success");
         }
 
         function updateTargetDate(id, newDateStr) {
@@ -948,7 +965,6 @@
 
             item.targetDate = newDateStr;
 
-            // Log change in notes automatically
             appendNoteToItem(id, `📅 Target date changed from ${formatDateDisplay(oldDate)} to ${formatDateDisplay(newDateStr)}`);
 
             renderTrackerGrid();
@@ -984,6 +1000,7 @@
             const category = document.getElementById('new-type').value;
             const provider = document.getElementById('new-provider').value.trim();
             const targetDate = document.getElementById('new-target-date').value;
+            const status = document.getElementById('new-status').value;
             const progress = parseInt(document.getElementById('new-progress').value, 10) || 0;
             const initialNote = document.getElementById('new-note').value.trim();
 
@@ -995,18 +1012,17 @@
             const id = 'cert-' + Date.now();
             const createdDate = new Date().toISOString().split('T')[0];
 
-            // 1. Add item entry conforming to target schema
             const newItem = {
                 id,
                 name,
                 category,
                 targetDate,
                 createdDate,
-                provider: provider || ''
+                provider: provider || '',
+                status
             };
             inputCatalog.push(newItem);
 
-            // 2. Initialize progress & notes conforming to target schema
             const initialNotesList = [];
             if (initialNote) {
                 initialNotesList.push({
@@ -1017,6 +1033,7 @@
 
             progressMap[id] = {
                 progress,
+                status,
                 notes: initialNotesList
             };
 
@@ -1135,18 +1152,17 @@
             const total = inputCatalog.length;
             let sumProgress = 0;
             let completed = 0;
-            let upcoming = 0;
+            let overdueOrWarning = 0;
 
             inputCatalog.forEach(item => {
                 const prog = progressMap[item.id] || { progress: 0 };
                 sumProgress += prog.progress;
-                if (prog.progress === 100) {
+                
+                const effectiveStatus = getEffectiveStatus(item, prog);
+                if (effectiveStatus === 'Completed') {
                     completed++;
-                }
-
-                const daysLeft = calculateDaysRemaining(item.targetDate);
-                if (daysLeft >= 0 && daysLeft <= 30 && prog.progress < 100) {
-                    upcoming++;
+                } else if (effectiveStatus === 'Overdue') {
+                    overdueOrWarning++;
                 }
             });
 
@@ -1155,7 +1171,7 @@
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-avg-progress').textContent = `${avg}%`;
             document.getElementById('stat-completed').textContent = completed;
-            document.getElementById('stat-upcoming').textContent = upcoming;
+            document.getElementById('stat-upcoming').textContent = overdueOrWarning;
         }
 
         // ==========================================
