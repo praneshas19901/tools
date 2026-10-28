@@ -834,8 +834,9 @@
                         </div>
                         <input type="date" 
                             value="${item.targetDate}" 
+                            onclick="this.showPicker && this.showPicker()"
                             onchange="updateTargetDate('${item.id}', this.value)"
-                            class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
+                            class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans cursor-pointer hover:border-slate-500">
                     </div>
                 </div>
 
