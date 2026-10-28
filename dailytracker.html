@@ -87,26 +87,38 @@
         <div id="viewTracker" class="space-y-6">
             <!-- Metrics & Day Status Banner -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Day Card -->
-                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <!-- Day Card & Productive Target Progress -->
+                <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between space-y-4">
                     <div class="flex items-center justify-between">
                         <span id="dayNameBadge" class="px-3 py-1 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-semibold rounded-full">Monday</span>
                         <span id="holidayNotice" class="hidden px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold rounded-full">☀️ Rest Day / Holiday</span>
                     </div>
-                    <div class="my-4">
+                    <div>
                         <h2 id="currentDisplayDate" class="text-2xl font-bold tracking-tight text-white">Oct 16, 2026</h2>
-                        <p class="text-sm text-slate-400">Daily Execution Dashboard</p>
+                        <p class="text-xs text-slate-400">Daily Execution Dashboard</p>
                     </div>
-                    <div class="flex items-center space-x-2 text-xs text-slate-400">
-                        <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
-                        <span>Productive Target: <strong id="productiveTargetText" class="text-slate-200">0 Hours</strong></span>
+
+                    <!-- Productive Target Progress Section -->
+                    <div class="pt-2 border-t border-slate-700/60">
+                        <div class="flex justify-between items-center text-xs mb-1.5">
+                            <span class="font-medium text-slate-300 flex items-center">
+                                <i class="fa-solid fa-clock-rotate-left text-indigo-400 mr-1.5"></i> Productive Target
+                            </span>
+                            <span id="prodTargetPercent" class="font-bold text-indigo-400">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700 mb-1.5">
+                            <div id="prodProgressBar" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div class="text-[11px] text-slate-400 text-right">
+                            <span id="productiveHoursText" class="font-medium text-slate-200">0 / 0 Hours</span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Completion Progress Card -->
                 <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between md:col-span-2">
                     <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-medium text-slate-300">Daily Completion Rate</span>
+                        <span class="text-sm font-medium text-slate-300">Daily Task Completion Rate</span>
                         <span id="completionPercent" class="text-xl font-bold text-indigo-400">0%</span>
                     </div>
                     <!-- Progress Bar -->
@@ -419,7 +431,7 @@
             return `${year}-${month}-${day}`;
         }
 
-        // Time string parser to calculate productive hours dynamically
+        // Time string parser to calculate durations dynamically
         function parseDurationInHours(timeStr) {
             if (!timeStr) return 0;
             const parts = timeStr.split('-').map(p => p.trim());
@@ -450,15 +462,27 @@
             return date.getTime();
         }
 
-        function calculateTotalProductiveHours() {
-            let totalHours = 0;
+        // Calculate Total Target & Checked Completed Hours for Productive Tasks
+        function calculateProductiveMetrics(checkedSet) {
+            let totalTarget = 0;
+            let completedHours = 0;
+
             scheduleData.forEach(task => {
-                const isProd = task.isProductive !== undefined ? task.isProductive : true; // Default true for legacy items
+                const isProd = task.isProductive !== undefined ? task.isProductive : true; // Default true
                 if (isProd) {
-                    totalHours += parseDurationInHours(task.time);
+                    const hours = parseDurationInHours(task.time);
+                    totalTarget += hours;
+                    if (checkedSet.has(task.id)) {
+                        completedHours += hours;
+                    }
                 }
             });
-            return Math.round(totalHours * 100) / 100;
+
+            const roundTarget = Math.round(totalTarget * 100) / 100;
+            const roundCompleted = Math.round(completedHours * 100) / 100;
+            const percentage = roundTarget > 0 ? Math.min(100, Math.round((roundCompleted / roundTarget) * 100)) : 0;
+
+            return { totalTarget: roundTarget, completedHours: roundCompleted, percentage };
         }
 
         // IndexedDB helpers for persistent handle caching
@@ -709,9 +733,14 @@
                 sundayBanner.classList.add('hidden');
             }
 
-            // Update Dynamic Productive Target Hours
-            const productiveHours = calculateTotalProductiveHours();
-            document.getElementById('productiveTargetText').innerText = `${productiveHours} Hours`;
+            const record = trackerData[currentDateStr] || { checkedTasks: [] };
+            const checkedSet = new Set(record.checkedTasks);
+
+            // Update Dynamic Productive Target Hours Progress Bar
+            const prodMetrics = calculateProductiveMetrics(checkedSet);
+            document.getElementById('prodTargetPercent').innerText = `${prodMetrics.percentage}%`;
+            document.getElementById('prodProgressBar').style.width = `${prodMetrics.percentage}%`;
+            document.getElementById('productiveHoursText').innerText = `${prodMetrics.completedHours} / ${prodMetrics.totalTarget} Hours`;
 
             if (scheduleData.length === 0) {
                 document.getElementById('scheduleList').innerHTML = `
@@ -721,9 +750,6 @@
                 `;
                 return;
             }
-
-            const record = trackerData[currentDateStr] || { checkedTasks: [] };
-            const checkedSet = new Set(record.checkedTasks);
 
             let html = '';
             scheduleData.forEach(item => {
