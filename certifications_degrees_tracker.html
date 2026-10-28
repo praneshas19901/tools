@@ -89,7 +89,7 @@
                         <span id="api-status-text">Folder Not Connected</span>
                     </div>
 
-                    <!-- Connect Directory Button -->
+                    <!-- Connect Directory Button (SINGLE CONTROL POINT) -->
                     <button id="btn-connect-folder" onclick="connectTrackerDirectory()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
                         <i class="fa-solid fa-folder-tree"></i>
                         <span id="btn-connect-label">Connect Folder</span>
@@ -124,21 +124,16 @@
         </div>
     </header>
 
-    <!-- Folder Connection Banner (Shown when no directory handle is active) -->
+    <!-- Folder Connection Information Banner (Only displayed when folder is NOT connected or needs authorization) -->
     <div id="directory-banner" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div id="banner-container" class="glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-start sm:items-center space-x-3">
-                <div id="banner-icon-bg" class="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 flex-shrink-0">
-                    <i id="banner-icon" class="fa-solid fa-folder-open text-xl"></i>
-                </div>
-                <div>
-                    <h3 id="banner-title" class="text-sm font-bold text-slate-100">Connect Local Storage Folder</h3>
-                    <p id="banner-desc" class="text-xs text-slate-400 mt-0.5">Select your storage directory. Files (<span class="font-mono text-blue-300">tracker-input.json</span> & <span class="font-mono text-blue-300">tracker-progress.json</span>) will auto-sync on every update.</p>
-                </div>
+        <div id="banner-container" class="glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex items-center space-x-3">
+            <div id="banner-icon-bg" class="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 flex-shrink-0">
+                <i id="banner-icon" class="fa-solid fa-folder-open text-xl"></i>
             </div>
-            <button id="banner-btn" onclick="connectTrackerDirectory()" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 whitespace-nowrap transition">
-                Select Folder
-            </button>
+            <div>
+                <h3 id="banner-title" class="text-sm font-bold text-slate-100">Local Storage Sync Status</h3>
+                <p id="banner-desc" class="text-xs text-slate-400 mt-0.5">Connect your local folder using the top header button to automatically sync <span class="font-mono text-blue-300">tracker-input.json</span> and <span class="font-mono text-blue-300">tracker-progress.json</span>.</p>
+            </div>
         </div>
     </div>
 
@@ -537,14 +532,15 @@
             const dot = document.getElementById('api-status-dot');
             const statusText = document.getElementById('api-status-text');
             const btnLabel = document.getElementById('btn-connect-label');
+            const banner = document.getElementById('directory-banner');
             const bannerContainer = document.getElementById('banner-container');
             const bannerIconBg = document.getElementById('banner-icon-bg');
             const bannerIcon = document.getElementById('banner-icon');
             const bannerTitle = document.getElementById('banner-title');
             const bannerDesc = document.getElementById('banner-desc');
-            const bannerBtn = document.getElementById('banner-btn');
 
             if (isConnected) {
+                // Header badge
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
                 if (statusText) {
                     statusText.className = "text-emerald-400 font-medium truncate max-w-[150px] sm:max-w-[200px]";
@@ -552,33 +548,28 @@
                 }
                 if (btnLabel) btnLabel.textContent = "Change Folder";
 
-                if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
-                if (bannerIconBg) bannerIconBg.className = "p-2.5 bg-emerald-600/20 text-emerald-400 rounded-xl border border-emerald-500/30 flex-shrink-0";
-                if (bannerIcon) bannerIcon.className = "fa-solid fa-folder-check text-xl";
-                if (bannerTitle) bannerTitle.textContent = `Connected Folder: ${folderName}`;
-                if (bannerDesc) bannerDesc.innerHTML = `Auto-sync active with <span class="font-mono text-emerald-300">tracker-input.json</span> and <span class="font-mono text-emerald-300">tracker-progress.json</span>.`;
-                if (bannerBtn) {
-                    bannerBtn.textContent = "Change Folder";
-                    bannerBtn.className = "px-4 py-2 text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg whitespace-nowrap transition border border-slate-700";
-                }
+                // Hide the main screen banner completely when connected
+                if (banner) banner.classList.add('hidden');
+
             } else if (needsPermission) {
+                // Header badge
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
                 if (statusText) {
                     statusText.className = "text-amber-400 font-medium truncate max-w-[150px] sm:max-w-[200px]";
                     statusText.textContent = `Re-authorize ${folderName}`;
                 }
-                if (btnLabel) btnLabel.textContent = "Re-authorize Access";
+                if (btnLabel) btnLabel.textContent = "Re-authorize Folder";
 
-                if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-amber-500/30 bg-amber-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
+                // Show re-authorization message banner
+                if (banner) banner.classList.remove('hidden');
+                if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-amber-500/30 bg-amber-950/20 flex items-center space-x-3";
                 if (bannerIconBg) bannerIconBg.className = "p-2.5 bg-amber-600/20 text-amber-400 rounded-xl border border-amber-500/30 flex-shrink-0";
                 if (bannerIcon) bannerIcon.className = "fa-solid fa-lock text-xl";
                 if (bannerTitle) bannerTitle.textContent = `Re-authorize Access to ${folderName}`;
-                if (bannerDesc) bannerDesc.textContent = "Click below to grant read/write access to sync your certification data.";
-                if (bannerBtn) {
-                    bannerBtn.textContent = "Authorize Access";
-                    bannerBtn.className = "px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-lg shadow-lg shadow-amber-600/30 whitespace-nowrap transition";
-                }
+                if (bannerDesc) bannerDesc.textContent = "Click 'Re-authorize Folder' in the top header to enable automatic file synchronization.";
+
             } else {
+                // Header badge
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-slate-500";
                 if (statusText) {
                     statusText.className = "text-slate-400";
@@ -586,15 +577,13 @@
                 }
                 if (btnLabel) btnLabel.textContent = "Connect Folder";
 
-                if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
+                // Show information banner when not connected
+                if (banner) banner.classList.remove('hidden');
+                if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex items-center space-x-3";
                 if (bannerIconBg) bannerIconBg.className = "p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 flex-shrink-0";
                 if (bannerIcon) bannerIcon.className = "fa-solid fa-folder-open text-xl";
                 if (bannerTitle) bannerTitle.textContent = "Connect Local Storage Folder";
-                if (bannerDesc) bannerDesc.innerHTML = 'Select your directory to auto-sync <span class="font-mono text-blue-300">tracker-input.json</span> and <span class="font-mono text-blue-300">tracker-progress.json</span>.';
-                if (bannerBtn) {
-                    bannerBtn.textContent = "Select Folder";
-                    bannerBtn.className = "px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-600/30 whitespace-nowrap transition";
-                }
+                if (bannerDesc) bannerDesc.innerHTML = 'Click <span class="font-semibold text-emerald-400">Connect Folder</span> in the top header to auto-sync <span class="font-mono text-blue-300">tracker-input.json</span> and <span class="font-mono text-blue-300">tracker-progress.json</span>.';
             }
         }
 
