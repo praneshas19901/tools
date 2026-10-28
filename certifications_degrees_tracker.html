@@ -223,7 +223,7 @@
                         <option value="Underway">Underway (Orange)</option>
                         <option value="Overdue">Overdue (Red)</option>
                         <option value="Completed">Completed (Green)</option>
-                        <option value="To-Do">To-Do (Yellow)</option>
+                        <option value="To-Do">To-Do (Purple)</option>
                     </select>
 
                     <select id="sort-by" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -317,7 +317,7 @@
                             <option value="Underway">Underway (Orange)</option>
                             <option value="Overdue">Overdue (Red)</option>
                             <option value="Completed">Completed (Green)</option>
-                            <option value="To-Do">To-Do (Yellow)</option>
+                            <option value="To-Do">To-Do (Purple)</option>
                         </select>
                     </div>
                 </div>
@@ -380,38 +380,38 @@
         let dirHandle = null;
 
         // Color definitions map according to target specs:
-        // 1. Underway - Orange tint card & badge
-        // 2. Overdue - Red tint card & badge
-        // 3. Completed - Green tint card & badge
-        // 4. To-Do - Yellow tint card & badge
+        // 1. Underway - Stronger Orange tint card & badge
+        // 2. Overdue - Stronger Red tint card & badge
+        // 3. Completed - Stronger Green tint card & badge
+        // 4. To-Do - Stronger Purple tint card & badge
         const STATUS_THEMES = {
             'Underway': {
-                cardBg: 'bg-amber-950/20 border-amber-500/40 hover:border-amber-500/70 shadow-amber-950/30',
-                badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                cardBg: 'bg-amber-950/60 border-amber-500/60 hover:border-amber-400 shadow-lg shadow-amber-950/50',
+                badge: 'bg-amber-500/30 text-amber-200 border-amber-400/50',
                 text: 'text-amber-400',
                 progressBg: 'bg-gradient-to-r from-amber-500 to-orange-400',
-                icon: 'fa-solid fa-spinner animate-spin text-amber-400'
+                icon: 'fa-solid fa-spinner animate-spin text-amber-300'
             },
             'Overdue': {
-                cardBg: 'bg-rose-950/25 border-rose-500/40 hover:border-rose-500/70 shadow-rose-950/30',
-                badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                cardBg: 'bg-rose-950/60 border-rose-500/60 hover:border-rose-400 shadow-lg shadow-rose-950/50',
+                badge: 'bg-rose-500/30 text-rose-200 border-rose-400/50',
                 text: 'text-rose-400',
                 progressBg: 'bg-gradient-to-r from-rose-600 to-red-400',
-                icon: 'fa-solid fa-circle-exclamation text-rose-400'
+                icon: 'fa-solid fa-circle-exclamation text-rose-300'
             },
             'Completed': {
-                cardBg: 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-500/70 shadow-emerald-950/30',
-                badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                cardBg: 'bg-emerald-950/60 border-emerald-500/60 hover:border-emerald-400 shadow-lg shadow-emerald-950/50',
+                badge: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/50',
                 text: 'text-emerald-400',
                 progressBg: 'bg-gradient-to-r from-emerald-500 to-teal-400',
-                icon: 'fa-solid fa-circle-check text-emerald-400'
+                icon: 'fa-solid fa-circle-check text-emerald-300'
             },
             'To-Do': {
-                cardBg: 'bg-yellow-950/20 border-yellow-500/40 hover:border-yellow-500/70 shadow-yellow-950/30',
-                badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
-                text: 'text-yellow-400',
-                progressBg: 'bg-gradient-to-r from-yellow-500 to-amber-300',
-                icon: 'fa-regular fa-clock text-yellow-400'
+                cardBg: 'bg-purple-950/60 border-purple-500/60 hover:border-purple-400 shadow-lg shadow-purple-950/50',
+                badge: 'bg-purple-500/30 text-purple-200 border-purple-400/50',
+                text: 'text-purple-300',
+                progressBg: 'bg-gradient-to-r from-purple-500 to-indigo-400',
+                icon: 'fa-regular fa-clock text-purple-300'
             }
         };
 
@@ -862,7 +862,7 @@
                                     <option value="Underway" class="bg-slate-900 text-amber-400 font-semibold" ${manualStatus === 'Underway' ? 'selected' : ''}>Underway (Orange)</option>
                                     <option value="Overdue" class="bg-slate-900 text-rose-400 font-semibold" ${manualStatus === 'Overdue' ? 'selected' : ''}>Overdue (Red)</option>
                                     <option value="Completed" class="bg-slate-900 text-emerald-400 font-semibold" ${manualStatus === 'Completed' ? 'selected' : ''}>Completed (Green)</option>
-                                    <option value="To-Do" class="bg-slate-900 text-yellow-400 font-semibold" ${manualStatus === 'To-Do' ? 'selected' : ''}>To-Do (Yellow)</option>
+                                    <option value="To-Do" class="bg-slate-900 text-purple-400 font-semibold" ${manualStatus === 'To-Do' ? 'selected' : ''}>To-Do (Purple)</option>
                                 </select>
                             </span>
                         </div>
