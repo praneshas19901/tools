@@ -85,11 +85,11 @@
                 <div class="flex items-center space-x-2 sm:space-x-3">
                     <!-- Dynamic File API Status Badge -->
                     <div id="file-api-status" class="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
-                        <span id="api-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span id="api-status-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
                         <span id="api-status-text">Folder Not Connected</span>
                     </div>
 
-                    <!-- Connect Directory Button (SINGLE CONTROL POINT) -->
+                    <!-- Connect Directory Button -->
                     <button id="btn-connect-folder" onclick="connectTrackerDirectory()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
                         <i class="fa-solid fa-folder-tree"></i>
                         <span id="btn-connect-label">Connect Folder</span>
@@ -124,15 +124,17 @@
         </div>
     </header>
 
-    <!-- Folder Connection Information Banner (Only displayed when folder is NOT connected or needs authorization) -->
+    <!-- Folder Connection Banner (Shown when no directory handle is active) -->
     <div id="directory-banner" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div id="banner-container" class="glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex items-center space-x-3">
-            <div id="banner-icon-bg" class="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 flex-shrink-0">
-                <i id="banner-icon" class="fa-solid fa-folder-open text-xl"></i>
-            </div>
-            <div>
-                <h3 id="banner-title" class="text-sm font-bold text-slate-100">Local Storage Sync Status</h3>
-                <p id="banner-desc" class="text-xs text-slate-400 mt-0.5">Connect your local folder using the top header button to automatically sync <span class="font-mono text-blue-300">tracker-input.json</span> and <span class="font-mono text-blue-300">tracker-progress.json</span>.</p>
+        <div id="banner-container" class="glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-start sm:items-center space-x-3">
+                <div id="banner-icon-bg" class="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 flex-shrink-0">
+                    <i id="banner-icon" class="fa-solid fa-folder-open text-xl"></i>
+                </div>
+                <div>
+                    <h3 id="banner-title" class="text-sm font-bold text-slate-100">Connect Local Storage Folder</h3>
+                    <p id="banner-desc" class="text-xs text-slate-400 mt-0.5">Select <span class="font-mono text-blue-300">C:\Storage\Tracker-Data\cert-degree-tracker</span> (or your custom directory). Files will auto-sync on every update.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -175,7 +177,7 @@
             <div class="glass-panel p-4 rounded-xl border border-slate-800">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-semibold uppercase text-slate-400">Completed</span>
-                    <i class="fa-solid fa-award text-emerald-400"></i>
+                    <i class="fa-solid fa-award text-amber-400"></i>
                 </div>
                 <div class="mt-2 flex items-baseline">
                     <span id="stat-completed" class="text-2xl font-extrabold text-white">0</span>
@@ -185,12 +187,12 @@
 
             <div class="glass-panel p-4 rounded-xl border border-slate-800">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase text-slate-400">Overdue / Warning</span>
-                    <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                    <span class="text-xs font-semibold uppercase text-slate-400">Upcoming Deadlines</span>
+                    <i class="fa-solid fa-clock text-rose-400"></i>
                 </div>
                 <div class="mt-2 flex items-baseline">
                     <span id="stat-upcoming" class="text-2xl font-extrabold text-white">0</span>
-                    <span class="ml-2 text-xs text-slate-400">need action</span>
+                    <span class="ml-2 text-xs text-slate-400">&lt; 30 days</span>
                 </div>
             </div>
         </section>
@@ -215,10 +217,10 @@
 
                     <select id="filter-status" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="ALL">All Statuses</option>
-                        <option value="Underway">Underway (Sky Blue)</option>
-                        <option value="Overdue">Overdue (Red)</option>
-                        <option value="Completed">Completed (Green)</option>
-                        <option value="To-Do">To-Do (Purple)</option>
+                        <option value="UNDERWAY">Underway</option>
+                        <option value="OVERDUE">Overdue</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="TO_DO">To-Do</option>
                     </select>
 
                     <select id="sort-by" onchange="renderTrackerGrid()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -306,13 +308,13 @@
                         <input type="date" id="new-target-date" required class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Initial Status</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Initial Status Override</label>
                         <select id="new-status" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                             <option value="AUTO">Auto (Calculated)</option>
-                            <option value="Underway">Underway (Sky Blue)</option>
-                            <option value="Overdue">Overdue (Red)</option>
-                            <option value="Completed">Completed (Green)</option>
-                            <option value="To-Do">To-Do (Purple)</option>
+                            <option value="UNDERWAY">Underway</option>
+                            <option value="OVERDUE">Overdue</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="TO_DO">To-Do</option>
                         </select>
                     </div>
                 </div>
@@ -367,86 +369,15 @@
         </div>
     </div>
 
+    <!-- Hidden HTML File Input Fallback -->
+    <input type="file" id="fallback-file-input" multiple accept=".json" class="hidden" onchange="handleFallbackFileInput(event)">
+
     <!-- Main Logic Script -->
     <script>
         // Application State
         let inputCatalog = [];
         let progressMap = {};
         let dirHandle = null;
-
-        // Color definitions map according to target specs:
-        // 1. Underway - Vibrant Sky Blue / Cyan tint card & badge
-        // 2. Overdue - Stronger Red tint card & badge
-        // 3. Completed - Stronger Green tint card & badge
-        // 4. To-Do - Stronger Purple tint card & badge
-        const STATUS_THEMES = {
-            'Underway': {
-                cardBg: 'bg-sky-950/60 border-sky-500/60 hover:border-sky-400 shadow-lg shadow-sky-950/50',
-                badge: 'bg-sky-500/30 text-sky-200 border-sky-400/50',
-                text: 'text-sky-300',
-                progressBg: 'bg-gradient-to-r from-sky-500 to-indigo-400',
-                icon: 'fa-solid fa-spinner animate-spin text-sky-300'
-            },
-            'Overdue': {
-                cardBg: 'bg-rose-950/60 border-rose-500/60 hover:border-rose-400 shadow-lg shadow-rose-950/50',
-                badge: 'bg-rose-500/30 text-rose-200 border-rose-400/50',
-                text: 'text-rose-400',
-                progressBg: 'bg-gradient-to-r from-rose-600 to-red-400',
-                icon: 'fa-solid fa-circle-exclamation text-rose-300'
-            },
-            'Completed': {
-                cardBg: 'bg-emerald-950/60 border-emerald-500/60 hover:border-emerald-400 shadow-lg shadow-emerald-950/50',
-                badge: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/50',
-                text: 'text-emerald-400',
-                progressBg: 'bg-gradient-to-r from-emerald-500 to-teal-400',
-                icon: 'fa-solid fa-circle-check text-emerald-300'
-            },
-            'To-Do': {
-                cardBg: 'bg-purple-950/60 border-purple-500/60 hover:border-purple-400 shadow-lg shadow-purple-950/50',
-                badge: 'bg-purple-500/30 text-purple-200 border-purple-400/50',
-                text: 'text-purple-300',
-                progressBg: 'bg-gradient-to-r from-purple-500 to-indigo-400',
-                icon: 'fa-regular fa-clock text-purple-300'
-            }
-        };
-
-        // Category Badge Highlighting Styles & Icons
-        const CATEGORY_STYLES = {
-            'Certification': {
-                badge: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/40 font-bold',
-                icon: 'fa-solid fa-certificate'
-            },
-            'Degree': {
-                badge: 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-sm shadow-purple-500/40 font-bold',
-                icon: 'fa-solid fa-graduation-cap'
-            },
-            'Specialization': {
-                badge: 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-sm shadow-cyan-500/40 font-bold',
-                icon: 'fa-solid fa-award'
-            },
-            'Other': {
-                badge: 'bg-slate-700 text-slate-100 border border-slate-600 shadow-sm font-bold',
-                icon: 'fa-solid fa-bookmark'
-            }
-        };
-
-        // Calculate status dynamically based on progress and target date
-        function getCalculatedStatus(item, progress) {
-            const daysLeft = calculateDaysRemaining(item.targetDate);
-            if (progress === 100) return 'Completed';
-            if (daysLeft < 0) return 'Overdue';
-            if (progress > 0) return 'Underway';
-            return 'To-Do';
-        }
-
-        // Get effective status (Manual Override vs Dynamic Calculation)
-        function getEffectiveStatus(item, progData) {
-            const manualStatus = progData?.status || item?.status;
-            if (manualStatus && manualStatus !== 'AUTO' && STATUS_THEMES[manualStatus]) {
-                return manualStatus;
-            }
-            return getCalculatedStatus(item, progData?.progress || 0);
-        }
 
         // ==========================================
         // INDEXEDDB DIRECTORY HANDLE PERSISTENCE
@@ -514,7 +445,7 @@
                             await readFilesFromDirectory();
                             updateConnectionUI(true, dirHandle.name);
                         } else {
-                            dirHandle = savedHandle;
+                            dirHandle = savedHandle; // Keep handle reference so user can grant permission with 1 click
                             updateConnectionUI(false, dirHandle.name, true);
                         }
                     } catch (e) {
@@ -531,8 +462,8 @@
         function updateConnectionUI(isConnected, folderName = '', needsPermission = false) {
             const dot = document.getElementById('api-status-dot');
             const statusText = document.getElementById('api-status-text');
+            const btnConnect = document.getElementById('btn-connect-folder');
             const btnLabel = document.getElementById('btn-connect-label');
-            const banner = document.getElementById('directory-banner');
             const bannerContainer = document.getElementById('banner-container');
             const bannerIconBg = document.getElementById('banner-icon-bg');
             const bannerIcon = document.getElementById('banner-icon');
@@ -540,50 +471,61 @@
             const bannerDesc = document.getElementById('banner-desc');
 
             if (isConnected) {
-                // Header badge
+                // Header badge - Connected state
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
                 if (statusText) {
-                    statusText.className = "text-emerald-400 font-medium truncate max-w-[150px] sm:max-w-[200px]";
+                    statusText.className = "text-emerald-400 font-medium truncate max-w-[180px] sm:max-w-[260px]";
                     statusText.textContent = `Connected: ${folderName}`;
                 }
-                if (btnLabel) btnLabel.textContent = "Change Folder";
+                // Hide button completely once connected
+                if (btnConnect) btnConnect.classList.add('hidden');
 
-                // Hide the main screen banner completely when connected
-                if (banner) banner.classList.add('hidden');
-
+                // Hide banner
+                if (bannerContainer) bannerContainer.parentElement.classList.add('hidden');
             } else if (needsPermission) {
-                // Header badge
+                // Header badge - Re-authorize state
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
                 if (statusText) {
                     statusText.className = "text-amber-400 font-medium truncate max-w-[150px] sm:max-w-[200px]";
                     statusText.textContent = `Re-authorize ${folderName}`;
                 }
-                if (btnLabel) btnLabel.textContent = "Re-authorize Folder";
+                if (btnConnect) {
+                    btnConnect.classList.remove('hidden');
+                    btnConnect.className = "px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/20 transition flex items-center gap-2";
+                }
+                if (btnLabel) btnLabel.textContent = "Authorize Access";
 
-                // Show re-authorization message banner
-                if (banner) banner.classList.remove('hidden');
-                if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-amber-500/30 bg-amber-950/20 flex items-center space-x-3";
+                // Show banner for re-authorization
+                if (bannerContainer) {
+                    bannerContainer.parentElement.classList.remove('hidden');
+                    bannerContainer.className = "glass-panel p-4 rounded-xl border border-amber-500/30 bg-amber-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
+                }
                 if (bannerIconBg) bannerIconBg.className = "p-2.5 bg-amber-600/20 text-amber-400 rounded-xl border border-amber-500/30 flex-shrink-0";
                 if (bannerIcon) bannerIcon.className = "fa-solid fa-lock text-xl";
                 if (bannerTitle) bannerTitle.textContent = `Re-authorize Access to ${folderName}`;
-                if (bannerDesc) bannerDesc.textContent = "Click 'Re-authorize Folder' in the top header to enable automatic file synchronization.";
-
+                if (bannerDesc) bannerDesc.textContent = "Click 'Authorize Access' in the header to grant read/write access to sync your data.";
             } else {
-                // Header badge
+                // Header badge - Disconnected state
                 if (dot) dot.className = "w-2 h-2 rounded-full bg-slate-500";
                 if (statusText) {
                     statusText.className = "text-slate-400";
                     statusText.textContent = folderName || "Folder Not Connected";
                 }
+                if (btnConnect) {
+                    btnConnect.classList.remove('hidden');
+                    btnConnect.className = "px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2";
+                }
                 if (btnLabel) btnLabel.textContent = "Connect Folder";
 
-                // Show information banner when not connected
-                if (banner) banner.classList.remove('hidden');
-                if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex items-center space-x-3";
+                // Show banner when no folder is connected
+                if (bannerContainer) {
+                    bannerContainer.parentElement.classList.remove('hidden');
+                    bannerContainer.className = "glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
+                }
                 if (bannerIconBg) bannerIconBg.className = "p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 flex-shrink-0";
                 if (bannerIcon) bannerIcon.className = "fa-solid fa-folder-open text-xl";
                 if (bannerTitle) bannerTitle.textContent = "Connect Local Storage Folder";
-                if (bannerDesc) bannerDesc.innerHTML = 'Click <span class="font-semibold text-emerald-400">Connect Folder</span> in the top header to auto-sync <span class="font-mono text-blue-300">tracker-input.json</span> and <span class="font-mono text-blue-300">tracker-progress.json</span>.';
+                if (bannerDesc) bannerDesc.innerHTML = 'Select <span class="font-mono text-blue-300">C:\\Storage\\Tracker-Data\\cert-degree-tracker</span> (or your custom directory). Files will auto-sync on every update.';
             }
         }
 
@@ -592,11 +534,12 @@
         // ==========================================
         async function connectTrackerDirectory() {
             if (!('showDirectoryPicker' in window)) {
-                showAlert("Directory Picker is not supported in this browser. You can use manual exports.", "info");
+                openFallbackFileInput();
                 return;
             }
 
             try {
+                // If handle exists but needs permission re-verification
                 if (dirHandle) {
                     const perm = await dirHandle.requestPermission({ mode: 'readwrite' });
                     if (perm === 'granted') {
@@ -607,7 +550,11 @@
                     }
                 }
 
-                dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                // Prompt user to select directory (e.g. C:\Storage\Tracker-Data\cert-degree-tracker)
+                dirHandle = await window.showDirectoryPicker({
+                    mode: 'readwrite'
+                });
+
                 await storeDirHandle(dirHandle);
                 await readFilesFromDirectory();
                 updateConnectionUI(true, dirHandle.name);
@@ -642,6 +589,7 @@
                 if (content.trim().length > 0) {
                     return JSON.parse(content);
                 } else {
+                    // Initialize empty file
                     await writeJSONToFileHandle(fileHandle, defaultData);
                     return defaultData;
                 }
@@ -662,9 +610,11 @@
             showSaveIndicator("Saving...", "saving");
 
             try {
+                // Write tracker-input.json
                 const inputHandle = await dirHandle.getFileHandle('tracker-input.json', { create: true });
                 await writeJSONToFileHandle(inputHandle, inputCatalog);
 
+                // Write tracker-progress.json
                 const progressHandle = await dirHandle.getFileHandle('tracker-progress.json', { create: true });
                 await writeJSONToFileHandle(progressHandle, progressMap);
 
@@ -717,17 +667,8 @@
                     progressMap = {};
                 }
             } else {
-                // Populate initial dummy data if empty to showcase app
-                inputCatalog = [
-                    { id: 'cert-1', name: 'AWS Certified Solutions Architect', category: 'Certification', provider: 'Amazon Web Services', targetDate: '2026-11-15', createdDate: '2026-01-10', status: 'AUTO' },
-                    { id: 'cert-2', name: 'MSc Computer Science', category: 'Degree', provider: 'University', targetDate: '2026-05-30', createdDate: '2025-09-01', status: 'Underway' },
-                    { id: 'cert-3', name: 'Certified Information Systems Security Professional (CISSP)', category: 'Certification', provider: '(ISC)²', targetDate: '2026-02-01', createdDate: '2025-10-01', status: 'AUTO' }
-                ];
-                progressMap = {
-                    'cert-1': { progress: 65, status: 'Underway', notes: [{ timestamp: '2026-02-10 14:00', text: 'Completed practice exam #2 with 82%' }] },
-                    'cert-2': { progress: 85, status: 'Underway', notes: [{ timestamp: '2026-01-20 10:00', text: 'Submitted thesis dissertation draft' }] },
-                    'cert-3': { progress: 20, status: 'Overdue', notes: [{ timestamp: '2025-11-01 11:30', text: 'Reviewing domain 3 cryptography concepts' }] }
-                };
+                inputCatalog = [];
+                progressMap = {};
             }
         }
 
@@ -760,6 +701,31 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        // ==========================================
+        // DYNAMIC STATUS HELPER LOGIC
+        // ==========================================
+        function getEffectiveStatus(item, prog) {
+            // Priority 1: Check manual override saved in progressMap or item
+            const manualStatus = (prog && prog.status) || item.status;
+            if (manualStatus && manualStatus !== 'AUTO') {
+                return manualStatus;
+            }
+
+            // Priority 2: Auto-calculate based on progress and target date
+            if (prog && prog.progress === 100) {
+                return 'COMPLETED';
+            }
+
+            const daysLeft = calculateDaysRemaining(item.targetDate);
+            if (daysLeft < 0) {
+                return 'OVERDUE';
+            } else if (prog && prog.progress > 0) {
+                return 'UNDERWAY';
+            } else {
+                return 'TO_DO';
+            }
         }
 
         // ==========================================
@@ -819,41 +785,86 @@
             });
         }
 
-        function createCardElement(item, prog, daysLeft) {
-            const effectiveStatus = getEffectiveStatus(item, prog);
-            const calcStatus = getCalculatedStatus(item, prog.progress);
-            const manualStatus = prog.status || item.status || 'AUTO';
-            const theme = STATUS_THEMES[effectiveStatus] || STATUS_THEMES['Underway'];
+        function getCategoryBadgeMarkup(category) {
+            let badgeClass = "bg-slate-700 text-slate-200 border-slate-600";
+            let iconClass = "fa-solid fa-bookmark";
 
+            if (category === 'Certification') {
+                badgeClass = "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 border-blue-400/40";
+                iconClass = "fa-solid fa-certificate";
+            } else if (category === 'Degree') {
+                badgeClass = "bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-md shadow-purple-500/20 border-purple-400/40";
+                iconClass = "fa-solid fa-graduation-cap";
+            } else if (category === 'Specialization') {
+                badgeClass = "bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-md shadow-cyan-500/20 border-cyan-400/40";
+                iconClass = "fa-solid fa-award";
+            } else {
+                badgeClass = "bg-slate-700/90 text-slate-100 border-slate-600 shadow-md";
+                iconClass = "fa-solid fa-layer-group";
+            }
+
+            return `
+                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5 ${badgeClass}">
+                    <i class="${iconClass}"></i>
+                    <span>${escapeHTML(category)}</span>
+                </span>
+            `;
+        }
+
+        function createCardElement(item, prog, daysLeft) {
+            const currentStatus = getEffectiveStatus(item, prog);
             const category = item.category || item.type || 'Certification';
-            const catStyle = CATEGORY_STYLES[category] || CATEGORY_STYLES['Other'];
+
+            // Distinct theme classes for status (Card container tinting + Dropdown styling)
+            let cardBgClass = "bg-slate-900/60 border-slate-800";
+            let statusBadgeClass = "bg-sky-500/30 text-sky-300 border-sky-500/50";
+            let progressGrad = "bg-gradient-to-r from-sky-500 to-indigo-400";
+            let progressTextColor = "text-sky-300";
+
+            if (currentStatus === 'UNDERWAY') {
+                cardBgClass = "bg-sky-950/60 border-sky-500/60 shadow-lg shadow-sky-950/40 hover:border-sky-400";
+                statusBadgeClass = "bg-sky-500/30 text-sky-300 border-sky-500/50";
+                progressGrad = "bg-gradient-to-r from-sky-500 to-indigo-400";
+                progressTextColor = "text-sky-300";
+            } else if (currentStatus === 'OVERDUE') {
+                cardBgClass = "bg-rose-950/60 border-rose-500/60 shadow-lg shadow-rose-950/40 hover:border-rose-400";
+                statusBadgeClass = "bg-rose-500/30 text-rose-300 border-rose-500/50";
+                progressGrad = "bg-gradient-to-r from-rose-600 to-pink-500";
+                progressTextColor = "text-rose-300";
+            } else if (currentStatus === 'COMPLETED') {
+                cardBgClass = "bg-emerald-950/60 border-emerald-500/60 shadow-lg shadow-emerald-950/40 hover:border-emerald-400";
+                statusBadgeClass = "bg-emerald-500/30 text-emerald-300 border-emerald-500/50";
+                progressGrad = "bg-gradient-to-r from-emerald-500 to-teal-400";
+                progressTextColor = "text-emerald-300";
+            } else if (currentStatus === 'TO_DO') {
+                cardBgClass = "bg-purple-950/60 border-purple-500/60 shadow-lg shadow-purple-950/40 hover:border-purple-400";
+                statusBadgeClass = "bg-purple-500/30 text-purple-300 border-purple-500/50";
+                progressGrad = "bg-gradient-to-r from-purple-500 to-indigo-400";
+                progressTextColor = "text-purple-300";
+            }
+
+            const categoryBadgeMarkup = getCategoryBadgeMarkup(category);
             const notesCount = (prog.notes || []).length;
 
             const card = document.createElement('div');
-            card.className = `backdrop-blur-md rounded-2xl p-5 border transition-all duration-300 flex flex-col justify-between space-y-4 shadow-xl ${theme.cardBg}`;
+            card.className = `glass-panel rounded-2xl p-5 border transition-all duration-300 flex flex-col justify-between space-y-4 shadow-xl ${cardBgClass}`;
             card.innerHTML = `
                 <div>
                     <!-- Header Badges -->
                     <div class="flex items-center justify-between gap-2 mb-3">
-                        <span class="px-3 py-1 rounded-lg text-[11px] tracking-wide uppercase ${catStyle.badge} flex items-center gap-1.5">
-                            <i class="${catStyle.icon}"></i>
-                            <span>${category}</span>
-                        </span>
+                        ${categoryBadgeMarkup}
 
-                        <!-- Selectable Status Dropdown -->
-                        <div class="relative flex items-center gap-1.5">
-                            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border ${theme.badge} flex items-center gap-1.5 transition">
-                                <i class="${theme.icon}"></i>
-                                <select 
-                                    onchange="updateItemStatus('${item.id}', this.value)"
-                                    class="bg-transparent text-current font-bold text-xs focus:outline-none cursor-pointer pr-1">
-                                    <option value="AUTO" class="bg-slate-900 text-slate-200" ${manualStatus === 'AUTO' ? 'selected' : ''}>Auto (${calcStatus})</option>
-                                    <option value="Underway" class="bg-slate-900 text-sky-400 font-semibold" ${manualStatus === 'Underway' ? 'selected' : ''}>Underway (Sky Blue)</option>
-                                    <option value="Overdue" class="bg-slate-900 text-rose-400 font-semibold" ${manualStatus === 'Overdue' ? 'selected' : ''}>Overdue (Red)</option>
-                                    <option value="Completed" class="bg-slate-900 text-emerald-400 font-semibold" ${manualStatus === 'Completed' ? 'selected' : ''}>Completed (Green)</option>
-                                    <option value="To-Do" class="bg-slate-900 text-purple-400 font-semibold" ${manualStatus === 'To-Do' ? 'selected' : ''}>To-Do (Purple)</option>
-                                </select>
-                            </span>
+                        <!-- Selectable Status Dropdown Badge -->
+                        <div class="relative inline-flex items-center">
+                            <select onchange="updateItemStatus('${item.id}', this.value)" 
+                                class="appearance-none font-bold text-xs px-2.5 py-1 pr-6 rounded-lg border focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-900 focus:ring-blue-500 cursor-pointer transition ${statusBadgeClass}">
+                                <option value="AUTO" ${(!prog.status || prog.status === 'AUTO') ? 'selected' : ''}>Auto (Calc)</option>
+                                <option value="UNDERWAY" ${prog.status === 'UNDERWAY' ? 'selected' : ''}>Underway</option>
+                                <option value="OVERDUE" ${prog.status === 'OVERDUE' ? 'selected' : ''}>Overdue</option>
+                                <option value="COMPLETED" ${prog.status === 'COMPLETED' ? 'selected' : ''}>Completed</option>
+                                <option value="TO_DO" ${prog.status === 'TO_DO' ? 'selected' : ''}>To-Do</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down text-[10px] absolute right-2 pointer-events-none opacity-80"></i>
                         </div>
                     </div>
 
@@ -861,7 +872,7 @@
                     <div class="flex items-start justify-between gap-2">
                         <div>
                             <h3 class="text-lg font-bold text-white tracking-tight">${escapeHTML(item.name)}</h3>
-                            <p class="text-xs text-slate-400 mt-0.5">${escapeHTML(item.provider || 'Target Goal')}</p>
+                            <p class="text-xs text-slate-300 mt-0.5 font-medium">${escapeHTML(item.provider || 'Target Goal')}</p>
                         </div>
                         <button onclick="deleteItem('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Delete Entry">
                             <i class="fa-solid fa-trash-can text-xs"></i>
@@ -869,13 +880,10 @@
                     </div>
 
                     <!-- Target Date Info & Inline Date Picker -->
-                    <div class="mt-4 flex items-center justify-between gap-2 text-xs text-slate-300 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+                    <div class="mt-4 flex items-center justify-between gap-2 text-xs text-slate-300 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800/80">
                         <div class="flex items-center gap-2">
                             <i class="fa-regular fa-calendar-check text-blue-400"></i>
-                            <span class="text-slate-400">Target:</span>
-                            <span class="text-xs ${daysLeft < 0 && effectiveStatus !== 'Completed' ? 'text-rose-400 font-semibold' : 'text-slate-300'}">
-                                (${daysLeft < 0 ? Math.abs(daysLeft) + ' days ago' : daysLeft + ' days left'})
-                            </span>
+                            <span class="text-slate-400">Target Date:</span>
                         </div>
                         <input type="date" 
                             value="${item.targetDate}" 
@@ -889,13 +897,13 @@
                 <div class="space-y-2 pt-2 border-t border-slate-800/80">
                     <div class="flex items-center justify-between text-xs">
                         <span class="text-slate-400 font-medium">Completion Progress</span>
-                        <span class="font-extrabold ${theme.text}">${prog.progress}%</span>
+                        <span class="font-extrabold ${progressTextColor}">${prog.progress}%</span>
                     </div>
 
                     <!-- Interactive Progress Bar & Slider -->
                     <div class="space-y-2">
-                        <div class="w-full bg-slate-950/80 rounded-full h-2 overflow-hidden border border-slate-800/80">
-                            <div class="h-full ${theme.progressBg} transition-all duration-300" style="width: ${prog.progress}%"></div>
+                        <div class="w-full bg-slate-950/80 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div class="h-full ${progressGrad} transition-all duration-300" style="width: ${prog.progress}%"></div>
                         </div>
 
                         <div class="flex items-center gap-3">
@@ -921,27 +929,26 @@
         }
 
         // ==========================================
-        // STATE MUTATIONS WITH AUTO-SAVE & STATUS UPDATES
+        // STATE MUTATIONS WITH AUTO-SAVE
         // ==========================================
         function updateItemStatus(id, newStatus) {
-            const item = inputCatalog.find(i => i.id === id);
-            if (!item) return;
-
-            // Sync status on both progress object and input catalog item for full persistence
             if (!progressMap[id]) {
                 progressMap[id] = { progress: 0, notes: [] };
             }
-            
             progressMap[id].status = newStatus;
-            item.status = newStatus;
 
-            const displayLabel = newStatus === 'AUTO' ? `Auto (${getCalculatedStatus(item, progressMap[id].progress)})` : newStatus;
-            appendNoteToItem(id, `🏷️ Status changed to "${displayLabel}"`);
+            // Sync with catalog item entry as well
+            const item = inputCatalog.find(i => i.id === id);
+            if (item) {
+                item.status = newStatus;
+            }
+
+            appendNoteToItem(id, `🏷️ Status manually updated to: ${newStatus}`);
 
             renderTrackerGrid();
             updateDashboardStats();
             autoSaveToFolder();
-            showAlert(`Updated status for "${item.name}" to ${displayLabel}`, "success");
+            showAlert(`Updated status for "${item ? item.name : 'item'}"`, "success");
         }
 
         function updateTargetDate(id, newDateStr) {
@@ -954,6 +961,7 @@
 
             item.targetDate = newDateStr;
 
+            // Log change in notes automatically
             appendNoteToItem(id, `📅 Target date changed from ${formatDateDisplay(oldDate)} to ${formatDateDisplay(newDateStr)}`);
 
             renderTrackerGrid();
@@ -975,6 +983,9 @@
             progressMap[id].progress = val;
 
             if (val === 100 && oldVal !== 100) {
+                progressMap[id].status = 'COMPLETED';
+                const item = inputCatalog.find(i => i.id === id);
+                if (item) item.status = 'COMPLETED';
                 appendNoteToItem(id, "🎉 Completed 100%!");
             }
 
@@ -989,7 +1000,7 @@
             const category = document.getElementById('new-type').value;
             const provider = document.getElementById('new-provider').value.trim();
             const targetDate = document.getElementById('new-target-date').value;
-            const status = document.getElementById('new-status').value;
+            const statusOverride = document.getElementById('new-status').value;
             const progress = parseInt(document.getElementById('new-progress').value, 10) || 0;
             const initialNote = document.getElementById('new-note').value.trim();
 
@@ -1001,6 +1012,7 @@
             const id = 'cert-' + Date.now();
             const createdDate = new Date().toISOString().split('T')[0];
 
+            // 1. Add item entry conforming to target schema
             const newItem = {
                 id,
                 name,
@@ -1008,10 +1020,11 @@
                 targetDate,
                 createdDate,
                 provider: provider || '',
-                status
+                status: statusOverride
             };
             inputCatalog.push(newItem);
 
+            // 2. Initialize progress & notes conforming to target schema
             const initialNotesList = [];
             if (initialNote) {
                 initialNotesList.push({
@@ -1022,7 +1035,7 @@
 
             progressMap[id] = {
                 progress,
-                status,
+                status: statusOverride,
                 notes: initialNotesList
             };
 
@@ -1141,17 +1154,20 @@
             const total = inputCatalog.length;
             let sumProgress = 0;
             let completed = 0;
-            let overdueOrWarning = 0;
+            let upcoming = 0;
 
             inputCatalog.forEach(item => {
                 const prog = progressMap[item.id] || { progress: 0 };
                 sumProgress += prog.progress;
                 
-                const effectiveStatus = getEffectiveStatus(item, prog);
-                if (effectiveStatus === 'Completed') {
+                const currentStatus = getEffectiveStatus(item, prog);
+                if (currentStatus === 'COMPLETED') {
                     completed++;
-                } else if (effectiveStatus === 'Overdue') {
-                    overdueOrWarning++;
+                }
+
+                const daysLeft = calculateDaysRemaining(item.targetDate);
+                if (daysLeft >= 0 && daysLeft <= 30 && currentStatus !== 'COMPLETED') {
+                    upcoming++;
                 }
             });
 
@@ -1160,7 +1176,7 @@
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-avg-progress').textContent = `${avg}%`;
             document.getElementById('stat-completed').textContent = completed;
-            document.getElementById('stat-upcoming').textContent = overdueOrWarning;
+            document.getElementById('stat-upcoming').textContent = upcoming;
         }
 
         // ==========================================
