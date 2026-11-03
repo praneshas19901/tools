@@ -2,8 +2,18 @@
 
 Welcome to my **Tools Portal** repository! This is a collection of lightweight, single-page web applications and trackers built with modern HTML5, CSS (Tailwind CSS), and vanilla JavaScript libraries. 
 
-> 🚀 **Explore the Live App Portal:**  
-> ### 🔗 **[👉 Click Here to Launch the Tools Portal Hub 👈](https://praneshas19901.github.io/tools)** *(Opens in a new tab)*
+<div align="center" style="background-color: #0d1117; padding: 20px; border-radius: 12px; border: 2px solid #30363d; margin: 20px 0;">
+
+  ### 🌐 **LIVE DEMO & PORTAL HUB**
+
+  <p>Access these tools and trackers live in your browser:</p>
+
+  <a href="https://praneshas19901.github.io/tools/index.html" target="_blank" rel="noopener noreferrer" style="font-size: 18px; font-weight: bold; background-color: #238636; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+    🚀 Launch Tools Portal Hub (Opens in New Tab) ↗
+  </a>
+
+</div>
+
 
 This repository was created out of a belief in **altruism, minimalism, and digital privacy**. All applications are designed to be simple, fast, safe, and respectful of your data.
 
