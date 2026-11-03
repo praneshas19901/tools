@@ -1,513 +1,404 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50 text-slate-800">
+<html lang="en" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kanban Board Lane-Based Task Tracker</title>
-  <!-- Tailwind CSS CDN -->
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
     body {
       font-family: 'Inter', sans-serif;
     }
-    .lane-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
-    .lane-scroll::-webkit-scrollbar-track {
-      background: rgba(241, 245, 249, 0.8);
-      border-radius: 8px;
-    }
-    .lane-scroll::-webkit-scrollbar-thumb {
-      background: rgba(203, 213, 225, 0.8);
-      border-radius: 8px;
-    }
-    .lane-scroll::-webkit-scrollbar-thumb:hover {
-      background: rgba(148, 163, 184, 1);
-    }
 
-    /* Floating / Swimming Cards Keyframe Animations */
+    /* Swimming animation for tasks in lanes */
     @keyframes swim {
-      0%, 100% {
-        transform: translateY(0px) rotate(0deg);
-      }
-      50% {
-        transform: translateY(-5px) rotate(0.4deg);
-      }
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-3px); }
     }
 
     .swim-card {
-      animation: swim 5s ease-in-out infinite;
+      animation: swim 4s ease-in-out infinite;
     }
 
-    /* Staggered swimming delays for natural fluid motion */
+    /* Staggered animation delays */
     .swim-delay-0 { animation-delay: 0s; }
     .swim-delay-1 { animation-delay: 0.8s; }
     .swim-delay-2 { animation-delay: 1.6s; }
     .swim-delay-3 { animation-delay: 2.4s; }
     .swim-delay-4 { animation-delay: 3.2s; }
 
-    /* Dragging and Drop hover feedback */
-    .task-card.dragging {
-      opacity: 0.4;
-      transform: scale(0.98);
-      border: 2px dashed #0284c7 !important;
-      animation: none !important;
+    /* Lane Color Glows on Task Hover */
+    .glow-high:hover {
+      box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.25), 0 8px 10px -6px rgba(239, 68, 68, 0.15);
     }
-    .drag-over {
-      background-color: #f0f9ff !important;
-      border: 2px dashed #0284c7 !important;
-      box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.15) !important;
+    .glow-medium:hover {
+      box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.25), 0 8px 10px -6px rgba(245, 158, 11, 0.15);
+    }
+    .glow-low:hover {
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.25), 0 8px 10px -6px rgba(16, 185, 129, 0.15);
+    }
+    .glow-deprioritized:hover {
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.25), 0 8px 10px -6px rgba(99, 102, 241, 0.15);
     }
 
-    /* Smooth dropdown menu */
+    /* Dropdown hover bridge & transition */
     .move-menu {
+      display: none;
       opacity: 0;
-      visibility: hidden;
-      transform: translateY(4px);
-      transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+      transition: opacity 0.15s ease-in-out;
     }
     .move-menu-container:hover .move-menu,
-    .move-menu.active {
+    .move-menu.is-active {
+      display: block;
       opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
     }
 
-    /* Custom Lane Color Glows on Hover */
-    .lane-glow-red:hover {
-      box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.18), 0 8px 10px -6px rgba(239, 68, 68, 0.1);
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
     }
-    .lane-glow-amber:hover {
-      box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.18), 0 8px 10px -6px rgba(245, 158, 11, 0.1);
+    ::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.8);
+      border-radius: 9999px;
     }
-    .lane-glow-emerald:hover {
-      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.18), 0 8px 10px -6px rgba(16, 185, 129, 0.1);
+    ::-webkit-scrollbar-thumb {
+      background: rgba(203, 213, 225, 0.9);
+      border-radius: 9999px;
     }
-    .lane-glow-indigo:hover {
-      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.18), 0 8px 10px -6px rgba(99, 102, 241, 0.1);
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 1);
     }
   </style>
 </head>
-<body class="h-full flex flex-col overflow-x-hidden bg-slate-50 text-slate-800 selection:bg-sky-500 selection:text-white">
+<body class="h-full text-slate-800 flex flex-col antialiased selection:bg-rose-100 selection:text-rose-600">
 
-  <!-- TOP HEADER NAVBAR -->
-  <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 py-3 sm:px-6 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-    <div class="flex items-center gap-3">
-      <div class="p-2.5 bg-gradient-to-tr from-sky-500 to-indigo-600 rounded-2xl shadow-md shadow-sky-500/20 text-white">
-        <i data-lucide="kanban" class="w-6 h-6"></i>
-      </div>
-      <div>
-        <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-          Kanban Board Lane-Based Task Tracker
-        </h1>
-        <p class="text-xs text-slate-500 hidden sm:block">GitHub Pages ready • Direct Local JSON Sync • Dynamic Fluid Swimming Tasks</p>
-      </div>
-    </div>
-
-    <!-- Header Controls -->
-    <div class="flex items-center flex-wrap gap-2 text-sm">
-
-      <!-- Active File Badge -->
-      <div id="fileStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200/80 text-xs text-slate-700 shadow-inner">
-        <span id="fileStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></span>
-        <span id="fileStatusText" class="truncate max-w-[150px] sm:max-w-[220px] font-medium">LocalStorage Mode</span>
+  <!-- Header Banner -->
+  <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- App Title & Description -->
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-gradient-to-br from-rose-500 to-indigo-600 text-white rounded-xl shadow-md">
+          <i data-lucide="kanban" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            Kanban Board Lane-Based Task Tracker
+          </h1>
+          <p class="text-xs text-slate-500">Organize, track progress, float tasks across priority lanes & sync to <code class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono text-[11px]">inputs-and-data.json</code></p>
+        </div>
       </div>
 
-      <!-- Auto-Reconnect / Open / Create File Buttons -->
-      <div class="flex items-center rounded-xl bg-slate-100 border border-slate-200 p-0.5">
-        <button id="reconnectFileBtn" title="Reconnect or select inputs-and-data.json" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white text-slate-700 hover:text-sky-600 transition-all font-medium hover:shadow-sm">
-          <i data-lucide="folder-open" class="w-4 h-4 text-sky-500"></i>
-          <span class="hidden sm:inline">Connect JSON</span>
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="openHistoryModal()" class="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-semibold transition-all">
+          <i data-lucide="history" class="w-4 h-4 text-slate-500"></i>
+          <span>Completed</span>
+          <span id="historyBadge" class="bg-emerald-500 text-white px-1.5 py-0.2 rounded-full text-[10px] font-bold">0</span>
         </button>
-        <button id="createDefaultFileBtn" title="Create inputs-and-data.json on local disk" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white text-slate-700 hover:text-emerald-600 transition-all font-medium hover:shadow-sm">
-          <i data-lucide="file-plus" class="w-4 h-4 text-emerald-500"></i>
-          <span class="hidden sm:inline">Create inputs-and-data.json</span>
+
+        <button onclick="openHelpModal()" class="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-semibold transition-all">
+          <i data-lucide="help-circle" class="w-4 h-4 text-slate-500"></i>
+          <span>Help</span>
+        </button>
+
+        <button onclick="connectLocalJSON()" id="syncBtn" class="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all">
+          <i data-lucide="folder-open" class="w-4 h-4"></i>
+          <span id="syncBtnText">Connect JSON File</span>
         </button>
       </div>
-
-      <!-- Fallback Download / Upload -->
-      <div class="flex items-center gap-1">
-        <button id="downloadFallbackBtn" title="Download JSON copy" class="p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors shadow-sm">
-          <i data-lucide="download" class="w-4 h-4"></i>
-        </button>
-        <label id="uploadFallbackLabel" title="Import JSON file" class="p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors shadow-sm cursor-pointer">
-          <i data-lucide="upload" class="w-4 h-4"></i>
-          <input type="file" id="importFileInput" accept=".json" class="hidden">
-        </label>
-      </div>
-
-      <div class="h-5 w-[1px] bg-slate-200 my-auto mx-1"></div>
-
-      <!-- History / Completed Tasks Button -->
-      <button id="historyBtn" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-700 rounded-xl transition-all font-medium text-xs sm:text-sm shadow-xs active:scale-95">
-        <i data-lucide="history" class="w-4 h-4 text-emerald-600"></i>
-        <span>History</span>
-        <span id="completedBadgeCount" class="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-emerald-600 text-white">0</span>
-      </button>
-
-      <!-- Global Add Task Button -->
-      <button id="globalAddTaskBtn" class="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white rounded-xl transition-all font-medium shadow-md shadow-sky-500/20 active:scale-95">
-        <i data-lucide="plus" class="w-4 h-4"></i>
-        <span class="hidden md:inline">New Task</span>
-      </button>
-
-      <!-- Help Button -->
-      <button id="helpBtn" class="p-2 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-300 text-slate-700 rounded-xl transition-all flex items-center justify-center shadow-sm" title="How to use this app">
-        <i data-lucide="help-circle" class="w-5 h-5 text-sky-500"></i>
-      </button>
     </div>
   </header>
 
-  <!-- FRIENDLY WELCOME / INTRO BANNERS -->
-  <div id="introBanner" class="bg-gradient-to-r from-sky-50 via-white to-indigo-50 border-b border-sky-100 px-4 py-3 sm:px-6 flex items-center justify-between gap-4 transition-all shadow-sm">
-    <div class="flex items-start sm:items-center gap-3">
-      <div class="p-2 bg-sky-500/10 rounded-xl text-sky-600 border border-sky-200/60 shrink-0 mt-0.5 sm:mt-0">
-        <i data-lucide="sparkles" class="w-5 h-5"></i>
+  <!-- Auto-Reconnection & Status Alert Bar -->
+  <div id="fileStatusBanner" class="bg-amber-50 border-b border-amber-200/80 px-4 py-2 text-xs text-amber-800 flex items-center justify-between transition-all">
+    <div class="max-w-7xl mx-auto w-full flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0"></i>
+        <span id="fileStatusText">App is running in single-session mode. Connect to <code class="font-bold">inputs-and-data.json</code> for local automatic persistence.</span>
       </div>
-      <div class="text-xs sm:text-sm text-slate-600">
-        <span class="font-semibold text-slate-900">Welcome to your Swimming Kanban Task Board!</span>
-        Tasks float smoothly in their priority currents and automatically save to your local <code class="text-sky-700 font-mono bg-sky-100/70 px-1.5 py-0.5 rounded border border-sky-200/80">inputs-and-data.json</code> file on every edit.
-      </div>
+      <button onclick="reconnectFileHandle()" id="reconnectBtn" class="hidden text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors">
+        Confirm File Access
+      </button>
     </div>
-    <button id="dismissBannerBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/50 transition-colors shrink-0" title="Dismiss Banner">
-      <i data-lucide="x" class="w-4 h-4"></i>
-    </button>
   </div>
 
-  <!-- MAIN KANBAN BOARD CONTAINER -->
-  <main class="flex-1 p-4 sm:p-6 overflow-x-auto min-h-0">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 h-full min-w-[320px] max-w-[1920px] mx-auto">
-
-      <!-- LANE 1: HIGH PRIORITY -->
-      <div data-lane="high" class="lane-column flex flex-col bg-red-50/40 rounded-2xl border border-red-200/80 overflow-hidden shadow-sm">
-        <div class="p-4 bg-gradient-to-r from-red-500/10 to-white/80 border-b border-red-200/60 flex items-center justify-between backdrop-blur-sm">
-          <div class="flex items-center gap-2.5">
-            <span class="w-3 h-3 rounded-full bg-red-500 shadow-md shadow-red-500/40"></span>
-            <h2 class="font-bold text-red-950 tracking-wide text-xs sm:text-sm uppercase">Lane 1 - High Priority</h2>
-            <span id="count-high" class="px-2 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 border border-red-200">0</span>
-          </div>
-          <button onclick="openTaskModal('high')" class="text-red-600 hover:text-red-700 hover:bg-red-100/80 p-1.5 rounded-lg transition-colors" title="Add task to Lane 1">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-          </button>
-        </div>
-        <div id="lane-high" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3.5 min-h-[150px]"></div>
+  <!-- Main Kanban Board -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col">
+    
+    <!-- Controls / Quick Add Bar -->
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority Lanes</span>
+        <span id="totalTasksCount" class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">0 Tasks</span>
       </div>
 
-      <!-- LANE 2: MEDIUM PRIORITY -->
-      <div data-lane="medium" class="lane-column flex flex-col bg-amber-50/40 rounded-2xl border border-amber-200/80 overflow-hidden shadow-sm">
-        <div class="p-4 bg-gradient-to-r from-amber-500/10 to-white/80 border-b border-amber-200/60 flex items-center justify-between backdrop-blur-sm">
-          <div class="flex items-center gap-2.5">
-            <span class="w-3 h-3 rounded-full bg-amber-500 shadow-md shadow-amber-500/40"></span>
-            <h2 class="font-bold text-amber-950 tracking-wide text-xs sm:text-sm uppercase">Lane 2 - Medium Priority</h2>
-            <span id="count-medium" class="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-200">0</span>
+      <button onclick="openTaskModal()" class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-sm text-xs transition-all transform active:scale-95">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span>Add New Task</span>
+      </button>
+    </div>
+
+    <!-- 4 Priority Columns Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 flex-1 min-h-[500px]">
+      
+      <!-- Lane 1: High Priority -->
+      <div class="bg-rose-50/60 border border-rose-200/80 rounded-2xl p-4 flex flex-col h-full shadow-xs">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-rose-200/80">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500 ring-4 ring-rose-200"></span>
+            <h2 class="font-bold text-slate-800 text-sm">High Priority</h2>
           </div>
-          <button onclick="openTaskModal('medium')" class="text-amber-600 hover:text-amber-700 hover:bg-amber-100/80 p-1.5 rounded-lg transition-colors" title="Add task to Lane 2">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-          </button>
+          <span id="count-high" class="text-xs bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded-full">0</span>
         </div>
-        <div id="lane-medium" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3.5 min-h-[150px]"></div>
+        <div id="lane-high" class="task-lane flex-1 space-y-3 min-h-[120px] transition-colors rounded-xl p-1" data-lane="high">
+          <!-- Tasks injected here -->
+        </div>
       </div>
 
-      <!-- LANE 3: LOW PRIORITY -->
-      <div data-lane="low" class="lane-column flex flex-col bg-emerald-50/40 rounded-2xl border border-emerald-200/80 overflow-hidden shadow-sm">
-        <div class="p-4 bg-gradient-to-r from-emerald-500/10 to-white/80 border-b border-emerald-200/60 flex items-center justify-between backdrop-blur-sm">
-          <div class="flex items-center gap-2.5">
-            <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/40"></span>
-            <h2 class="font-bold text-emerald-950 tracking-wide text-xs sm:text-sm uppercase">Lane 3 - Low Priority</h2>
-            <span id="count-low" class="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">0</span>
+      <!-- Lane 2: Medium Priority -->
+      <div class="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 flex flex-col h-full shadow-xs">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-amber-200/80">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-500 ring-4 ring-amber-200"></span>
+            <h2 class="font-bold text-slate-800 text-sm">Medium Priority</h2>
           </div>
-          <button onclick="openTaskModal('low')" class="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/80 p-1.5 rounded-lg transition-colors" title="Add task to Lane 3">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-          </button>
+          <span id="count-medium" class="text-xs bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">0</span>
         </div>
-        <div id="lane-low" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3.5 min-h-[150px]"></div>
+        <div id="lane-medium" class="task-lane flex-1 space-y-3 min-h-[120px] transition-colors rounded-xl p-1" data-lane="medium">
+          <!-- Tasks injected here -->
+        </div>
       </div>
 
-      <!-- LANE 4: DE-PRIORITIZED -->
-      <div data-lane="deprioritized" class="lane-column flex flex-col bg-indigo-50/30 rounded-2xl border border-indigo-200/70 overflow-hidden shadow-sm">
-        <div class="p-4 bg-gradient-to-r from-indigo-500/10 to-white/80 border-b border-indigo-200/60 flex items-center justify-between backdrop-blur-sm">
-          <div class="flex items-center gap-2.5">
-            <span class="w-3 h-3 rounded-full bg-indigo-500 shadow-md shadow-indigo-500/40"></span>
-            <h2 class="font-bold text-indigo-950 tracking-wide text-xs sm:text-sm uppercase">Lane 4 - De-prioritized</h2>
-            <span id="count-deprioritized" class="px-2 py-0.5 text-xs font-bold rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">0</span>
+      <!-- Lane 3: Low Priority -->
+      <div class="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4 flex flex-col h-full shadow-xs">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-emerald-200/80">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-200"></span>
+            <h2 class="font-bold text-slate-800 text-sm">Low Priority</h2>
           </div>
-          <button onclick="openTaskModal('deprioritized')" class="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100/80 p-1.5 rounded-lg transition-colors" title="Add task to Lane 4">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-          </button>
+          <span id="count-low" class="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">0</span>
         </div>
-        <div id="lane-deprioritized" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3.5 min-h-[150px]"></div>
+        <div id="lane-low" class="task-lane flex-1 space-y-3 min-h-[120px] transition-colors rounded-xl p-1" data-lane="low">
+          <!-- Tasks injected here -->
+        </div>
+      </div>
+
+      <!-- Lane 4: De-prioritized -->
+      <div class="bg-indigo-50/60 border border-indigo-200/80 rounded-2xl p-4 flex flex-col h-full shadow-xs">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-indigo-200/80">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-indigo-500 ring-4 ring-indigo-200"></span>
+            <h2 class="font-bold text-slate-800 text-sm">De-prioritized</h2>
+          </div>
+          <span id="count-deprioritized" class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">0</span>
+        </div>
+        <div id="lane-deprioritized" class="task-lane flex-1 space-y-3 min-h-[120px] transition-colors rounded-xl p-1" data-lane="deprioritized">
+          <!-- Tasks injected here -->
+        </div>
       </div>
 
     </div>
   </main>
 
-  <!-- ADD / EDIT TASK MODAL -->
-  <div id="taskModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-white border border-slate-200 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden my-8">
-      <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
-        <h3 id="modalTitle" class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <i data-lucide="check-square" class="w-5 h-5 text-sky-500"></i>
-          Create New Task
-        </h3>
-        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors">
+  <!-- Create / Edit Task Modal -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden transition-opacity">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 id="modalTitle" class="text-lg font-bold text-slate-900">Add New Task</h3>
+        <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100 transition-colors">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="taskForm" class="p-6 space-y-4">
+      <form id="taskForm" onsubmit="saveTaskFromForm(event)" class="space-y-4">
         <input type="hidden" id="taskIdInput">
 
-        <!-- Title -->
         <div>
-          <label for="taskTitle" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Task Title *</label>
-          <input type="text" id="taskTitle" required placeholder="e.g. Prepare client presentation deck" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none transition-all text-sm text-slate-800">
+          <label for="taskTitle" class="block text-xs font-semibold text-slate-700 mb-1">Task Title *</label>
+          <input type="text" id="taskTitle" required placeholder="e.g., Update system documentation" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all">
         </div>
 
-        <!-- Lane Selection -->
-        <div>
-          <label for="taskLane" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Priority Lane *</label>
-          <select id="taskLane" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none transition-all text-sm text-slate-800 font-medium">
-            <option value="high">Lane 1 - High Priority</option>
-            <option value="medium">Lane 2 - Medium Priority</option>
-            <option value="low">Lane 3 - Low Priority</option>
-            <option value="deprioritized">Lane 4 - De-prioritized</option>
-          </select>
-        </div>
-
-        <!-- Deadline & Progress -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label for="taskDeadline" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Deadline Date</label>
-            <input type="date" id="taskDeadline" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none transition-all text-xs text-slate-800">
+            <label for="taskLane" class="block text-xs font-semibold text-slate-700 mb-1">Target Priority Lane</label>
+            <select id="taskLane" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all">
+              <option value="high">Lane 1 - High Priority</option>
+              <option value="medium">Lane 2 - Medium Priority</option>
+              <option value="low">Lane 3 - Low Priority</option>
+              <option value="deprioritized">Lane 4 - De-prioritized</option>
+            </select>
           </div>
 
           <div>
-            <div class="flex justify-between items-center mb-1">
-              <label for="taskProgress" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Progress</label>
-              <span id="progressValDisplay" class="text-xs font-bold text-sky-600">0%</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="range" id="taskProgress" min="0" max="100" value="0" class="w-full accent-sky-500 cursor-pointer">
-              <input type="number" id="taskProgressInput" min="0" max="100" value="0" class="w-14 px-1.5 py-1 text-center bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
-            </div>
+            <label for="taskDeadline" class="block text-xs font-semibold text-slate-700 mb-1">Deadline Date</label>
+            <input type="date" id="taskDeadline" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all">
           </div>
         </div>
 
-        <!-- Notes -->
         <div>
-          <label for="taskNotes" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Notes / Sub-tasks</label>
-          <textarea id="taskNotes" rows="3" placeholder="Add additional details, links, or sub-task notes..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none transition-all text-xs text-slate-800 resize-none"></textarea>
+          <div class="flex justify-between items-center mb-1">
+            <label for="taskProgress" class="text-xs font-semibold text-slate-700">Progress Percentage</label>
+            <span id="progressValDisplay" class="text-xs font-bold text-rose-600">0%</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="range" id="taskProgress" min="0" max="100" value="0" oninput="updateProgressDisplay(this.value)" class="w-full accent-rose-600 cursor-pointer">
+            <input type="number" id="taskProgressInput" min="0" max="100" value="0" oninput="syncProgressSlider(this.value)" class="w-16 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs text-center font-bold">
+          </div>
         </div>
 
-        <!-- Modal Action Buttons -->
-        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
-          <button type="button" id="cancelModalBtn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
-            Cancel
-          </button>
-          <button type="submit" class="px-5 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm">
-            Save Task
-          </button>
+        <div>
+          <label for="taskNotes" class="block text-xs font-semibold text-slate-700 mb-1">Task Notes & Description</label>
+          <textarea id="taskNotes" rows="3" placeholder="Add optional details, links, or notes..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeTaskModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-sm transition-all">Save Task</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- COMPLETED TASKS HISTORY MODAL -->
-  <div id="historyModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 max-h-[85vh] flex flex-col">
-      <div class="px-6 py-4 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2.5">
-          <div class="p-2 bg-emerald-500 text-white rounded-xl shadow-xs">
+  <!-- History / Completed Tasks Modal -->
+  <div id="historyModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden transition-opacity">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
             <i data-lucide="check-circle-2" class="w-5 h-5"></i>
           </div>
           <div>
             <h3 class="text-lg font-bold text-slate-900">Completed Tasks History</h3>
-            <p class="text-xs text-slate-500">Archived completed tasks (Hidden from main board view)</p>
+            <p class="text-xs text-slate-500">Tasks marked as 100% finished or checked off are safely archived here.</p>
           </div>
         </div>
-        <button id="closeHistoryBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors">
+        <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100 transition-colors">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div id="historyList" class="p-6 overflow-y-auto space-y-3 flex-1 min-h-[200px]">
-        <!-- Dynamic History Items -->
+      <!-- Completed List -->
+      <div id="completedListContainer" class="flex-1 overflow-y-auto space-y-3 pr-1">
+        <!-- Completed items injected here -->
       </div>
 
-      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
-        <span id="historyTotalText" class="text-xs font-semibold text-slate-500">Total Completed: 0</span>
-        <button id="closeHistoryFooterBtn" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-semibold transition-colors">
-          Close
-        </button>
+      <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+        <span id="historyModalCount" class="text-xs font-medium text-slate-500">0 archived tasks</span>
+        <button onclick="closeHistoryModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all">Close Window</button>
       </div>
     </div>
   </div>
 
-  <!-- EXPANDED DETAILED HELP MODAL -->
-  <div id="helpModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
-      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
-        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <i data-lucide="book-open" class="w-5 h-5 text-sky-500"></i>
-          Complete User Guide: Kanban Task Tracker
-        </h3>
-        <button id="closeHelpBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors">
+  <!-- Detailed Help Guide Modal -->
+  <div id="helpModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden transition-opacity">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">User Guide & Instructions</h3>
+        </div>
+        <button onclick="closeHelpModal()" class="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100 transition-colors">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="p-6 overflow-y-auto space-y-6 text-slate-600 text-sm leading-relaxed">
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs leading-relaxed text-slate-600">
         
-        <!-- STEP 1 -->
-        <div class="flex gap-4 items-start">
-          <div class="p-2.5 bg-red-100 border border-red-200 rounded-2xl text-red-600 shrink-0 shadow-sm">
-            <i data-lucide="file-type-2" class="w-5 h-5"></i>
-          </div>
-          <div class="space-y-1">
-            <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
-              1. Connecting Local JSON (<code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700 border">inputs-and-data.json</code>)
-            </h4>
-            <p>This web app uses the modern <strong>File System Access API</strong> to write updates directly to your hard drive without server uploads.</p>
-            <ul class="list-disc pl-5 text-xs text-slate-500 space-y-1 pt-1">
-              <li>Click <strong>"Create inputs-and-data.json"</strong> to initialize a new dataset on your machine.</li>
-              <li>Or click <strong>"Connect JSON"</strong> to select an existing <code class="font-mono">inputs-and-data.json</code> file.</li>
-              <li>If your browser doesn't support direct file writing, fallback <strong>Download/Upload</strong> buttons are available.</li>
-            </ul>
-          </div>
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+          <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i data-lucide="hard-drive" class="w-4 h-4 text-emerald-600"></i>
+            1. Connecting to local inputs-and-data.json
+          </h4>
+          <p>This app reads & writes directly to your computer using the modern <b>File System Access API</b>. Click <b>"Connect JSON File"</b> in the top navigation to create or choose your local <code class="font-mono text-emerald-700">inputs-and-data.json</code> file.</p>
         </div>
 
-        <!-- STEP 2 -->
-        <div class="flex gap-4 items-start">
-          <div class="p-2.5 bg-amber-100 border border-amber-200 rounded-2xl text-amber-600 shrink-0 shadow-sm">
-            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-          </div>
-          <div class="space-y-1">
-            <h4 class="text-base font-bold text-slate-900">2. Auto-Reconnect Feature</h4>
-            <p>Your local file handle is saved securely in your browser's <strong>IndexedDB</strong> storage. Whenever you revisit or refresh this page, the app will automatically request permission and re-bind to <code class="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">inputs-and-data.json</code> instantly.</p>
-          </div>
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+          <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4 text-sky-600"></i>
+            2. Automatic Next-Visit Reconnection
+          </h4>
+          <p>Your local file handle is saved securely inside your browser's IndexedDB. When you reopen the page later, the app will remember your file and ask for a quick 1-click permission confirmation to load automatically!</p>
         </div>
 
-        <!-- STEP 3 -->
-        <div class="flex gap-4 items-start">
-          <div class="p-2.5 bg-emerald-100 border border-emerald-200 rounded-2xl text-emerald-600 shrink-0 shadow-sm">
-            <i data-lucide="swim" class="w-5 h-5"></i>
-          </div>
-          <div class="space-y-1">
-            <h4 class="text-base font-bold text-slate-900">3. Swimming Tasks & Priority Lanes</h4>
-            <p>Tasks swim inside 4 color-coded currents:</p>
-            <div class="grid grid-cols-2 gap-2 text-xs pt-1">
-              <span class="p-2 bg-red-50 text-red-700 border border-red-200 rounded-xl font-medium">Lane 1: High Priority (Red)</span>
-              <span class="p-2 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl font-medium">Lane 2: Medium Priority (Amber)</span>
-              <span class="p-2 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl font-medium">Lane 3: Low Priority (Green)</span>
-              <span class="p-2 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-xl font-medium">Lane 4: De-prioritized (Indigo)</span>
-            </div>
-          </div>
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+          <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i data-lucide="arrow-left-right" class="w-4 h-4 text-rose-600"></i>
+            3. Swim Lanes & Task Reordering
+          </h4>
+          <p>Drag task cards between any of the 4 priority columns (High, Medium, Low, De-prioritized). To reorder tasks within a column, drag them vertically or use the <b>Up/Down arrow buttons</b> on each card.</p>
         </div>
 
-        <!-- STEP 4 -->
-        <div class="flex gap-4 items-start">
-          <div class="p-2.5 bg-indigo-100 border border-indigo-200 rounded-2xl text-indigo-600 shrink-0 shadow-sm">
-            <i data-lucide="move" class="w-5 h-5"></i>
-          </div>
-          <div class="space-y-1">
-            <h4 class="text-base font-bold text-slate-900">4. Moving, Reordering & Editing</h4>
-            <ul class="list-disc pl-5 text-xs text-slate-500 space-y-1">
-              <li><strong>Drag & Drop:</strong> Grab any task card to move it between lanes or reorder cards vertically.</li>
-              <li><strong>Quick Move:</strong> Click the <em>Move ▾</em> button on any task card to transfer it with one click.</li>
-              <li><strong>Task Details:</strong> Double click or hit the edit pencil icon to modify progress percentages, set deadlines, or append notes.</li>
-            </ul>
-          </div>
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+          <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i data-lucide="minimize-2" class="w-4 h-4 text-amber-600"></i>
+            4. Minimizing Cards
+          </h4>
+          <p>Click the <b>Minimize icon</b> in any task card header to collapse it into a compact row showing only the checkbox, title, and deadline date badge.</p>
         </div>
 
-        <!-- STEP 5 -->
-        <div class="flex gap-4 items-start">
-          <div class="p-2.5 bg-emerald-100 border border-emerald-200 rounded-2xl text-emerald-600 shrink-0 shadow-sm">
-            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-          </div>
-          <div class="space-y-1">
-            <h4 class="text-base font-bold text-slate-900">5. Completed Tasks & History Archive</h4>
-            <ul class="list-disc pl-5 text-xs text-slate-500 space-y-1">
-              <li><strong>Auto-Completion:</strong> Check the checkbox on a card OR set its progress to 100%. The task automatically disappears from the main Kanban view into a hidden state.</li>
-              <li><strong>History Modal:</strong> Click the <strong>History</strong> button in the header bar to view all finished tasks with completion timestamps and original lane information.</li>
-              <li><strong>Restoration:</strong> Click <em>Restore Task</em> in History to uncheck or set progress back to 90% and put it back in its lane.</li>
-            </ul>
-          </div>
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+          <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+            5. Completion & History Archive
+          </h4>
+          <p>Checking off a task checkbox or sliding progress to 100% automatically hides it from the main board and moves it to the <b>Completed History</b>. Click <b>"Completed"</b> in the top navbar anytime to review or restore archived tasks.</p>
         </div>
 
       </div>
 
-      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
-        <button id="closeHelpFooterBtn" class="px-5 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
-          Got it!
-        </button>
+      <div class="flex justify-end pt-3 border-t border-slate-100">
+        <button onclick="closeHelpModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all">Got it, thanks!</button>
       </div>
     </div>
   </div>
 
-  <!-- NOTIFICATION TOAST -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-white border border-slate-200 shadow-xl text-slate-800 text-sm">
-    <i id="toastIcon" data-lucide="info" class="w-5 h-5 text-sky-500"></i>
-    <span id="toastMessage" class="font-medium">Notification message</span>
-  </div>
-
-  <!-- INDEXEDDB & APP LOGIC -->
+  <!-- JavaScript Logic -->
   <script>
-    // INDEXEDDB HELPER FOR PERSISTING FILE HANDLE
-    const DB_NAME = 'KanbanTaskTrackerDB';
-    const STORE_NAME = 'fileHandles';
-    const HANDLE_KEY = 'inputs_data_handle';
-
-    function initDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME);
-          }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-    }
-
-    async function setStoredHandle(handle) {
-      try {
-        const db = await initDB();
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_NAME, 'readwrite');
-          tx.objectStore(STORE_NAME).put(handle, HANDLE_KEY);
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-      } catch (err) {
-        console.error("IndexedDB error writing handle:", err);
+    // Priority Lane Configurations
+    const LANE_CONFIGS = {
+      high: {
+        border: 'border-rose-500',
+        glowClass: 'glow-high',
+        progressFill: 'bg-rose-500',
+        label: 'High Priority'
+      },
+      medium: {
+        border: 'border-amber-500',
+        glowClass: 'glow-medium',
+        progressFill: 'bg-amber-500',
+        label: 'Medium Priority'
+      },
+      low: {
+        border: 'border-emerald-500',
+        glowClass: 'glow-low',
+        progressFill: 'bg-emerald-500',
+        label: 'Low Priority'
+      },
+      deprioritized: {
+        border: 'border-indigo-500',
+        glowClass: 'glow-deprioritized',
+        progressFill: 'bg-indigo-500',
+        label: 'De-prioritized'
       }
-    }
+    };
 
-    async function getStoredHandle() {
-      try {
-        const db = await initDB();
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_NAME, 'readonly');
-          const request = tx.objectStore(STORE_NAME).get(HANDLE_KEY);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-      } catch (err) {
-        console.error("IndexedDB error reading handle:", err);
-        return null;
-      }
-    }
-
-    // DEFAULT SAMPLE DATA
-    const DEFAULT_DATA = {
+    // Default Sample State
+    let appData = {
       tasks: [
         {
           id: 'task-101',
@@ -516,6 +407,7 @@
           deadline: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
           progress: 75,
           completed: false,
+          minimized: false,
           notes: 'Align with key stakeholders on roadmap.'
         },
         {
@@ -525,6 +417,7 @@
           deadline: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0],
           progress: 40,
           completed: false,
+          minimized: false,
           notes: 'Verify single-file bundle build passes.'
         },
         {
@@ -534,264 +427,234 @@
           deadline: '',
           progress: 20,
           completed: false,
+          minimized: true,
           notes: 'Ensure AA contrast standards.'
         },
         {
           id: 'task-104',
-          title: 'Archive deprecated documentation',
+          title: 'Archive legacy documentation',
           lane: 'deprioritized',
           deadline: '',
-          progress: 100,
-          completed: true,
-          completedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-          notes: 'Moved legacy docs to archive folder.'
+          progress: 0,
+          completed: false,
+          minimized: false,
+          notes: 'Deprioritized until next quarter.'
         }
       ]
     };
 
-    let appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
     let fileHandle = null;
-    const isFileSystemSupported = 'showOpenFilePicker' in window;
 
-    // LIGHT THEME LANE CONFIGURATIONS
-    const LANE_CONFIGS = {
-      high: {
-        border: 'border-l-red-500',
-        cardBg: 'bg-white',
-        glowClass: 'lane-glow-red',
-        progressFill: 'bg-red-500',
-        badgeBg: 'bg-red-50 text-red-700 border-red-200'
-      },
-      medium: {
-        border: 'border-l-amber-500',
-        cardBg: 'bg-white',
-        glowClass: 'lane-glow-amber',
-        progressFill: 'bg-amber-500',
-        badgeBg: 'bg-amber-50 text-amber-800 border-amber-200'
-      },
-      low: {
-        border: 'border-l-emerald-500',
-        cardBg: 'bg-white',
-        glowClass: 'lane-glow-emerald',
-        progressFill: 'bg-emerald-500',
-        badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200'
-      },
-      deprioritized: {
-        border: 'border-l-indigo-400',
-        cardBg: 'bg-white',
-        glowClass: 'lane-glow-indigo',
-        progressFill: 'bg-indigo-500',
-        badgeBg: 'bg-indigo-50 text-indigo-800 border-indigo-200'
+    // IndexedDB setup for file handle persistence
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('KanbanTaskTrackerDB', 1);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('fileHandles')) {
+            db.createObjectStore('fileHandles');
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function storeFileHandle(handle) {
+      try {
+        const db = await openDB();
+        const tx = db.transaction('fileHandles', 'readwrite');
+        tx.objectStore('fileHandles').put(handle, 'inputsAndDataJson');
+      } catch (err) {
+        console.warn('Could not store handle in IndexedDB:', err);
       }
-    };
+    }
 
-    // ON DOM LOAD
-    document.addEventListener('DOMContentLoaded', async () => {
+    async function getStoredFileHandle() {
+      try {
+        const db = await openDB();
+        const tx = db.transaction('fileHandles', 'readonly');
+        return new Promise((resolve) => {
+          const req = tx.objectStore('fileHandles').get('inputsAndDataJson');
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      } catch (err) {
+        return null;
+      }
+    }
+
+    // Initialize App & Auto Reconnection
+    window.addEventListener('DOMContentLoaded', async () => {
       lucide.createIcons();
-      loadFromLocalStorage();
-      renderBoard();
-      setupEventListeners();
       setupDragAndDrop();
 
-      if (isFileSystemSupported) {
-        await tryAutoReconnectFile();
+      // Listen for window clicks to close move dropdowns
+      window.addEventListener('click', (e) => {
+        if (!e.target.closest('.move-menu-container')) {
+          document.querySelectorAll('.move-menu').forEach(menu => menu.classList.remove('is-active'));
+        }
+      });
+
+      // Try automatic reconnection from stored IndexedDB handle
+      const savedHandle = await getStoredFileHandle();
+      if (savedHandle) {
+        fileHandle = savedHandle;
+        try {
+          if (await fileHandle.queryPermission({ mode: 'readwrite' }) === 'granted') {
+            await loadDataFromFileHandle();
+            updateFileStatusUI(true, 'inputs-and-data.json connected & synced');
+          } else {
+            updateFileStatusUI(false, 'Found saved inputs-and-data.json handle. Please confirm file access.', true);
+          }
+        } catch (e) {
+          updateFileStatusUI(false, 'Saved handle expired. Please reconnect JSON file.');
+        }
       }
+
+      renderBoard();
     });
 
-    async function tryAutoReconnectFile() {
+    async function reconnectFileHandle() {
+      if (!fileHandle) return;
       try {
-        const storedHandle = await getStoredHandle();
-        if (storedHandle) {
-          const options = { mode: 'readwrite' };
-          let perm = await storedHandle.queryPermission(options);
-          if (perm !== 'granted') {
-            perm = await storedHandle.requestPermission(options);
-          }
-
-          if (perm === 'granted') {
-            fileHandle = storedHandle;
-            const loaded = await readFromFileHandle();
-            if (loaded) {
-              updateFileBadge(`Connected: ${fileHandle.name}`, 'emerald');
-              showToast(`Auto-connected to ${fileHandle.name}`, "hard-drive", "emerald");
-              return;
-            }
-          }
+        const perm = await fileHandle.requestPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
+          await loadDataFromFileHandle();
+          updateFileStatusUI(true, 'inputs-and-data.json reconnected successfully');
         }
       } catch (err) {
-        console.warn("Auto-reconnect skipped or denied:", err);
+        console.error('Permission error:', err);
       }
-      updateFileBadge('LocalStorage Mode', 'amber');
     }
 
-    async function readFromFileHandle() {
-      if (!fileHandle) return false;
-      try {
-        const file = await fileHandle.getFile();
-        const text = await file.text();
-        const data = JSON.parse(text);
-        if (data && Array.isArray(data.tasks)) {
-          appData.tasks = data.tasks;
-          renderBoard();
-          saveToLocalStorage();
-          return true;
-        }
-      } catch (e) {
-        console.error("Error reading file handle:", e);
-      }
-      return false;
-    }
-
-    async function openFileFromDisk() {
-      if (!isFileSystemSupported) {
-        showToast("File System API not supported. Use upload/download buttons.", "alert-triangle", "amber");
+    // Connect to local JSON file via File System Access API
+    async function connectLocalJSON() {
+      if (!('showOpenFilePicker' in window)) {
+        alert('File System Access API is not supported by your browser. Please use a modern browser like Chrome, Edge, or Opera.');
         return;
       }
+
       try {
         const [handle] = await window.showOpenFilePicker({
-          types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }],
           multiple: false
         });
+
         fileHandle = handle;
-        await setStoredHandle(fileHandle);
-        await readFromFileHandle();
-        updateFileBadge(`Connected: ${fileHandle.name}`, 'emerald');
-        showToast(`Connected to ${fileHandle.name}`, "folder-check", "emerald");
+        await storeFileHandle(handle);
+        await loadDataFromFileHandle();
+        updateFileStatusUI(true, fileHandle.name);
       } catch (err) {
-        if (err.name !== 'AbortError') showToast("Could not open file", "x-circle", "rose");
+        if (err.name !== 'AbortError') {
+          // If file does not exist or user wants to create one initially
+          await createInitialJSONFile();
+        }
       }
     }
 
-    async function createDefaultFileOnDisk() {
-      if (!isFileSystemSupported) {
-        downloadJSONFallback();
-        return;
-      }
+    async function createInitialJSONFile() {
       try {
         const handle = await window.showSaveFilePicker({
           suggestedName: 'inputs-and-data.json',
-          types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }]
         });
+
         fileHandle = handle;
-        await setStoredHandle(fileHandle);
-        await saveToFileHandle();
-        updateFileBadge(`Connected: ${fileHandle.name}`, 'emerald');
-        showToast(`Created and connected to ${fileHandle.name}!`, "check-circle-2", "emerald");
+        await storeFileHandle(handle);
+        await persistData();
+        updateFileStatusUI(true, fileHandle.name);
       } catch (err) {
-        if (err.name !== 'AbortError') showToast("Could not create file", "x-circle", "rose");
+        console.warn('File creation canceled or failed:', err);
       }
     }
 
-    async function saveToFileHandle() {
-      if (!fileHandle) return false;
+    async function loadDataFromFileHandle() {
+      if (!fileHandle) return;
       try {
-        const writable = await fileHandle.createWritable();
-        await writable.write(JSON.stringify(appData, null, 2));
-        await writable.close();
-        return true;
+        const file = await fileHandle.getFile();
+        const content = await file.text();
+        if (content.trim()) {
+          const parsed = JSON.parse(content);
+          if (parsed && Array.isArray(parsed.tasks)) {
+            appData = parsed;
+            renderBoard();
+          }
+        }
       } catch (err) {
-        console.error("Failed writing file:", err);
-        return false;
+        console.error('Failed reading JSON file:', err);
       }
     }
 
     async function persistData() {
-      saveToLocalStorage();
-      if (fileHandle) {
-        const success = await saveToFileHandle();
-        if (success) {
-          showToast(`Synced to ${fileHandle.name}`, "check", "emerald");
+      if (!fileHandle) return;
+      try {
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(appData, null, 2));
+        await writable.close();
+      } catch (err) {
+        console.error('Failed writing data to local file:', err);
+      }
+    }
+
+    function updateFileStatusUI(isConnected, fileName, showReconnect = false) {
+      const syncBtnText = document.getElementById('syncBtnText');
+      const syncBtn = document.getElementById('syncBtn');
+      const fileStatusText = document.getElementById('fileStatusText');
+      const reconnectBtn = document.getElementById('reconnectBtn');
+
+      if (isConnected) {
+        syncBtnText.textContent = 'File Connected';
+        syncBtn.className = 'flex items-center gap-2 px-3.5 py-2 bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all';
+        fileStatusText.innerHTML = `Active Sync: <code class="font-bold font-mono">${escapeHTML(fileName)}</code>`;
+        reconnectBtn.classList.add('hidden');
+      } else {
+        syncBtnText.textContent = 'Connect JSON File';
+        syncBtn.className = 'flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all';
+        fileStatusText.innerHTML = escapeHTML(fileName);
+        if (showReconnect) {
+          reconnectBtn.classList.remove('hidden');
         } else {
-          showToast("Saved to LocalStorage (File write failed)", "alert-circle", "amber");
+          reconnectBtn.classList.add('hidden');
         }
       }
     }
 
-    function loadFromLocalStorage() {
-      const saved = localStorage.getItem('kanban_lane_tasks_data');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed.tasks)) appData.tasks = parsed.tasks;
-        } catch (e) { console.error(e); }
-      }
-    }
-
-    function saveToLocalStorage() {
-      localStorage.setItem('kanban_lane_tasks_data', JSON.stringify(appData, null, 2));
-    }
-
-    function downloadJSONFallback() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
-      const a = document.createElement('a');
-      a.setAttribute("href", dataStr);
-      a.setAttribute("download", "inputs-and-data.json");
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      showToast("Downloaded inputs-and-data.json", "download", "sky");
-    }
-
-    function importJSONFallback(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const parsed = JSON.parse(e.target.result);
-          if (parsed && Array.isArray(parsed.tasks)) {
-            appData.tasks = parsed.tasks;
-            renderBoard();
-            persistData();
-            showToast(`Loaded ${parsed.tasks.length} tasks!`, "check", "emerald");
-          }
-        } catch (err) { showToast("Invalid JSON file.", "x-circle", "rose"); }
-      };
-      reader.readAsText(file);
-      event.target.value = '';
-    }
-
-    function updateFileBadge(fileName, color) {
-      const dot = document.getElementById('fileStatusDot');
-      const text = document.getElementById('fileStatusText');
-      text.textContent = fileName;
-      dot.className = "w-2.5 h-2.5 rounded-full ";
-      if (color === 'emerald') dot.classList.add('bg-emerald-500', 'shadow-sm', 'shadow-emerald-500');
-      else if (color === 'amber') dot.classList.add('bg-amber-500');
-      else dot.classList.add('bg-slate-400');
-    }
-
-    // RENDER BOARD WITH SWIMMING CARDS
+    // Render Board Lanes & Cards
     function renderBoard() {
+      const activeTasks = appData.tasks.filter(t => !t.completed);
+      const completedTasks = appData.tasks.filter(t => t.completed);
+
+      document.getElementById('historyBadge').textContent = completedTasks.length;
+      document.getElementById('totalTasksCount').textContent = `${activeTasks.length} Active Tasks`;
+
       const lanes = ['high', 'medium', 'low', 'deprioritized'];
-      
-      // Update header completed counter badge
-      const completedCount = appData.tasks.filter(t => t.completed || t.progress === 100).length;
-      document.getElementById('completedBadgeCount').textContent = completedCount;
+      lanes.forEach(lane => {
+        const container = document.getElementById(`lane-${lane}`);
+        const countSpan = document.getElementById(`count-${lane}`);
+        const laneTasks = activeTasks.filter(t => t.lane === lane);
 
-      lanes.forEach(laneKey => {
-        const laneEl = document.getElementById(`lane-${laneKey}`);
-        const countEl = document.getElementById(`count-${laneKey}`);
-        
-        // Filter tasks that belong to this lane AND are not completed / 100%
-        const tasks = appData.tasks.filter(t => t.lane === laneKey && !t.completed && t.progress < 100);
+        countSpan.textContent = laneTasks.length;
+        container.innerHTML = '';
 
-        countEl.textContent = tasks.length;
-        laneEl.innerHTML = '';
-
-        if (tasks.length === 0) {
-          laneEl.innerHTML = `
-            <div class="h-28 flex flex-col items-center justify-center border-2 border-dashed border-slate-200/80 rounded-2xl text-slate-400 text-xs gap-1 bg-white/40">
-              <span>No active tasks in this lane</span>
-              <button onclick="openTaskModal('${laneKey}')" class="text-sky-600 hover:underline font-medium">Add task</button>
+        if (laneTasks.length === 0) {
+          container.innerHTML = `
+            <div class="h-24 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-xs italic">
+              No tasks in this lane
             </div>
           `;
-          return;
+        } else {
+          laneTasks.forEach((task, index) => {
+            const cardEl = createTaskCardElement(task, index);
+            container.appendChild(cardEl);
+          });
         }
-
-        tasks.forEach((task, index) => {
-          laneEl.appendChild(createTaskCardElement(task, index));
-        });
       });
 
       lucide.createIcons();
@@ -802,8 +665,9 @@
       const card = document.createElement('div');
 
       const delayClass = `swim-delay-${index % 5}`;
+      const isMinimized = !!task.minimized;
 
-      card.className = `task-card swim-card ${delayClass} bg-white border-l-4 ${config.border} border-y border-r border-slate-200/90 hover:-translate-y-1 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing group relative ${config.glowClass}`;
+      card.className = `task-card swim-card ${delayClass} bg-white border-l-4 ${config.border} border-y border-r border-slate-200/90 hover:-translate-y-1 rounded-2xl ${isMinimized ? 'p-2.5' : 'p-4'} shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing group relative ${config.glowClass}`;
       card.draggable = true;
       card.dataset.id = task.id;
 
@@ -818,7 +682,7 @@
         else if (isToday) colorClass = 'text-amber-800 bg-amber-50 border-amber-200 font-semibold';
 
         deadlineBadge = `
-          <div class="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg border ${colorClass}">
+          <div class="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg border ${colorClass} shrink-0">
             <i data-lucide="calendar" class="w-3 h-3"></i>
             <span>${task.deadline}</span>
           </div>
@@ -835,211 +699,113 @@
       .map(l => `<button onclick="quickMoveTask('${task.id}', '${l.key}')" class="hover:bg-slate-100 px-2 py-1 rounded-lg text-left text-[11px] text-slate-700 font-medium transition-colors w-full flex items-center justify-between">→ ${l.label}</button>`)
       .join('');
 
-      card.innerHTML = `
-        <div class="flex items-start justify-between gap-2 mb-1.5">
-          <div class="flex items-start gap-2.5 flex-1 min-w-0">
-            <input type="checkbox" onchange="toggleTaskCompletion('${task.id}', this.checked)" title="Mark completed" class="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer shrink-0">
-            <h3 class="font-bold text-slate-800 text-sm leading-snug break-words flex-1">${escapeHTML(task.title)}</h3>
-          </div>
-          <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
-            <button onclick="openTaskModal('${task.lane}', '${task.id}')" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-sky-600 rounded-lg transition-colors" title="Edit Task">
-              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-            </button>
-            <button onclick="deleteTask('${task.id}')" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-red-600 rounded-lg transition-colors" title="Delete Task">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
-        </div>
-
-        ${task.notes ? `<p class="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed pl-6">${escapeHTML(task.notes)}</p>` : ''}
-
-        <div class="mb-3 space-y-1 pl-6">
-          <div class="flex justify-between items-center text-[11px]">
-            <span class="text-slate-400 font-medium">Progress</span>
-            <span class="font-bold text-slate-700">${task.progress}%</span>
-          </div>
-          <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div class="h-full ${config.progressFill} transition-all duration-300 rounded-full" style="width: ${task.progress}%"></div>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 pl-6">
-          <div class="flex items-center gap-1">
-            ${deadlineBadge}
-            <!-- Reorder Buttons for Precision Control -->
-            <div class="flex items-center gap-0.5 ml-1">
-              <button onclick="reorderTaskItem('${task.id}', -1)" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded transition-colors" title="Move Up">
-                <i data-lucide="arrow-up" class="w-3 h-3"></i>
+      if (isMinimized) {
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <input type="checkbox" onchange="toggleTaskCompletion('${task.id}', this.checked)" title="Mark completed" class="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer shrink-0">
+              <h3 class="font-semibold text-slate-800 text-xs truncate flex-1" title="${escapeHTML(task.title)}">${escapeHTML(task.title)}</h3>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              ${deadlineBadge}
+              <button onclick="toggleMinimizeTask('${task.id}')" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-lg transition-colors" title="Expand Task">
+                <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
               </button>
-              <button onclick="reorderTaskItem('${task.id}', 1)" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded transition-colors" title="Move Down">
-                <i data-lucide="arrow-down" class="w-3 h-3"></i>
+            </div>
+          </div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2 mb-1.5">
+            <div class="flex items-start gap-2.5 flex-1 min-w-0">
+              <input type="checkbox" onchange="toggleTaskCompletion('${task.id}', this.checked)" title="Mark completed" class="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer shrink-0">
+              <h3 class="font-bold text-slate-800 text-sm leading-snug break-words flex-1">${escapeHTML(task.title)}</h3>
+            </div>
+            <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 shrink-0">
+              <button onclick="toggleMinimizeTask('${task.id}')" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-lg transition-colors" title="Minimize Task">
+                <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="openTaskModal('${task.lane}', '${task.id}')" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-sky-600 rounded-lg transition-colors" title="Edit Task">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="deleteTask('${task.id}')" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-red-600 rounded-lg transition-colors" title="Delete Task">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
           </div>
 
-          <div class="relative move-menu-container">
-            <button onclick="toggleMoveMenu(event, '${task.id}')" class="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors font-medium border border-slate-200/80 shadow-2xs">
-              <span>Move</span>
-              <i data-lucide="chevron-down" class="w-3 h-3"></i>
-            </button>
-            <div class="move-menu absolute right-0 bottom-full pb-1 z-20 min-w-[120px]" id="move-menu-${task.id}">
-              <div class="bg-white border border-slate-200 rounded-xl p-1.5 shadow-xl space-y-0.5">
-                ${moveButtons}
+          ${task.notes ? `<p class="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed pl-6">${escapeHTML(task.notes)}</p>` : ''}
+
+          <div class="mb-3 space-y-1 pl-6">
+            <div class="flex justify-between items-center text-[11px]">
+              <span class="text-slate-400 font-medium">Progress</span>
+              <span class="font-bold text-slate-700">${task.progress}%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full ${config.progressFill} transition-all duration-300 rounded-full" style="width: ${task.progress}%"></div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 pl-6">
+            <div class="flex items-center gap-1">
+              ${deadlineBadge}
+              <div class="flex items-center gap-0.5 ml-1">
+                <button onclick="reorderTaskItem('${task.id}', -1)" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded transition-colors" title="Move Up">
+                  <i data-lucide="arrow-up" class="w-3 h-3"></i>
+                </button>
+                <button onclick="reorderTaskItem('${task.id}', 1)" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded transition-colors" title="Move Down">
+                  <i data-lucide="arrow-down" class="w-3 h-3"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="relative move-menu-container">
+              <button onclick="toggleMoveMenu(event, '${task.id}')" class="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors font-medium border border-slate-200/80 shadow-2xs">
+                <span>Move</span>
+                <i data-lucide="chevron-down" class="w-3 h-3"></i>
+              </button>
+              <div class="move-menu absolute right-0 bottom-full pb-1 z-20 min-w-[120px]" id="move-menu-${task.id}">
+                <div class="bg-white border border-slate-200 rounded-xl p-1.5 shadow-xl space-y-0.5">
+                  ${moveButtons}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      }
 
       return card;
     }
 
-    function toggleTaskCompletion(taskId, isChecked) {
-      const task = appData.tasks.find(t => t.id === taskId);
-      if (task) {
-        task.completed = isChecked;
-        if (isChecked) {
-          task.progress = 100;
-          task.completedAt = new Date().toISOString();
-          showToast("Task marked complete & archived!", "check-circle-2", "emerald");
-        } else {
-          task.progress = 90;
-          delete task.completedAt;
-          showToast("Task uncompleted & restored", "rotate-ccw", "sky");
-        }
-        renderBoard();
-        persistData();
-      }
-    }
-
-    function openHistoryModal() {
-      renderHistoryList();
-      document.getElementById('historyModal').classList.remove('hidden');
-    }
-
-    function closeHistoryModal() {
-      document.getElementById('historyModal').classList.add('hidden');
-    }
-
-    function renderHistoryList() {
-      const historyListEl = document.getElementById('historyList');
-      const totalTextEl = document.getElementById('historyTotalText');
-      const completedTasks = appData.tasks.filter(t => t.completed || t.progress === 100);
-
-      totalTextEl.textContent = `Total Completed: ${completedTasks.length}`;
-      historyListEl.innerHTML = '';
-
-      if (completedTasks.length === 0) {
-        historyListEl.innerHTML = `
-          <div class="h-40 flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
-            <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
-            <span>No completed tasks yet. Mark tasks as done or set progress to 100%.</span>
-          </div>
-        `;
-        lucide.createIcons();
-        return;
-      }
-
-      completedTasks.forEach(task => {
-        const item = document.createElement('div');
-        item.className = "bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 shadow-2xs hover:bg-white transition-colors";
-
-        const laneNames = {
-          high: 'Lane 1 (High)',
-          medium: 'Lane 2 (Medium)',
-          low: 'Lane 3 (Low)',
-          deprioritized: 'Lane 4 (De-prioritized)'
-        };
-
-        const completedDateStr = task.completedAt 
-          ? new Date(task.completedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
-          : 'Recently';
-
-        item.innerHTML = `
-          <div class="flex items-start gap-3 min-w-0 flex-1">
-            <div class="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg shrink-0 mt-0.5">
-              <i data-lucide="check" class="w-4 h-4"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHTML(task.title)}</h4>
-              <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">${escapeHTML(task.notes || 'No notes added')}</p>
-              <div class="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400 flex-wrap">
-                <span class="px-2 py-0.5 rounded bg-slate-200/70 font-medium text-slate-700">${laneNames[task.lane] || task.lane}</span>
-                <span>•</span>
-                <span>Completed: ${completedDateStr}</span>
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-            <button onclick="restoreTask('${task.id}')" class="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-700 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1">
-              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-              <span>Restore</span>
-            </button>
-            <button onclick="deleteTask('${task.id}'); renderHistoryList();" class="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors" title="Delete permanently">
-              <i data-lucide="trash-2" class="w-4 h-4"></i>
-            </button>
-          </div>
-        `;
-        historyListEl.appendChild(item);
-      });
-
-      lucide.createIcons();
-    }
-
-    function restoreTask(taskId) {
-      const task = appData.tasks.find(t => t.id === taskId);
-      if (task) {
-        task.completed = false;
-        task.progress = 90; // Set back below 100% so it stays in active board
-        delete task.completedAt;
-        renderBoard();
-        renderHistoryList();
-        persistData();
-        showToast("Task restored to active lane!", "rotate-ccw", "sky");
-      }
-    }
-
-    // TASK MODAL MANAGEMENT
-    function openTaskModal(lane = 'high', taskId = null) {
+    // Modal & Action Controls
+    function openTaskModal(laneKey = 'high', taskId = null) {
       const modal = document.getElementById('taskModal');
-      const modalTitle = document.getElementById('modalTitle');
-      const taskIdInput = document.getElementById('taskIdInput');
-      const titleInput = document.getElementById('taskTitle');
-      const laneSelect = document.getElementById('taskLane');
-      const deadlineInput = document.getElementById('taskDeadline');
-      const progressRange = document.getElementById('taskProgress');
-      const progressNumInput = document.getElementById('taskProgressInput');
-      const progressValDisplay = document.getElementById('progressValDisplay');
-      const notesInput = document.getElementById('taskNotes');
+      const form = document.getElementById('taskForm');
+      form.reset();
 
       if (taskId) {
         const task = appData.tasks.find(t => t.id === taskId);
         if (task) {
-          modalTitle.innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-sky-500"></i> Edit Task`;
-          taskIdInput.value = task.id;
-          titleInput.value = task.title;
-          laneSelect.value = task.lane;
-          deadlineInput.value = task.deadline || '';
-          progressRange.value = task.progress || 0;
-          progressNumInput.value = task.progress || 0;
-          progressValDisplay.textContent = `${task.progress || 0}%`;
-          notesInput.value = task.notes || '';
+          document.getElementById('modalTitle').textContent = 'Edit Task';
+          document.getElementById('taskIdInput').value = task.id;
+          document.getElementById('taskTitle').value = task.title;
+          document.getElementById('taskLane').value = task.lane;
+          document.getElementById('taskDeadline').value = task.deadline || '';
+          document.getElementById('taskProgress').value = task.progress || 0;
+          document.getElementById('taskProgressInput').value = task.progress || 0;
+          document.getElementById('progressValDisplay').textContent = `${task.progress || 0}%`;
+          document.getElementById('taskNotes').value = task.notes || '';
         }
       } else {
-        modalTitle.innerHTML = `<i data-lucide="check-square" class="w-5 h-5 text-sky-500"></i> Create New Task`;
-        taskIdInput.value = '';
-        titleInput.value = '';
-        laneSelect.value = lane;
-        deadlineInput.value = '';
-        progressRange.value = 0;
-        progressNumInput.value = 0;
-        progressValDisplay.textContent = '0%';
-        notesInput.value = '';
+        document.getElementById('modalTitle').textContent = 'Add New Task';
+        document.getElementById('taskIdInput').value = '';
+        document.getElementById('taskLane').value = laneKey;
+        document.getElementById('taskProgress').value = 0;
+        document.getElementById('taskProgressInput').value = 0;
+        document.getElementById('progressValDisplay').textContent = '0%';
       }
 
-      lucide.createIcons();
       modal.classList.remove('hidden');
-      titleInput.focus();
     }
 
     function closeTaskModal() {
@@ -1055,243 +821,278 @@
       const progress = parseInt(document.getElementById('taskProgress').value, 10) || 0;
       const notes = document.getElementById('taskNotes').value.trim();
 
-      if (!title) return;
+      const isCompleted = progress >= 100;
 
       if (id) {
-        const task = appData.tasks.find(t => t.id === id);
-        if (task) {
-          task.title = title;
-          task.lane = lane;
-          task.deadline = deadline;
-          task.progress = progress;
-          task.notes = notes;
-          if (progress === 100) {
-            task.completed = true;
-            if (!task.completedAt) task.completedAt = new Date().toISOString();
-          } else {
-            task.completed = false;
-            delete task.completedAt;
-          }
+        const taskIndex = appData.tasks.findIndex(t => t.id === id);
+        if (taskIndex !== -1) {
+          appData.tasks[taskIndex] = {
+            ...appData.tasks[taskIndex],
+            title,
+            lane,
+            deadline,
+            progress,
+            notes,
+            completed: isCompleted,
+            completedAt: isCompleted ? (appData.tasks[taskIndex].completedAt || new Date().toISOString()) : null
+          };
         }
       } else {
-        const isComp = progress === 100;
-        appData.tasks.push({
+        const newTask = {
           id: 'task-' + Date.now(),
-          title, lane, deadline, progress, notes,
-          completed: isComp,
-          completedAt: isComp ? new Date().toISOString() : null
-        });
+          title,
+          lane,
+          deadline,
+          progress,
+          notes,
+          completed: isCompleted,
+          minimized: false,
+          completedAt: isCompleted ? new Date().toISOString() : null
+        };
+        appData.tasks.unshift(newTask);
       }
 
       closeTaskModal();
       renderBoard();
       persistData();
-      showToast(id ? "Task updated!" : "New task created!", "check", "emerald");
     }
 
-    function deleteTask(id) {
-      appData.tasks = appData.tasks.filter(t => t.id !== id);
+    function updateProgressDisplay(val) {
+      document.getElementById('progressValDisplay').textContent = `${val}%`;
+      document.getElementById('taskProgressInput').value = val;
+    }
+
+    function syncProgressSlider(val) {
+      let clamped = Math.min(100, Math.max(0, parseInt(val, 10) || 0));
+      document.getElementById('taskProgress').value = clamped;
+      document.getElementById('progressValDisplay').textContent = `${clamped}%`;
+    }
+
+    function toggleMinimizeTask(taskId) {
+      const task = appData.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.minimized = !task.minimized;
+        renderBoard();
+        persistData();
+      }
+    }
+
+    function toggleTaskCompletion(taskId, isChecked) {
+      const task = appData.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.completed = isChecked;
+        if (isChecked) {
+          task.progress = 100;
+          task.completedAt = new Date().toISOString();
+        } else {
+          task.progress = 90; // Default restore progress
+          task.completedAt = null;
+        }
+        renderBoard();
+        persistData();
+      }
+    }
+
+    function deleteTask(taskId) {
+      appData.tasks = appData.tasks.filter(t => t.id !== taskId);
       renderBoard();
       persistData();
-      showToast("Task deleted", "trash-2", "rose");
     }
 
-    function quickMoveTask(id, targetLane) {
-      const task = appData.tasks.find(t => t.id === id);
+    function quickMoveTask(taskId, targetLane) {
+      const task = appData.tasks.find(t => t.id === taskId);
       if (task) {
         task.lane = targetLane;
         renderBoard();
         persistData();
-        showToast(`Moved to ${targetLane.toUpperCase()} lane`, "arrow-right", "sky");
       }
+    }
+
+    function toggleMoveMenu(e, taskId) {
+      e.stopPropagation();
+      const targetMenu = document.getElementById(`move-menu-${taskId}`);
+      document.querySelectorAll('.move-menu').forEach(menu => {
+        if (menu !== targetMenu) menu.classList.remove('is-active');
+      });
+      if (targetMenu) targetMenu.classList.toggle('is-active');
     }
 
     function reorderTaskItem(taskId, direction) {
-      const taskIndex = appData.tasks.findIndex(t => t.id === taskId);
-      if (taskIndex === -1) return;
-      const currentTask = appData.tasks[taskIndex];
-      
-      // Get all tasks in the same lane
-      const laneTaskIndices = appData.tasks
-        .map((t, idx) => (t.lane === currentTask.lane && !t.completed && t.progress < 100) ? idx : -1)
-        .filter(idx => idx !== -1);
-      
-      const posInLane = laneTaskIndices.indexOf(taskIndex);
-      const targetPosInLane = posInLane + direction;
+      const task = appData.tasks.find(t => t.id === taskId);
+      if (!task) return;
 
-      if (targetPosInLane >= 0 && targetPosInLane < laneTaskIndices.length) {
-        const targetGlobalIndex = laneTaskIndices[targetPosInLane];
-        // Swap tasks in array
-        const temp = appData.tasks[taskIndex];
-        appData.tasks[taskIndex] = appData.tasks[targetGlobalIndex];
-        appData.tasks[targetGlobalIndex] = temp;
-        
+      const sameLaneTasks = appData.tasks.filter(t => t.lane === task.lane && !t.completed);
+      const currentIndex = sameLaneTasks.findIndex(t => t.id === taskId);
+      const targetIndex = currentIndex + direction;
+
+      if (targetIndex >= 0 && targetIndex < sameLaneTasks.length) {
+        const swapTarget = sameLaneTasks[targetIndex];
+        const globalIdxA = appData.tasks.findIndex(t => t.id === task.id);
+        const globalIdxB = appData.tasks.findIndex(t => t.id === swapTarget.id);
+
+        const temp = appData.tasks[globalIdxA];
+        appData.tasks[globalIdxA] = appData.tasks[globalIdxB];
+        appData.tasks[globalIdxB] = temp;
+
         renderBoard();
         persistData();
-        showToast("Task reordered!", "arrow-up-down", "sky");
       }
     }
 
-    function toggleMoveMenu(event, taskId) {
-      event.stopPropagation();
-      const targetMenu = document.getElementById(`move-menu-${taskId}`);
-      const isActive = targetMenu.classList.contains('active');
-      document.querySelectorAll('.move-menu.active').forEach(m => m.classList.remove('active'));
-      if (!isActive) {
-        targetMenu.classList.add('active');
-      }
-    }
-
-    // DRAG AND DROP HANDLERS WITH POSITION CALCULATION
+    // Drag and Drop Handling
     function setupDragAndDrop() {
-      let draggedTaskId = null;
+      let draggedCardId = null;
 
       document.addEventListener('dragstart', (e) => {
         const card = e.target.closest('.task-card');
         if (card) {
-          draggedTaskId = card.dataset.id;
-          card.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
+          draggedCardId = card.dataset.id;
+          e.dataTransfer.setData('text/plain', card.dataset.id);
+          card.classList.add('opacity-50');
         }
       });
 
       document.addEventListener('dragend', (e) => {
         const card = e.target.closest('.task-card');
         if (card) {
-          card.classList.remove('dragging');
+          card.classList.remove('opacity-50');
         }
-        document.querySelectorAll('.lane-column').forEach(col => col.classList.remove('drag-over'));
       });
 
-      const lanes = document.querySelectorAll('.lane-column');
-      lanes.forEach(laneEl => {
+      document.querySelectorAll('.task-lane').forEach(laneEl => {
         laneEl.addEventListener('dragover', (e) => {
           e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          laneEl.classList.add('drag-over');
+          laneEl.classList.add('bg-slate-200/50');
         });
 
-        laneEl.addEventListener('dragleave', (e) => {
-          if (!laneEl.contains(e.relatedTarget)) {
-            laneEl.classList.remove('drag-over');
-          }
+        laneEl.addEventListener('dragleave', () => {
+          laneEl.classList.remove('bg-slate-200/50');
         });
 
         laneEl.addEventListener('drop', (e) => {
           e.preventDefault();
-          laneEl.classList.remove('drag-over');
-          const targetLaneKey = laneEl.dataset.lane;
+          laneEl.classList.remove('bg-slate-200/50');
+          const taskId = e.dataTransfer.getData('text/plain') || draggedCardId;
+          const targetLane = laneEl.dataset.lane;
 
-          if (!draggedTaskId || !targetLaneKey) return;
+          if (!taskId) return;
 
-          const draggedIndex = appData.tasks.findIndex(t => t.id === draggedTaskId);
-          if (draggedIndex === -1) return;
+          const task = appData.tasks.find(t => t.id === taskId);
+          if (task) {
+            task.lane = targetLane;
 
-          const draggedTask = appData.tasks[draggedIndex];
-          draggedTask.lane = targetLaneKey;
+            // Reorder inside stack based on drop vertical offset
+            const afterElement = getDragAfterElement(laneEl, e.clientY);
+            appData.tasks = appData.tasks.filter(t => t.id !== taskId);
 
-          // Calculate drop insertion index based on vertical mouse position
-          const laneContainer = document.getElementById(`lane-${targetLaneKey}`);
-          const cards = [...laneContainer.querySelectorAll('.task-card:not(.dragging)')];
-          
-          let insertBeforeId = null;
-          for (const card of cards) {
-            const box = card.getBoundingClientRect();
-            if (e.clientY < box.top + box.height / 2) {
-              insertBeforeId = card.dataset.id;
-              break;
+            if (afterElement == null) {
+              appData.tasks.push(task);
+            } else {
+              const afterId = afterElement.dataset.id;
+              const afterIdx = appData.tasks.findIndex(t => t.id === afterId);
+              appData.tasks.splice(afterIdx, 0, task);
             }
-          }
 
-          // Move item in appData.tasks array
-          appData.tasks.splice(draggedIndex, 1);
-          if (insertBeforeId) {
-            const targetIndex = appData.tasks.findIndex(t => t.id === insertBeforeId);
-            appData.tasks.splice(targetIndex, 0, draggedTask);
-          } else {
-            appData.tasks.push(draggedTask);
+            renderBoard();
+            persistData();
           }
-
-          renderBoard();
-          persistData();
-          showToast("Task reordered & saved!", "move", "sky");
         });
       });
     }
 
-    function setupEventListeners() {
-      document.getElementById('globalAddTaskBtn').addEventListener('click', () => openTaskModal('high'));
-      document.getElementById('reconnectFileBtn').addEventListener('click', openFileFromDisk);
-      document.getElementById('createDefaultFileBtn').addEventListener('click', createDefaultFileOnDisk);
-      document.getElementById('downloadFallbackBtn').addEventListener('click', downloadJSONFallback);
-      document.getElementById('importFileInput').addEventListener('change', importJSONFallback);
-
-      document.getElementById('closeModalBtn').addEventListener('click', closeTaskModal);
-      document.getElementById('cancelModalBtn').addEventListener('click', closeTaskModal);
-      document.getElementById('taskForm').addEventListener('submit', saveTaskFromForm);
-
-      document.getElementById('historyBtn').addEventListener('click', openHistoryModal);
-      document.getElementById('closeHistoryBtn').addEventListener('click', closeHistoryModal);
-      document.getElementById('closeHistoryFooterBtn').addEventListener('click', closeHistoryModal);
-
-      const range = document.getElementById('taskProgress');
-      const numInput = document.getElementById('taskProgressInput');
-      const valDisplay = document.getElementById('progressValDisplay');
-
-      range.addEventListener('input', (e) => {
-        numInput.value = e.target.value;
-        valDisplay.textContent = `${e.target.value}%`;
-      });
-      numInput.addEventListener('input', (e) => {
-        let val = parseInt(e.target.value, 10) || 0;
-        val = Math.max(0, Math.min(100, val));
-        range.value = val;
-        valDisplay.textContent = `${val}%`;
-      });
-
-      const helpModal = document.getElementById('helpModal');
-      const historyModal = document.getElementById('historyModal');
-      document.getElementById('helpBtn').addEventListener('click', () => helpModal.classList.remove('hidden'));
-      document.getElementById('closeHelpBtn').addEventListener('click', () => helpModal.classList.add('hidden'));
-      document.getElementById('closeHelpFooterBtn').addEventListener('click', () => helpModal.classList.add('hidden'));
-
-      document.getElementById('dismissBannerBtn').addEventListener('click', () => {
-        document.getElementById('introBanner').classList.add('hidden');
-      });
-
-      window.addEventListener('click', (e) => {
-        if (e.target === document.getElementById('taskModal')) closeTaskModal();
-        if (e.target === helpModal) helpModal.classList.add('hidden');
-        if (e.target === historyModal) closeHistoryModal();
-        if (!e.target.closest('.move-menu-container')) {
-          document.querySelectorAll('.move-menu.active').forEach(m => m.classList.remove('active'));
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.task-card:not(.opacity-50)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
         }
-      });
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    function escapeHTML(str) {
-      if (!str) return '';
-      return str.replace(/[&<>'"]/g, tag => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-      }[tag] || tag));
-    }
+    // Completed History Modal Functions
+    function openHistoryModal() {
+      const modal = document.getElementById('historyModal');
+      const container = document.getElementById('completedListContainer');
+      const countEl = document.getElementById('historyModalCount');
+      const completedTasks = appData.tasks.filter(t => t.completed);
 
-    function showToast(message, iconName = 'info', color = 'sky') {
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toastMessage');
-      const toastIcon = document.getElementById('toastIcon');
+      countEl.textContent = `${completedTasks.length} archived tasks`;
+      container.innerHTML = '';
 
-      toastMsg.textContent = message;
-      toastIcon.setAttribute('data-lucide', iconName);
+      if (completedTasks.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-400 space-y-2">
+            <i data-lucide="check-circle" class="w-8 h-8 mx-auto opacity-50"></i>
+            <p class="text-xs">No completed tasks archived yet.</p>
+          </div>
+        `;
+      } else {
+        completedTasks.forEach(task => {
+          const config = LANE_CONFIGS[task.lane] || LANE_CONFIGS.deprioritized;
+          const item = document.createElement('div');
+          item.className = 'p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:bg-slate-100/80 transition-colors';
+          item.innerHTML = `
+            <div class="flex items-start gap-3 flex-1 min-w-0">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0"></i>
+              <div class="min-w-0 flex-1">
+                <h4 class="font-bold text-slate-800 text-xs line-through text-slate-500 truncate">${escapeHTML(task.title)}</h4>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">${config.label}</span>
+                  ${task.completedAt ? `<span class="text-[10px] text-slate-400">Completed ${new Date(task.completedAt).toLocaleDateString()}</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="restoreTask('${task.id}')" class="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-all flex items-center gap-1">
+                <i data-lucide="rotate-ccw" class="w-3 h-3 text-sky-600"></i>
+                <span>Restore</span>
+              </button>
+              <button onclick="deleteTask('${task.id}'); openHistoryModal();" class="p-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-white transition-colors" title="Delete permanently">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      }
+
       lucide.createIcons();
+      modal.classList.remove('hidden');
+    }
 
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.add('hidden');
+    }
 
-      setTimeout(() => {
-        toast.classList.remove('translate-y-0', 'opacity-100');
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3000);
+    function restoreTask(taskId) {
+      toggleTaskCompletion(taskId, false);
+      openHistoryModal();
+    }
+
+    // Help Modal Controls
+    function openHelpModal() {
+      document.getElementById('helpModal').classList.remove('hidden');
+    }
+
+    function closeHelpModal() {
+      document.getElementById('helpModal').classList.add('hidden');
+    }
+
+    // Helper HTML Escaper
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>"']/g, match => {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[match];
+      });
     }
   </script>
 </body>
