@@ -2,30 +2,37 @@
 
 Welcome to my **Tools Portal** repository! This is a collection of lightweight, single-page web applications and trackers built with modern HTML5, CSS (Tailwind CSS), and vanilla JavaScript libraries. 
 
-<div align="center">
-
 ### 🌐 **LIVE DEMO & PORTAL HUB**
 
 Access these tools and trackers live directly in your browser:
 
-[![Launch Tools Portal Hub](https://img.shields.io/badge/%F0%9F%9A%80_LAUNCH_TOOLS_PORTAL_HUB-238636?style=for-the-badge&logo=github&logoColor=white)](https://praneshas19901.github.io/tools/index.html)
-
-<sub>*(Tip: Hold <b>Ctrl</b> / <b>Cmd</b> while clicking to open in a new tab)*</sub>
-
+<div align="center">
+  <br />
+  <a href="https://praneshas19901.github.io/tools">
+    <img src="https://img.shields.io/badge/🚀_LAUNCH_TOOLS_PORTAL_HUB-238636?style=for-the-badge&logo=github&logoColor=white" alt="Launch Tools Portal Hub" />
+  </a>
+  <p><sub>*(Tip: Hold <b>Ctrl</b> / <b>Cmd</b> while clicking to open in a new tab)*</sub></p>
 </div>
-
----
 
 ## ⚡ Deployment, Local Use & Hosting
 
 * **Run Locally**: You don't even need a web server! You can simply download or clone this repository and double-click any `.html` file to run it locally in your web browser.
+
 * **Self-Hosting**: Feel free to clone this repo and host these applications yourself on your preferred hosting platforms, such as **Cloudflare Pages**, **GitHub Pages**, **Vercel**, or **Netlify**.
 
-> ⚠️ **Usage Policy & Bandwidth Warning**:
-> Please respect the usage of the hosted live demo tools site. **Do not abuse, overload, or waste server bandwidth**. GitHub Pages enforces strict bandwidth soft limits (e.g., 100 GB per month). Excessive traffic or automated requests can trigger these limits and cause temporary suspension or throttling of the hosted portal. If you plan to use these tools heavily or for team operations, please clone the repository and host your own instance!
+<br />
+
+<div style="background-color: #2d1600; color: #ffcc80; padding: 16px; border-radius: 8px; border-left: 5px solid #ff9800;">
+  <h3 style="margin-top: 0; color: #ffa726;">⚠️ Usage Policy & Bandwidth Warning</h3>
+  <p>Please respect the usage of the hosted live demo tools site. <b>Do not abuse, overload, or waste server bandwidth.</b></p>
+  <p>GitHub Pages enforces strict bandwidth soft limits (e.g., 100 GB per month). Excessive traffic or automated requests can trigger these limits and cause temporary suspension or throttling of the hosted portal. If you plan to use these tools heavily or for team operations, please clone the repository and host your own instance!</p>
+</div>
+
+<br />
+
 
 ---
-This repository was created out of a belief in **altruism, minimalism, and digital privacy**. All applications are designed to be simple, fast, safe, and respectful of your data.
+## This repository was created out of a belief in **altruism, minimalism, and digital privacy**. All applications are designed to be simple, fast, safe, and respectful of your data.
 ---
 
 ## 🔒 Privacy & Safety First
