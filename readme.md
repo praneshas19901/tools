@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20HTML5-brightgreen.svg)](#-compatibility--recommended-hardware)
 [![Privacy](https://img.shields.io/badge/Data%20Privacy-100%25%20Local-success.svg)](#-privacy--safety-first)
+[![License: Open Source & Free](https://img.shields.io/badge/License-Open%20Source%20%26%20Free-brightgreen.svg)](https://opensource.org/licenses)
 
 Welcome to the **Tools Portal** repository! This is a collection of lightweight, single-page web applications and trackers built with modern HTML5, Tailwind CSS, and vanilla JavaScript libraries.
 
