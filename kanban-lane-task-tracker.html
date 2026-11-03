@@ -144,6 +144,13 @@
 
       <div class="h-5 w-[1px] bg-slate-200 my-auto mx-1"></div>
 
+      <!-- History / Completed Tasks Button -->
+      <button id="historyBtn" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-700 rounded-xl transition-all font-medium text-xs sm:text-sm shadow-xs active:scale-95">
+        <i data-lucide="history" class="w-4 h-4 text-emerald-600"></i>
+        <span>History</span>
+        <span id="completedBadgeCount" class="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-emerald-600 text-white">0</span>
+      </button>
+
       <!-- Global Add Task Button -->
       <button id="globalAddTaskBtn" class="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white rounded-xl transition-all font-medium shadow-md shadow-sky-500/20 active:scale-95">
         <i data-lucide="plus" class="w-4 h-4"></i>
@@ -253,62 +260,34 @@
         </button>
       </div>
 
-      <form id="taskForm" class="p-6 space-y-4">
-        <input type="hidden" id="taskId">
-
-        <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Task Title *</label>
-          <input type="text" id="taskTitle" required placeholder="e.g. Prepare project presentation deck"
-                 class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:bg-white transition-all text-sm shadow-sm">
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <!-- COMPLETED TASKS HISTORY MODAL -->
+  <div id="historyModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 max-h-[85vh] flex flex-col">
+      <div class="px-6 py-4 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-emerald-500 text-white rounded-xl shadow-xs">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Priority Lane</label>
-            <select id="taskLane" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-sky-500 focus:bg-white text-sm shadow-sm">
-              <option value="high">Lane 1 - High Priority</option>
-              <option value="medium">Lane 2 - Medium Priority</option>
-              <option value="low">Lane 3 - Low Priority</option>
-              <option value="deprioritized">Lane 4 - De-prioritized</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Deadline</label>
-            <input type="date" id="taskDeadline"
-                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-sky-500 focus:bg-white text-sm shadow-sm">
+            <h3 class="text-lg font-bold text-slate-900">Completed Tasks History</h3>
+            <p class="text-xs text-slate-500">Archived completed tasks (Hidden from main board view)</p>
           </div>
         </div>
+        <button id="closeHistoryBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
 
-        <div>
-          <div class="flex justify-between items-center mb-1.5">
-            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Progress Percentage</label>
-            <span id="progressValDisplay" class="text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">0%</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <input type="range" id="taskProgress" min="0" max="100" value="0"
-                   class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500">
-            <input type="number" id="taskProgressInput" min="0" max="100" value="0"
-                   class="w-16 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-center text-slate-800 text-sm focus:outline-none focus:border-sky-500 focus:bg-white shadow-sm">
-          </div>
-        </div>
+      <div id="historyList" class="p-6 overflow-y-auto space-y-3 flex-1 min-h-[200px]">
+        <!-- Dynamic History Items -->
+      </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Notes & Details</label>
-          <textarea id="taskNotes" rows="3" placeholder="Add additional details or progress notes..."
-                    class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:bg-white text-sm resize-none shadow-sm"></textarea>
-        </div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <button type="button" id="cancelModalBtn" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors">
-            Cancel
-          </button>
-          <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-xl shadow-md shadow-sky-500/20 transition-all flex items-center gap-2">
-            <i data-lucide="check" class="w-4 h-4"></i>
-            <span>Save Task</span>
-          </button>
-        </div>
-      </form>
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
+        <span id="historyTotalText" class="text-xs font-semibold text-slate-500">Total Completed: 0</span>
+        <button id="closeHistoryFooterBtn" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-semibold transition-colors">
+          Close
+        </button>
+      </div>
     </div>
   </div>
 
@@ -388,6 +367,21 @@
           </div>
         </div>
 
+        <!-- STEP 5 -->
+        <div class="flex gap-4 items-start">
+          <div class="p-2.5 bg-emerald-100 border border-emerald-200 rounded-2xl text-emerald-600 shrink-0 shadow-sm">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          </div>
+          <div class="space-y-1">
+            <h4 class="text-base font-bold text-slate-900">5. Completed Tasks & History Archive</h4>
+            <ul class="list-disc pl-5 text-xs text-slate-500 space-y-1">
+              <li><strong>Auto-Completion:</strong> Check the checkbox on a card OR set its progress to 100%. The task automatically disappears from the main Kanban view into a hidden state.</li>
+              <li><strong>History Modal:</strong> Click the <strong>History</strong> button in the header bar to view all finished tasks with completion timestamps and original lane information.</li>
+              <li><strong>Restoration:</strong> Click <em>Restore Task</em> in History to uncheck or set progress back to 90% and put it back in its lane.</li>
+            </ul>
+          </div>
+        </div>
+
       </div>
 
       <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
@@ -463,6 +457,7 @@
           lane: 'high',
           deadline: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
           progress: 75,
+          completed: false,
           notes: 'Align with key stakeholders on roadmap.'
         },
         {
@@ -471,6 +466,7 @@
           lane: 'medium',
           deadline: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0],
           progress: 40,
+          completed: false,
           notes: 'Verify single-file bundle build passes.'
         },
         {
@@ -479,6 +475,7 @@
           lane: 'low',
           deadline: '',
           progress: 20,
+          completed: false,
           notes: 'Ensure AA contrast standards.'
         },
         {
@@ -487,6 +484,8 @@
           lane: 'deprioritized',
           deadline: '',
           progress: 100,
+          completed: true,
+          completedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
           notes: 'Moved legacy docs to archive folder.'
         }
       ]
@@ -707,10 +706,17 @@
     // RENDER BOARD WITH SWIMMING CARDS
     function renderBoard() {
       const lanes = ['high', 'medium', 'low', 'deprioritized'];
+      
+      // Update header completed counter badge
+      const completedCount = appData.tasks.filter(t => t.completed || t.progress === 100).length;
+      document.getElementById('completedBadgeCount').textContent = completedCount;
+
       lanes.forEach(laneKey => {
         const laneEl = document.getElementById(`lane-${laneKey}`);
         const countEl = document.getElementById(`count-${laneKey}`);
-        const tasks = appData.tasks.filter(t => t.lane === laneKey);
+        
+        // Filter tasks that belong to this lane AND are not completed / 100%
+        const tasks = appData.tasks.filter(t => t.lane === laneKey && !t.completed && t.progress < 100);
 
         countEl.textContent = tasks.length;
         laneEl.innerHTML = '';
@@ -718,7 +724,7 @@
         if (tasks.length === 0) {
           laneEl.innerHTML = `
             <div class="h-28 flex flex-col items-center justify-center border-2 border-dashed border-slate-200/80 rounded-2xl text-slate-400 text-xs gap-1 bg-white/40">
-              <span>No tasks in this lane</span>
+              <span>No active tasks in this lane</span>
               <button onclick="openTaskModal('${laneKey}')" class="text-sky-600 hover:underline font-medium">Add task</button>
             </div>
           `;
@@ -773,7 +779,10 @@
 
       card.innerHTML = `
         <div class="flex items-start justify-between gap-2 mb-1.5">
-          <h3 class="font-bold text-slate-800 text-sm leading-snug break-words flex-1">${escapeHTML(task.title)}</h3>
+          <div class="flex items-start gap-2.5 flex-1 min-w-0">
+            <input type="checkbox" onchange="toggleTaskCompletion('${task.id}', this.checked)" title="Mark completed" class="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer shrink-0">
+            <h3 class="font-bold text-slate-800 text-sm leading-snug break-words flex-1">${escapeHTML(task.title)}</h3>
+          </div>
           <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
             <button onclick="openTaskModal('${task.lane}', '${task.id}')" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-sky-600 rounded-lg transition-colors" title="Edit Task">
               <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
@@ -784,9 +793,9 @@
           </div>
         </div>
 
-        ${task.notes ? `<p class="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed">${escapeHTML(task.notes)}</p>` : ''}
+        ${task.notes ? `<p class="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed pl-6">${escapeHTML(task.notes)}</p>` : ''}
 
-        <div class="mb-3 space-y-1">
+        <div class="mb-3 space-y-1 pl-6">
           <div class="flex justify-between items-center text-[11px]">
             <span class="text-slate-400 font-medium">Progress</span>
             <span class="font-bold text-slate-700">${task.progress}%</span>
@@ -796,7 +805,7 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 pl-6">
           ${deadlineBadge || '<div></div>'}
           <div class="relative move-menu-container">
             <button onclick="toggleMoveMenu(event, '${task.id}')" class="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors font-medium border border-slate-200/80 shadow-2xs">
@@ -815,111 +824,152 @@
       return card;
     }
 
-    // DRAG AND DROP
-    let draggedTaskId = null;
-
-    function setupDragAndDrop() {
-      const main = document.querySelector('main');
-
-      main.addEventListener('dragstart', (e) => {
-        const card = e.target.closest('.task-card');
-        if (!card) return;
-        draggedTaskId = card.dataset.id;
-        card.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-      });
-
-      main.addEventListener('dragend', (e) => {
-        const card = e.target.closest('.task-card');
-        if (card) card.classList.remove('dragging');
-        document.querySelectorAll('.lane-scroll').forEach(el => el.classList.remove('drag-over'));
-      });
-
-      const lanes = document.querySelectorAll('.lane-scroll');
-      lanes.forEach(lane => {
-        lane.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          lane.classList.add('drag-over');
-
-          const afterElement = getDragAfterElement(lane, e.clientY);
-          const draggingCard = document.querySelector('.dragging');
-          if (draggingCard) {
-            if (afterElement == null) lane.appendChild(draggingCard);
-            else lane.insertBefore(draggingCard, afterElement);
-          }
-        });
-
-        lane.addEventListener('dragleave', () => lane.classList.remove('drag-over'));
-
-        lane.addEventListener('drop', (e) => {
-          e.preventDefault();
-          lane.classList.remove('drag-over');
-
-          const newTasksOrder = [];
-          document.querySelectorAll('.lane-scroll').forEach(lEl => {
-            const lKey = lEl.id.replace('lane-', '');
-            lEl.querySelectorAll('.task-card').forEach(c => {
-              const task = appData.tasks.find(t => t.id === c.dataset.id);
-              if (task) {
-                task.lane = lKey;
-                newTasksOrder.push(task);
-              }
-            });
-          });
-
-          appData.tasks = newTasksOrder;
-          renderBoard();
-          persistData();
-          draggedTaskId = null;
-        });
-      });
-    }
-
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll('.task-card:not(.dragging)')];
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
+    function toggleTaskCompletion(taskId, isChecked) {
+      const task = appData.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.completed = isChecked;
+        if (isChecked) {
+          task.progress = 100;
+          task.completedAt = new Date().toISOString();
+          showToast("Task marked complete & archived!", "check-circle-2", "emerald");
         } else {
-          return closest;
+          task.progress = 90;
+          delete task.completedAt;
+          showToast("Task uncompleted & restored", "rotate-ccw", "sky");
         }
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
+        renderBoard();
+        persistData();
+      }
     }
 
-    // MODALS AND FORM ACTIONS
-    function openTaskModal(laneKey = 'high', taskId = null) {
-      const modal = document.getElementById('taskModal');
-      const titleEl = document.getElementById('modalTitle');
+    function openHistoryModal() {
+      renderHistoryList();
+      document.getElementById('historyModal').classList.remove('hidden');
+    }
 
-      document.getElementById('taskForm').reset();
-      document.getElementById('taskId').value = '';
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.add('hidden');
+    }
+
+    function renderHistoryList() {
+      const historyListEl = document.getElementById('historyList');
+      const totalTextEl = document.getElementById('historyTotalText');
+      const completedTasks = appData.tasks.filter(t => t.completed || t.progress === 100);
+
+      totalTextEl.textContent = `Total Completed: ${completedTasks.length}`;
+      historyListEl.innerHTML = '';
+
+      if (completedTasks.length === 0) {
+        historyListEl.innerHTML = `
+          <div class="h-40 flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
+            <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+            <span>No completed tasks yet. Mark tasks as done or set progress to 100%.</span>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      completedTasks.forEach(task => {
+        const item = document.createElement('div');
+        item.className = "bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 shadow-2xs hover:bg-white transition-colors";
+
+        const laneNames = {
+          high: 'Lane 1 (High)',
+          medium: 'Lane 2 (Medium)',
+          low: 'Lane 3 (Low)',
+          deprioritized: 'Lane 4 (De-prioritized)'
+        };
+
+        const completedDateStr = task.completedAt 
+          ? new Date(task.completedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+          : 'Recently';
+
+        item.innerHTML = `
+          <div class="flex items-start gap-3 min-w-0 flex-1">
+            <div class="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg shrink-0 mt-0.5">
+              <i data-lucide="check" class="w-4 h-4"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHTML(task.title)}</h4>
+              <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">${escapeHTML(task.notes || 'No notes added')}</p>
+              <div class="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400 flex-wrap">
+                <span class="px-2 py-0.5 rounded bg-slate-200/70 font-medium text-slate-700">${laneNames[task.lane] || task.lane}</span>
+                <span>•</span>
+                <span>Completed: ${completedDateStr}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <button onclick="restoreTask('${task.id}')" class="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-700 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>Restore</span>
+            </button>
+            <button onclick="deleteTask('${task.id}'); renderHistoryList();" class="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors" title="Delete permanently">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+        historyListEl.appendChild(item);
+      });
+
+      lucide.createIcons();
+    }
+
+    function restoreTask(taskId) {
+      const task = appData.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.completed = false;
+        task.progress = 90; // Set back below 100% so it stays in active board
+        delete task.completedAt;
+        renderBoard();
+        renderHistoryList();
+        persistData();
+        showToast("Task restored to active lane!", "rotate-ccw", "sky");
+      }
+    }
+
+    // TASK MODAL MANAGEMENT
+    function openTaskModal(lane = 'high', taskId = null) {
+      const modal = document.getElementById('taskModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const taskIdInput = document.getElementById('taskIdInput');
+      const titleInput = document.getElementById('taskTitle');
+      const laneSelect = document.getElementById('taskLane');
+      const deadlineInput = document.getElementById('taskDeadline');
+      const progressRange = document.getElementById('taskProgress');
+      const progressNumInput = document.getElementById('taskProgressInput');
+      const progressValDisplay = document.getElementById('progressValDisplay');
+      const notesInput = document.getElementById('taskNotes');
 
       if (taskId) {
         const task = appData.tasks.find(t => t.id === taskId);
         if (task) {
-          document.getElementById('taskId').value = task.id;
-          document.getElementById('taskTitle').value = task.title;
-          document.getElementById('taskLane').value = task.lane;
-          document.getElementById('taskDeadline').value = task.deadline || '';
-          document.getElementById('taskProgress').value = task.progress || 0;
-          document.getElementById('taskProgressInput').value = task.progress || 0;
-          document.getElementById('progressValDisplay').textContent = `${task.progress || 0}%`;
-          document.getElementById('taskNotes').value = task.notes || '';
-          titleEl.innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-sky-500"></i> Edit Task`;
+          modalTitle.innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-sky-500"></i> Edit Task`;
+          taskIdInput.value = task.id;
+          titleInput.value = task.title;
+          laneSelect.value = task.lane;
+          deadlineInput.value = task.deadline || '';
+          progressRange.value = task.progress || 0;
+          progressNumInput.value = task.progress || 0;
+          progressValDisplay.textContent = `${task.progress || 0}%`;
+          notesInput.value = task.notes || '';
         }
       } else {
-        document.getElementById('taskLane').value = laneKey;
-        document.getElementById('taskProgress').value = 0;
-        document.getElementById('taskProgressInput').value = 0;
-        document.getElementById('progressValDisplay').textContent = '0%';
-        titleEl.innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-sky-500"></i> Create New Task`;
+        modalTitle.innerHTML = `<i data-lucide="check-square" class="w-5 h-5 text-sky-500"></i> Create New Task`;
+        taskIdInput.value = '';
+        titleInput.value = '';
+        laneSelect.value = lane;
+        deadlineInput.value = '';
+        progressRange.value = 0;
+        progressNumInput.value = 0;
+        progressValDisplay.textContent = '0%';
+        notesInput.value = '';
       }
 
       lucide.createIcons();
       modal.classList.remove('hidden');
+      titleInput.focus();
     }
 
     function closeTaskModal() {
@@ -928,7 +978,7 @@
 
     function saveTaskFromForm(e) {
       e.preventDefault();
-      const id = document.getElementById('taskId').value;
+      const id = document.getElementById('taskIdInput').value;
       const title = document.getElementById('taskTitle').value.trim();
       const lane = document.getElementById('taskLane').value;
       const deadline = document.getElementById('taskDeadline').value;
@@ -945,11 +995,21 @@
           task.deadline = deadline;
           task.progress = progress;
           task.notes = notes;
+          if (progress === 100) {
+            task.completed = true;
+            if (!task.completedAt) task.completedAt = new Date().toISOString();
+          } else {
+            task.completed = false;
+            delete task.completedAt;
+          }
         }
       } else {
+        const isComp = progress === 100;
         appData.tasks.push({
           id: 'task-' + Date.now(),
-          title, lane, deadline, progress, notes
+          title, lane, deadline, progress, notes,
+          completed: isComp,
+          completedAt: isComp ? new Date().toISOString() : null
         });
       }
 
@@ -959,34 +1019,82 @@
       showToast(id ? "Task updated!" : "New task created!", "check", "emerald");
     }
 
-    function deleteTask(taskId) {
-      appData.tasks = appData.tasks.filter(t => t.id !== taskId);
+    function deleteTask(id) {
+      appData.tasks = appData.tasks.filter(t => t.id !== id);
       renderBoard();
       persistData();
       showToast("Task deleted", "trash-2", "rose");
     }
 
-    function quickMoveTask(taskId, targetLane) {
-      const task = appData.tasks.find(t => t.id === taskId);
+    function quickMoveTask(id, targetLane) {
+      const task = appData.tasks.find(t => t.id === id);
       if (task) {
         task.lane = targetLane;
         renderBoard();
         persistData();
-        showToast(`Moved task to ${targetLane.toUpperCase()}`, "arrow-right-left", "sky");
+        showToast(`Moved to ${targetLane.toUpperCase()} lane`, "arrow-right", "sky");
       }
     }
 
     function toggleMoveMenu(event, taskId) {
       event.stopPropagation();
-      const menu = document.getElementById(`move-menu-${taskId}`);
-      if (!menu) return;
-      
-      const isOpen = menu.classList.contains('active');
+      const targetMenu = document.getElementById(`move-menu-${taskId}`);
+      const isActive = targetMenu.classList.contains('active');
       document.querySelectorAll('.move-menu.active').forEach(m => m.classList.remove('active'));
-      
-      if (!isOpen) {
-        menu.classList.add('active');
+      if (!isActive) {
+        targetMenu.classList.add('active');
       }
+    }
+
+    // DRAG AND DROP HANDLERS
+    function setupDragAndDrop() {
+      let draggedTaskId = null;
+
+      document.addEventListener('dragstart', (e) => {
+        if (e.target.classList && e.target.classList.contains('task-card')) {
+          draggedTaskId = e.target.dataset.id;
+          e.target.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        }
+      });
+
+      document.addEventListener('dragend', (e) => {
+        if (e.target.classList && e.target.classList.contains('task-card')) {
+          e.target.classList.remove('dragging');
+        }
+        document.querySelectorAll('.lane-column').forEach(col => col.classList.remove('drag-over'));
+      });
+
+      const lanes = document.querySelectorAll('.lane-column');
+      lanes.forEach(laneEl => {
+        laneEl.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          laneEl.classList.add('drag-over');
+        });
+
+        laneEl.addEventListener('dragleave', (e) => {
+          if (!laneEl.contains(e.relatedTarget)) {
+            laneEl.classList.remove('drag-over');
+          }
+        });
+
+        laneEl.addEventListener('drop', (e) => {
+          e.preventDefault();
+          laneEl.classList.remove('drag-over');
+          const targetLaneKey = laneEl.dataset.lane;
+
+          if (draggedTaskId && targetLaneKey) {
+            const task = appData.tasks.find(t => t.id === draggedTaskId);
+            if (task) {
+              task.lane = targetLaneKey;
+              renderBoard();
+              persistData();
+              showToast("Task reordered!", "move", "sky");
+            }
+          }
+        });
+      });
     }
 
     function setupEventListeners() {
@@ -999,6 +1107,10 @@
       document.getElementById('closeModalBtn').addEventListener('click', closeTaskModal);
       document.getElementById('cancelModalBtn').addEventListener('click', closeTaskModal);
       document.getElementById('taskForm').addEventListener('submit', saveTaskFromForm);
+
+      document.getElementById('historyBtn').addEventListener('click', openHistoryModal);
+      document.getElementById('closeHistoryBtn').addEventListener('click', closeHistoryModal);
+      document.getElementById('closeHistoryFooterBtn').addEventListener('click', closeHistoryModal);
 
       const range = document.getElementById('taskProgress');
       const numInput = document.getElementById('taskProgressInput');
@@ -1016,6 +1128,7 @@
       });
 
       const helpModal = document.getElementById('helpModal');
+      const historyModal = document.getElementById('historyModal');
       document.getElementById('helpBtn').addEventListener('click', () => helpModal.classList.remove('hidden'));
       document.getElementById('closeHelpBtn').addEventListener('click', () => helpModal.classList.add('hidden'));
       document.getElementById('closeHelpFooterBtn').addEventListener('click', () => helpModal.classList.add('hidden'));
@@ -1027,6 +1140,7 @@
       window.addEventListener('click', (e) => {
         if (e.target === document.getElementById('taskModal')) closeTaskModal();
         if (e.target === helpModal) helpModal.classList.add('hidden');
+        if (e.target === historyModal) closeHistoryModal();
         if (!e.target.closest('.move-menu-container')) {
           document.querySelectorAll('.move-menu.active').forEach(m => m.classList.remove('active'));
         }
