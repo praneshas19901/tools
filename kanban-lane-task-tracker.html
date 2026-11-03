@@ -39,6 +39,19 @@
       background-color: rgba(30, 41, 59, 0.8) !important;
       border: 2px dashed #0284c7 !important;
     }
+    /* Smooth hover bridge and click menu transition for move dropdown */
+    .move-menu {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+    }
+    .move-menu-container:hover .move-menu,
+    .move-menu.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body class="h-full flex flex-col overflow-x-hidden selection:bg-sky-500 selection:text-white">
@@ -708,13 +721,16 @@
 
         <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-700/40">
           ${deadlineBadge || '<div></div>'}
-          <div class="relative group/move">
-            <button class="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-slate-700/50">
+          <div class="relative move-menu-container">
+            <button onclick="toggleMoveMenu(event, '${task.id}')" class="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700/60 transition-colors font-medium">
               <span>Move</span>
               <i data-lucide="chevron-down" class="w-3 h-3"></i>
             </button>
-            <div class="absolute right-0 bottom-full mb-1 hidden group-hover/move:flex flex-col bg-slate-900 border border-slate-700 rounded-lg p-1 shadow-xl z-20 min-w-[90px]">
-              ${moveButtons}
+            <!-- Invisible bridge padding to prevent pointer-leave gaps -->
+            <div class="move-menu absolute right-0 bottom-full pb-1 z-20 min-w-[110px]" id="move-menu-${task.id}">
+              <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 shadow-2xl space-y-0.5">
+                ${moveButtons}
+              </div>
             </div>
           </div>
         </div>
@@ -884,6 +900,19 @@
       }
     }
 
+    function toggleMoveMenu(event, taskId) {
+      event.stopPropagation();
+      const menu = document.getElementById(`move-menu-${taskId}`);
+      if (!menu) return;
+      
+      const isOpen = menu.classList.contains('active');
+      document.querySelectorAll('.move-menu.active').forEach(m => m.classList.remove('active'));
+      
+      if (!isOpen) {
+        menu.classList.add('active');
+      }
+    }
+
     function setupEventListeners() {
       document.getElementById('globalAddTaskBtn').addEventListener('click', () => openTaskModal('high'));
       document.getElementById('reconnectFileBtn').addEventListener('click', openFileFromDisk);
@@ -922,6 +951,10 @@
       window.addEventListener('click', (e) => {
         if (e.target === document.getElementById('taskModal')) closeTaskModal();
         if (e.target === helpModal) helpModal.classList.add('hidden');
+        // Close open move menus on outside click
+        if (!e.target.closest('.move-menu-container')) {
+          document.querySelectorAll('.move-menu.active').forEach(m => m.classList.remove('active'));
+        }
       });
     }
 
