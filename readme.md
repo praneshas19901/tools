@@ -2,6 +2,8 @@
 
 Welcome to my **Tools Portal** repository! This is a collection of lightweight, single-page web applications and trackers built with modern HTML5, CSS (Tailwind CSS), and vanilla JavaScript libraries. 
 
+Access the tools site at **https://praneshas19901.github.io/tools/** to have a feel, you can clone this repo and run at your own hosting as well.
+
 This repository was created out of a belief in **altruism, minimalism, and digital privacy**. All applications are designed to be simple, fast, safe, and respectful of your data.
 
 ---
