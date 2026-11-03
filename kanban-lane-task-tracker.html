@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lane Kanban - File-System Task Tracker</title>
+  <title>Kanban Board Lane-Based Task Tracker</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Inter -->
@@ -16,7 +16,6 @@
     body {
       font-family: 'Inter', sans-serif;
     }
-    /* Custom scrollbar for column content */
     .lane-scroll::-webkit-scrollbar {
       width: 6px;
     }
@@ -31,7 +30,6 @@
     .lane-scroll::-webkit-scrollbar-thumb:hover {
       background: rgba(71, 85, 105, 1);
     }
-    /* Dragging effects */
     .task-card.dragging {
       opacity: 0.4;
       transform: scale(0.98);
@@ -40,15 +38,6 @@
     .drag-over {
       background-color: rgba(30, 41, 59, 0.8) !important;
       border: 2px dashed #0284c7 !important;
-    }
-    /* Simple Pulse Animation for unsaved status */
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.05); opacity: 1; }
-      100% { transform: scale(0.95); opacity: 0.8; }
-    }
-    .pulse-unsaved {
-      animation: pulse-ring 2s infinite ease-in-out;
     }
   </style>
 </head>
@@ -61,45 +50,40 @@
         <i data-lucide="kanban" class="w-6 h-6"></i>
       </div>
       <div>
-        <h1 class="text-xl font-bold tracking-tight text-slate-50 flex items-center gap-2">
-          Lane Tracker
-          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 font-medium">Local JSON Sync</span>
+        <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-50 flex items-center gap-2">
+          Kanban Board Lane-Based Task Tracker
         </h1>
-        <p class="text-xs text-slate-400 hidden sm:block">Manage tasks with direct browser File System Access API</p>
+        <p class="text-xs text-slate-400 hidden sm:block">GitHub Pages ready • Direct Local JSON Sync</p>
       </div>
     </div>
 
-    <!-- Right Header Controls -->
+    <!-- Header Controls -->
     <div class="flex items-center flex-wrap gap-2 text-sm">
 
-      <!-- File Status Indicator -->
+      <!-- Active File Badge -->
       <div id="fileStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-700/80 text-xs text-slate-300">
         <span id="fileStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-        <span id="fileStatusText" class="truncate max-w-[150px] sm:max-w-[220px]">Local Storage Only</span>
+        <span id="fileStatusText" class="truncate max-w-[150px] sm:max-w-[220px]">Local Storage Mode</span>
       </div>
 
-      <!-- File System API Buttons -->
+      <!-- Auto-Reconnect / Open / Create File Buttons -->
       <div class="flex items-center rounded-lg bg-slate-900 border border-slate-700 p-0.5">
-        <button id="openFileBtn" title="Connect to an existing JSON file" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-200 transition-colors font-medium">
+        <button id="reconnectFileBtn" title="Reconnect or select inputs-and-data.json" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-200 transition-colors font-medium">
           <i data-lucide="folder-open" class="w-4 h-4 text-sky-400"></i>
-          <span class="hidden sm:inline">Open JSON</span>
+          <span class="hidden sm:inline">Connect JSON</span>
         </button>
-        <button id="saveAsBtn" title="Save current state to a new JSON file using File System API" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-200 transition-colors font-medium">
-          <i data-lucide="save" class="w-4 h-4 text-emerald-400"></i>
-          <span class="hidden sm:inline">Save File As</span>
-        </button>
-        <button id="quickSaveBtn" title="Directly write back changes to connected file" class="hidden flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white transition-colors font-medium ml-1">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-          <span>Save</span>
+        <button id="createDefaultFileBtn" title="Create inputs-and-data.json on local disk" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-200 transition-colors font-medium">
+          <i data-lucide="file-plus" class="w-4 h-4 text-emerald-400"></i>
+          <span class="hidden sm:inline">Create inputs-and-data.json</span>
         </button>
       </div>
 
-      <!-- Fallback Download / Import -->
+      <!-- Fallback Download / Upload -->
       <div class="flex items-center gap-1">
-        <button id="downloadFallbackBtn" title="Download tasks as JSON file" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors">
+        <button id="downloadFallbackBtn" title="Download JSON copy" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors">
           <i data-lucide="download" class="w-4 h-4"></i>
         </button>
-        <label id="uploadFallbackLabel" title="Import JSON File (Fallback)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors cursor-pointer">
+        <label id="uploadFallbackLabel" title="Import JSON file" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors cursor-pointer">
           <i data-lucide="upload" class="w-4 h-4"></i>
           <input type="file" id="importFileInput" accept=".json" class="hidden">
         </label>
@@ -120,84 +104,84 @@
     </div>
   </header>
 
+  <!-- FRIENDLY WELCOME / INTRO BANNERS -->
+  <div id="introBanner" class="bg-gradient-to-r from-sky-950/80 via-slate-800/90 to-indigo-950/80 border-b border-sky-800/40 px-4 py-3 sm:px-6 flex items-center justify-between gap-4 transition-all">
+    <div class="flex items-start sm:items-center gap-3">
+      <div class="p-2 bg-sky-500/20 rounded-xl text-sky-300 border border-sky-500/30 shrink-0 mt-0.5 sm:mt-0">
+        <i data-lucide="sparkles" class="w-5 h-5"></i>
+      </div>
+      <div class="text-xs sm:text-sm text-slate-200">
+        <span class="font-semibold text-slate-100">Welcome to your Lane-Based Kanban Board!</span>
+        Organize tasks seamlessly across 4 priority lanes. Tasks automatically sync with your local <code class="text-sky-300 font-mono bg-slate-900/80 px-1.5 py-0.5 rounded border border-slate-700">inputs-and-data.json</code> file on every update and stay re-connected whenever you revisit this page.
+      </div>
+    </div>
+    <button id="dismissBannerBtn" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors shrink-0" title="Dismiss Welcome Banner">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  </div>
+
   <!-- MAIN KANBAN BOARD CONTAINER -->
   <main class="flex-1 p-4 sm:p-6 overflow-x-auto min-h-0">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 h-full min-w-[320px] max-w-[1920px] mx-auto">
 
       <!-- LANE 1: HIGH PRIORITY -->
       <div data-lane="high" class="lane-column flex flex-col bg-slate-800/50 rounded-2xl border border-rose-500/30 overflow-hidden shadow-xl backdrop-blur-sm">
-        <!-- Lane Header -->
         <div class="p-4 bg-gradient-to-r from-rose-950/60 to-slate-800/80 border-b border-rose-500/20 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <span class="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-500/50"></span>
-            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">High Priority</h2>
+            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">Lane 1 - High Priority</h2>
             <span id="count-high" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">0</span>
           </div>
-          <button onclick="openTaskModal('high')" class="text-rose-400 hover:text-rose-200 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors" title="Add task to High Priority">
+          <button onclick="openTaskModal('high')" class="text-rose-400 hover:text-rose-200 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors" title="Add task to Lane 1">
             <i data-lucide="plus" class="w-4 h-4"></i>
           </button>
         </div>
-        <!-- Task List Area -->
-        <div id="lane-high" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]">
-          <!-- Dynamic Task Cards Rendered Here -->
-        </div>
+        <div id="lane-high" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]"></div>
       </div>
 
       <!-- LANE 2: MEDIUM PRIORITY -->
       <div data-lane="medium" class="lane-column flex flex-col bg-slate-800/50 rounded-2xl border border-amber-500/30 overflow-hidden shadow-xl backdrop-blur-sm">
-        <!-- Lane Header -->
         <div class="p-4 bg-gradient-to-r from-amber-950/60 to-slate-800/80 border-b border-amber-500/20 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <span class="w-3 h-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50"></span>
-            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">Medium Priority</h2>
+            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">Lane 2 - Medium Priority</h2>
             <span id="count-medium" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">0</span>
           </div>
-          <button onclick="openTaskModal('medium')" class="text-amber-400 hover:text-amber-200 hover:bg-amber-500/10 p-1.5 rounded-lg transition-colors" title="Add task to Medium Priority">
+          <button onclick="openTaskModal('medium')" class="text-amber-400 hover:text-amber-200 hover:bg-amber-500/10 p-1.5 rounded-lg transition-colors" title="Add task to Lane 2">
             <i data-lucide="plus" class="w-4 h-4"></i>
           </button>
         </div>
-        <!-- Task List Area -->
-        <div id="lane-medium" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]">
-          <!-- Dynamic Task Cards Rendered Here -->
-        </div>
+        <div id="lane-medium" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]"></div>
       </div>
 
       <!-- LANE 3: LOW PRIORITY -->
       <div data-lane="low" class="lane-column flex flex-col bg-slate-800/50 rounded-2xl border border-emerald-500/30 overflow-hidden shadow-xl backdrop-blur-sm">
-        <!-- Lane Header -->
         <div class="p-4 bg-gradient-to-r from-emerald-950/60 to-slate-800/80 border-b border-emerald-500/20 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
-            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">Low Priority</h2>
+            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">Lane 3 - Low Priority</h2>
             <span id="count-low" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">0</span>
           </div>
-          <button onclick="openTaskModal('low')" class="text-emerald-400 hover:text-emerald-200 hover:bg-emerald-500/10 p-1.5 rounded-lg transition-colors" title="Add task to Low Priority">
+          <button onclick="openTaskModal('low')" class="text-emerald-400 hover:text-emerald-200 hover:bg-emerald-500/10 p-1.5 rounded-lg transition-colors" title="Add task to Lane 3">
             <i data-lucide="plus" class="w-4 h-4"></i>
           </button>
         </div>
-        <!-- Task List Area -->
-        <div id="lane-low" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]">
-          <!-- Dynamic Task Cards Rendered Here -->
-        </div>
+        <div id="lane-low" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]"></div>
       </div>
 
       <!-- LANE 4: DE-PRIORITIZED -->
       <div data-lane="deprioritized" class="lane-column flex flex-col bg-slate-800/50 rounded-2xl border border-slate-600/40 overflow-hidden shadow-xl backdrop-blur-sm">
-        <!-- Lane Header -->
         <div class="p-4 bg-gradient-to-r from-slate-900/80 to-slate-800/80 border-b border-slate-700/50 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <span class="w-3 h-3 rounded-full bg-slate-400 shadow-lg shadow-slate-500/50"></span>
-            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">De-prioritized</h2>
+            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">Lane 4 - De-prioritized</h2>
             <span id="count-deprioritized" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-700 text-slate-300 border border-slate-600">0</span>
           </div>
-          <button onclick="openTaskModal('deprioritized')" class="text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 p-1.5 rounded-lg transition-colors" title="Add task to De-prioritized">
+          <button onclick="openTaskModal('deprioritized')" class="text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 p-1.5 rounded-lg transition-colors" title="Add task to Lane 4">
             <i data-lucide="plus" class="w-4 h-4"></i>
           </button>
         </div>
-        <!-- Task List Area -->
-        <div id="lane-deprioritized" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]">
-          <!-- Dynamic Task Cards Rendered Here -->
-        </div>
+        <div id="lane-deprioritized" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]"></div>
       </div>
 
     </div>
@@ -205,8 +189,7 @@
 
   <!-- ADD / EDIT TASK MODAL -->
   <div id="taskModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all my-8">
-      <!-- Modal Header -->
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden my-8">
       <div class="px-6 py-4 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">
         <h3 id="modalTitle" class="text-lg font-bold text-slate-100 flex items-center gap-2">
           <i data-lucide="check-square" class="w-5 h-5 text-sky-400"></i>
@@ -217,30 +200,26 @@
         </button>
       </div>
 
-      <!-- Modal Form -->
       <form id="taskForm" class="p-6 space-y-4">
         <input type="hidden" id="taskId">
 
-        <!-- Title -->
         <div>
           <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Task Title *</label>
-          <input type="text" id="taskTitle" required placeholder="e.g. Implement direct file sync feature"
-                 class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all text-sm">
+          <input type="text" id="taskTitle" required placeholder="e.g. Prepare project presentation deck"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-all text-sm">
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Lane / Priority -->
           <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Target Lane</label>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Priority Lane</label>
             <select id="taskLane" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-sky-500 text-sm">
-              <option value="high"> High Priority Lane</option>
-              <option value="medium"> Medium Priority Lane</option>
-              <option value="low"> Low Priority Lane</option>
-              <option value="deprioritized"> De-prioritized Lane</option>
+              <option value="high">Lane 1 - High Priority</option>
+              <option value="medium">Lane 2 - Medium Priority</option>
+              <option value="low">Lane 3 - Low Priority</option>
+              <option value="deprioritized">Lane 4 - De-prioritized</option>
             </select>
           </div>
 
-          <!-- Deadline -->
           <div>
             <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Deadline</label>
             <input type="date" id="taskDeadline"
@@ -248,7 +227,6 @@
           </div>
         </div>
 
-        <!-- Progress Percentage Slider + Number Input -->
         <div>
           <div class="flex justify-between items-center mb-1.5">
             <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Progress Percentage</label>
@@ -262,14 +240,12 @@
           </div>
         </div>
 
-        <!-- Notes / Description -->
         <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Notes / Details</label>
-          <textarea id="taskNotes" rows="3" placeholder="Add additional details, links, or sub-checklist items..."
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Notes & Details</label>
+          <textarea id="taskNotes" rows="3" placeholder="Add additional details or progress notes..."
                     class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 text-sm resize-none"></textarea>
         </div>
 
-        <!-- Action Buttons -->
         <div class="flex items-center justify-end gap-3 pt-2">
           <button type="button" id="cancelModalBtn" class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-700/50 rounded-xl transition-colors">
             Cancel
@@ -283,75 +259,51 @@
     </div>
   </div>
 
-  <!-- HELP & GUIDE MODAL -->
+  <!-- HELP MODAL -->
   <div id="helpModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
     <div class="bg-slate-800 border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
-      <!-- Modal Header -->
       <div class="px-6 py-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
         <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
           <i data-lucide="book-open" class="w-5 h-5 text-sky-400"></i>
-          User Guide & Storage Instructions
+          How to Use Kanban Board Task Tracker
         </h3>
         <button id="closeHelpBtn" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <!-- Modal Content Body -->
-      <div class="p-6 overflow-y-auto space-y-6 text-slate-300 text-sm leading-relaxed">
-        
-        <!-- Section 1 -->
+      <div class="p-6 overflow-y-auto space-y-5 text-slate-300 text-sm leading-relaxed">
         <div class="flex gap-4 items-start">
           <div class="p-2.5 bg-sky-950 border border-sky-800 rounded-xl text-sky-400 shrink-0">
-            <i data-lucide="columns" class="w-5 h-5"></i>
+            <i data-lucide="layers" class="w-5 h-5"></i>
           </div>
           <div>
-            <h4 class="text-base font-semibold text-slate-100 mb-1">4-Column Priority Lanes</h4>
-            <p>Tasks are organized across 4 distinct lanes: <strong>High Priority</strong>, <strong>Medium Priority</strong>, <strong>Low Priority</strong>, and <strong>De-prioritized</strong>. Each lane and task card features color-coded accents for immediate visual recognition.</p>
+            <h4 class="text-base font-semibold text-slate-100 mb-1">4 Priority Lanes</h4>
+            <p>Tasks are organized into 4 distinct lanes: <strong>High Priority</strong>, <strong>Medium Priority</strong>, <strong>Low Priority</strong>, and <strong>De-prioritized</strong>.</p>
           </div>
         </div>
 
-        <!-- Section 2 -->
         <div class="flex gap-4 items-start">
           <div class="p-2.5 bg-indigo-950 border border-indigo-800 rounded-xl text-indigo-400 shrink-0">
             <i data-lucide="move" class="w-5 h-5"></i>
           </div>
           <div>
-            <h4 class="text-base font-semibold text-slate-100 mb-1">Drag, Drop & Reorder</h4>
-            <p>Drag any task card to move it between lanes or reorder tasks within the same lane. Alternatively, use the quick-action move buttons on each card to shift tasks instantly.</p>
+            <h4 class="text-base font-semibold text-slate-100 mb-1">Drag & Drop or Quick Move</h4>
+            <p>Drag any task card to move it between lanes or reorder tasks within a lane. You can also use the drop-down menu on each card to transfer it instantly.</p>
           </div>
         </div>
 
-        <!-- Section 3 -->
         <div class="flex gap-4 items-start">
           <div class="p-2.5 bg-emerald-950 border border-emerald-800 rounded-xl text-emerald-400 shrink-0">
             <i data-lucide="hard-drive" class="w-5 h-5"></i>
           </div>
           <div>
-            <h4 class="text-base font-semibold text-slate-100 mb-1">File System Access API (Local JSON)</h4>
-            <p class="mb-2">This app can connect directly to real <code>.json</code> files stored on your disk using modern browser capabilities:</p>
-            <ul class="list-disc list-inside space-y-1 text-slate-400 pl-1">
-              <li><strong class="text-slate-200">Open JSON:</strong> Connect an existing JSON file from your system. Changes will sync directly back to that file!</li>
-              <li><strong class="text-slate-200">Save File As:</strong> Bind a new JSON file on your computer to automatically sync future changes.</li>
-              <li><strong class="text-slate-200">Fallback Mode:</strong> If your browser does not support the File System Access API (or permission is denied), data is stored in standard Browser <code>localStorage</code>, with manual Import/Export available via the toolbar buttons.</li>
-            </ul>
+            <h4 class="text-base font-semibold text-slate-100 mb-1">Automatic Reconnect to Local JSON File</h4>
+            <p>This app uses IndexedDB to store your local file handle. On every visit, the board automatically attempts to reconnect to your <code class="text-sky-300 font-mono">inputs-and-data.json</code> file on disk!</p>
           </div>
         </div>
-
-        <!-- Section 4 -->
-        <div class="flex gap-4 items-start">
-          <div class="p-2.5 bg-amber-950 border border-amber-800 rounded-xl text-amber-400 shrink-0">
-            <i data-lucide="globe" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h4 class="text-base font-semibold text-slate-100 mb-1">GitHub Pages Ready</h4>
-            <p>This entire app runs completely client-side in standard browsers (Chrome, Edge, Opera, Safari) with zero external servers required. Perfect for hosting on GitHub Pages!</p>
-          </div>
-        </div>
-
       </div>
 
-      <!-- Modal Footer -->
       <div class="px-6 py-3 bg-slate-800/80 border-t border-slate-700 flex justify-end">
         <button id="closeHelpFooterBtn" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold transition-colors">
           Got it!
@@ -366,197 +318,221 @@
     <span id="toastMessage">Notification message</span>
   </div>
 
-  <!-- APPLICATION LOGIC SCRIPT -->
+  <!-- INDEXEDDB & APP LOGIC -->
   <script>
-    // Global Application State
-    let appData = {
+    // INDEXEDDB HELPER FOR PERSISTING FILE HANDLE
+    const DB_NAME = 'KanbanTaskTrackerDB';
+    const STORE_NAME = 'fileHandles';
+    const HANDLE_KEY = 'inputs_data_handle';
+
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME);
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function setStoredHandle(handle) {
+      try {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put(handle, HANDLE_KEY);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        console.error("IndexedDB error writing handle:", err);
+      }
+    }
+
+    async function getStoredHandle() {
+      try {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const request = tx.objectStore(STORE_NAME).get(HANDLE_KEY);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      } catch (err) {
+        console.error("IndexedDB error reading handle:", err);
+        return null;
+      }
+    }
+
+    // DEFAULT SAMPLE DATA
+    const DEFAULT_DATA = {
       tasks: [
         {
-          id: 'demo-1',
-          title: 'Review project milestones & deliverables',
+          id: 'task-101',
+          title: 'Review quarterly project goals',
           lane: 'high',
           deadline: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
-          progress: 65,
-          notes: 'Coordinate with lead team on key Q3 objectives.'
+          progress: 75,
+          notes: 'Align with key stakeholders on roadmap.'
         },
         {
-          id: 'demo-2',
-          title: 'Update GitHub Pages repository settings',
+          id: 'task-102',
+          title: 'Update GitHub Pages build script',
           lane: 'medium',
-          deadline: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
-          progress: 30,
-          notes: 'Ensure custom domain SSL certificate is active.'
+          deadline: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0],
+          progress: 40,
+          notes: 'Verify single-file bundle build passes.'
         },
         {
-          id: 'demo-3',
-          title: 'Refactor color themes & dark mode CSS',
+          id: 'task-103',
+          title: 'Refactor color themes & contrast',
           lane: 'low',
           deadline: '',
-          progress: 10,
-          notes: 'Check contrast levels for accessibility.'
+          progress: 20,
+          notes: 'Ensure AA contrast standards.'
         },
         {
-          id: 'demo-4',
-          title: 'Archived legacy documentation',
+          id: 'task-104',
+          title: 'Archive deprecated documentation',
           lane: 'deprioritized',
           deadline: '',
           progress: 100,
-          notes: 'Stored in backup drive folder.'
+          notes: 'Moved legacy docs to archive folder.'
         }
       ]
     };
 
-    // File System Access API handle
+    let appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
     let fileHandle = null;
-    let isFileSystemSupported = 'showOpenFilePicker' in window;
+    const isFileSystemSupported = 'showOpenFilePicker' in window;
 
-    // Theme Configs for Lanes
     const LANE_CONFIGS = {
       high: {
         border: 'border-l-rose-500',
-        bgBg: 'bg-rose-950/20',
-        badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
         progressFill: 'bg-rose-500',
         hoverBorder: 'hover:border-rose-500/60'
       },
       medium: {
         border: 'border-l-amber-500',
-        bgBg: 'bg-amber-950/20',
-        badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
         progressFill: 'bg-amber-500',
         hoverBorder: 'hover:border-amber-500/60'
       },
       low: {
         border: 'border-l-emerald-500',
-        bgBg: 'bg-emerald-950/20',
-        badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
         progressFill: 'bg-emerald-500',
         hoverBorder: 'hover:border-emerald-500/60'
       },
       deprioritized: {
         border: 'border-l-slate-500',
-        bgBg: 'bg-slate-900/40',
-        badgeBg: 'bg-slate-700/50 text-slate-300 border-slate-600/40',
         progressFill: 'bg-slate-500',
         hoverBorder: 'hover:border-slate-500/60'
       }
     };
 
-    // INITIALIZATION ON DOM READY
-    document.addEventListener('DOMContentLoaded', () => {
+    // ON DOM LOAD
+    document.addEventListener('DOMContentLoaded', async () => {
       lucide.createIcons();
       loadFromLocalStorage();
       renderBoard();
       setupEventListeners();
       setupDragAndDrop();
-      updateFileBadge('LocalStorage', 'amber');
+
+      // Attempt automatic handle reconnection
+      if (isFileSystemSupported) {
+        await tryAutoReconnectFile();
+      }
     });
 
-    // LOCAL STORAGE HANDLING
-    function loadFromLocalStorage() {
-      const saved = localStorage.getItem('lane_kanban_tasks');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed.tasks)) {
-            appData.tasks = parsed.tasks;
-          }
-        } catch (e) {
-          console.error("Failed to parse localStorage tasks", e);
-        }
-      }
-    }
-
-    function saveToLocalStorage() {
-      localStorage.setItem('lane_kanban_tasks', JSON.stringify(appData, null, 2));
-    }
-
-    // AUTO SYNC OR PERSIST
-    async function persistData() {
-      saveToLocalStorage();
-
-      // If we have an active File System API file connected
-      if (fileHandle) {
-        const saved = await saveToFileHandle();
-        if (saved) {
-          showToast("Saved to local JSON file!", "check", "emerald");
-        } else {
-          showToast("Auto-save to file failed. LocalStorage updated.", "alert-circle", "amber");
-        }
-      }
-    }
-
-    // FILE SYSTEM ACCESS API METHODS
-    async function openFileFromDisk() {
-      if (!isFileSystemSupported) {
-        showToast("File System API not supported in this browser. Use Import button instead.", "alert-triangle", "amber");
-        return;
-      }
-
+    // AUTO-RECONNECT TO LAST OPENED JSON FILE
+    async function tryAutoReconnectFile() {
       try {
-        const [handle] = await window.showOpenFilePicker({
-          types: [{
-            description: 'JSON Files',
-            accept: { 'application/json': ['.json'] }
-          }],
-          multiple: false
-        });
-
-        fileHandle = handle;
-        const file = await fileHandle.getFile();
-        const text = await file.text();
-        
-        try {
-          const data = JSON.parse(text);
-          if (data && Array.isArray(data.tasks)) {
-            appData.tasks = data.tasks;
-            renderBoard();
-            saveToLocalStorage();
-            updateFileBadge(fileHandle.name, 'emerald');
-            document.getElementById('quickSaveBtn').classList.remove('hidden');
-            showToast(`Loaded ${data.tasks.length} tasks from ${fileHandle.name}`, "folder-check", "emerald");
-          } else {
-            showToast("Invalid format: File must contain a 'tasks' array.", "alert-triangle", "rose");
+        const storedHandle = await getStoredHandle();
+        if (storedHandle) {
+          // Check permissions
+          const options = { mode: 'readwrite' };
+          let perm = await storedHandle.queryPermission(options);
+          if (perm !== 'granted') {
+            perm = await storedHandle.requestPermission(options);
           }
-        } catch (err) {
-          showToast("Could not parse JSON file.", "x-circle", "rose");
+
+          if (perm === 'granted') {
+            fileHandle = storedHandle;
+            const loaded = await readFromFileHandle();
+            if (loaded) {
+              updateFileBadge(`Connected: ${fileHandle.name}`, 'emerald');
+              showToast(`Auto-connected to ${fileHandle.name}`, "hard-drive", "emerald");
+              return;
+            }
+          }
         }
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error(err);
-          showToast("Failed to open file.", "x-circle", "rose");
+        console.warn("Auto-reconnect skipped or denied:", err);
+      }
+      updateFileBadge('LocalStorage Mode', 'amber');
+    }
+
+    // READ FILE HANDLE
+    async function readFromFileHandle() {
+      if (!fileHandle) return false;
+      try {
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (data && Array.isArray(data.tasks)) {
+          appData.tasks = data.tasks;
+          renderBoard();
+          saveToLocalStorage();
+          return true;
         }
+      } catch (e) {
+        console.error("Error reading file handle:", e);
+      }
+      return false;
+    }
+
+    // CONNECT TO EXISTING OR NEW FILE
+    async function openFileFromDisk() {
+      if (!isFileSystemSupported) {
+        showToast("File System API not supported. Use upload/download buttons.", "alert-triangle", "amber");
+        return;
+      }
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
+          multiple: false
+        });
+        fileHandle = handle;
+        await setStoredHandle(fileHandle);
+        await readFromFileHandle();
+        updateFileBadge(`Connected: ${fileHandle.name}`, 'emerald');
+        showToast(`Connected to ${fileHandle.name}`, "folder-check", "emerald");
+      } catch (err) {
+        if (err.name !== 'AbortError') showToast("Could not open file", "x-circle", "rose");
       }
     }
 
-    async function saveFileAsDisk() {
+    // CREATE DEFAULT inputs-and-data.json
+    async function createDefaultFileOnDisk() {
       if (!isFileSystemSupported) {
-        // Fallback: Trigger download
         downloadJSONFallback();
         return;
       }
-
       try {
         const handle = await window.showSaveFilePicker({
-          suggestedName: 'tasks-backup.json',
-          types: [{
-            description: 'JSON Files',
-            accept: { 'application/json': ['.json'] }
-          }]
+          suggestedName: 'inputs-and-data.json',
+          types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
         });
-
         fileHandle = handle;
-        const success = await saveToFileHandle();
-        if (success) {
-          updateFileBadge(fileHandle.name, 'emerald');
-          document.getElementById('quickSaveBtn').classList.remove('hidden');
-          showToast(`Bound to ${fileHandle.name} and saved!`, "check-circle-2", "emerald");
-        }
+        await setStoredHandle(fileHandle);
+        await saveToFileHandle();
+        updateFileBadge(`Connected: ${fileHandle.name}`, 'emerald');
+        showToast(`Created and connected to ${fileHandle.name}!`, "check-circle-2", "emerald");
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error(err);
-          showToast("Failed to save file.", "x-circle", "rose");
-        }
+        if (err.name !== 'AbortError') showToast("Could not create file", "x-circle", "rose");
       }
     }
 
@@ -568,27 +544,52 @@
         await writable.close();
         return true;
       } catch (err) {
-        console.error("Error writing to file handle:", err);
+        console.error("Failed writing file:", err);
         return false;
       }
     }
 
-    // FALLBACK DOWNLOAD / IMPORT
+    async function persistData() {
+      saveToLocalStorage();
+      if (fileHandle) {
+        const success = await saveToFileHandle();
+        if (success) {
+          showToast(`Synced to ${fileHandle.name}`, "check", "emerald");
+        } else {
+          showToast("Saved to LocalStorage (File write failed)", "alert-circle", "amber");
+        }
+      }
+    }
+
+    function loadFromLocalStorage() {
+      const saved = localStorage.getItem('kanban_lane_tasks_data');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.tasks)) appData.tasks = parsed.tasks;
+        } catch (e) { console.error(e); }
+      }
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('kanban_lane_tasks_data', JSON.stringify(appData, null, 2));
+    }
+
+    // FALLBACKS
     function downloadJSONFallback() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `lane-tasks-${new Date().toISOString().split('T')[0]}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      showToast("Downloaded tasks JSON file", "download", "sky");
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", "inputs-and-data.json");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast("Downloaded inputs-and-data.json", "download", "sky");
     }
 
     function importJSONFallback(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
@@ -597,13 +598,9 @@
             appData.tasks = parsed.tasks;
             renderBoard();
             persistData();
-            showToast(`Imported ${parsed.tasks.length} tasks!`, "check", "emerald");
-          } else {
-            showToast("Invalid JSON schema.", "alert-triangle", "rose");
+            showToast(`Loaded ${parsed.tasks.length} tasks!`, "check", "emerald");
           }
-        } catch (err) {
-          showToast("Error parsing uploaded JSON file.", "x-circle", "rose");
-        }
+        } catch (err) { showToast("Invalid JSON file.", "x-circle", "rose"); }
       };
       reader.readAsText(file);
       event.target.value = '';
@@ -613,60 +610,55 @@
       const dot = document.getElementById('fileStatusDot');
       const text = document.getElementById('fileStatusText');
       text.textContent = fileName;
-
       dot.className = "w-2.5 h-2.5 rounded-full ";
       if (color === 'emerald') dot.classList.add('bg-emerald-500', 'shadow-sm', 'shadow-emerald-500');
       else if (color === 'amber') dot.classList.add('bg-amber-500');
       else dot.classList.add('bg-slate-500');
     }
 
-    // RENDER KANBAN BOARD
+    // RENDER BOARD
     function renderBoard() {
       const lanes = ['high', 'medium', 'low', 'deprioritized'];
-      
       lanes.forEach(laneKey => {
         const laneEl = document.getElementById(`lane-${laneKey}`);
         const countEl = document.getElementById(`count-${laneKey}`);
         const tasks = appData.tasks.filter(t => t.lane === laneKey);
-        
+
         countEl.textContent = tasks.length;
         laneEl.innerHTML = '';
 
         if (tasks.length === 0) {
           laneEl.innerHTML = `
-            <div class="h-32 flex flex-col items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl text-slate-500 text-xs gap-1">
+            <div class="h-28 flex flex-col items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl text-slate-500 text-xs gap-1">
               <span>No tasks in this lane</span>
-              <button onclick="openTaskModal('${laneKey}')" class="text-sky-400 hover:underline">Add one now</button>
+              <button onclick="openTaskModal('${laneKey}')" class="text-sky-400 hover:underline">Add task</button>
             </div>
           `;
           return;
         }
 
         tasks.forEach(task => {
-          const card = createTaskCardElement(task);
-          laneEl.appendChild(card);
+          laneEl.appendChild(createTaskCardElement(task));
         });
       });
 
       lucide.createIcons();
     }
 
-    // CREATE TASK CARD ELEMENT
     function createTaskCardElement(task) {
       const config = LANE_CONFIGS[task.lane] || LANE_CONFIGS.deprioritized;
       const card = document.createElement('div');
-      
+
       card.className = `task-card bg-slate-800 border-l-4 ${config.border} border-y border-r border-slate-700/70 hover:${config.hoverBorder} rounded-xl p-3.5 shadow-md transition-all cursor-grab active:cursor-grabbing group relative`;
       card.draggable = true;
       card.dataset.id = task.id;
 
-      // Deadline calculation
       let deadlineBadge = '';
       if (task.deadline) {
         const today = new Date().toISOString().split('T')[0];
         const isOverdue = task.deadline < today && task.progress < 100;
         const isToday = task.deadline === today;
-        
+
         let colorClass = 'text-slate-400 bg-slate-900 border-slate-700';
         if (isOverdue) colorClass = 'text-rose-300 bg-rose-950/80 border-rose-800';
         else if (isToday) colorClass = 'text-amber-300 bg-amber-950/80 border-amber-800';
@@ -679,18 +671,15 @@
         `;
       }
 
-      // Quick move options
-      const lanes = [
-        { key: 'high', label: 'High' },
-        { key: 'medium', label: 'Med' },
-        { key: 'low', label: 'Low' },
-        { key: 'deprioritized', label: 'De-p' }
-      ];
-
-      const moveButtons = lanes
-        .filter(l => l.key !== task.lane)
-        .map(l => `<button onclick="quickMoveTask('${task.id}', '${l.key}')" class="hover:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-medium transition-colors">→ ${l.label}</button>`)
-        .join('');
+      const moveButtons = [
+        { key: 'high', label: 'Lane 1' },
+        { key: 'medium', label: 'Lane 2' },
+        { key: 'low', label: 'Lane 3' },
+        { key: 'deprioritized', label: 'Lane 4' }
+      ]
+      .filter(l => l.key !== task.lane)
+      .map(l => `<button onclick="quickMoveTask('${task.id}', '${l.key}')" class="hover:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-medium transition-colors">→ ${l.label}</button>`)
+      .join('');
 
       card.innerHTML = `
         <div class="flex items-start justify-between gap-2 mb-1.5">
@@ -707,7 +696,6 @@
 
         ${task.notes ? `<p class="text-xs text-slate-400 mb-3 line-clamp-2 leading-relaxed">${escapeHTML(task.notes)}</p>` : ''}
 
-        <!-- Progress Bar -->
         <div class="mb-3 space-y-1">
           <div class="flex justify-between items-center text-[11px]">
             <span class="text-slate-400 font-medium">Progress</span>
@@ -718,11 +706,8 @@
           </div>
         </div>
 
-        <!-- Card Footer -->
         <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-700/40">
           ${deadlineBadge || '<div></div>'}
-          
-          <!-- Move Dropdown/Quick Actions -->
           <div class="relative group/move">
             <button class="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-slate-700/50">
               <span>Move</span>
@@ -738,7 +723,7 @@
       return card;
     }
 
-    // DRAG AND DROP HANDLERS
+    // DRAG AND DROP
     let draggedTaskId = null;
 
     function setupDragAndDrop() {
@@ -768,35 +753,24 @@
           const afterElement = getDragAfterElement(lane, e.clientY);
           const draggingCard = document.querySelector('.dragging');
           if (draggingCard) {
-            if (afterElement == null) {
-              lane.appendChild(draggingCard);
-            } else {
-              lane.insertBefore(draggingCard, afterElement);
-            }
+            if (afterElement == null) lane.appendChild(draggingCard);
+            else lane.insertBefore(draggingCard, afterElement);
           }
         });
 
-        lane.addEventListener('dragleave', () => {
-          lane.classList.remove('drag-over');
-        });
+        lane.addEventListener('dragleave', () => lane.classList.remove('drag-over'));
 
         lane.addEventListener('drop', (e) => {
           e.preventDefault();
           lane.classList.remove('drag-over');
 
-          const newLaneKey = lane.id.replace('lane-', '');
-          if (!draggedTaskId) return;
-
-          // Reorder tasks in array according to current DOM ordering
           const newTasksOrder = [];
-          
           document.querySelectorAll('.lane-scroll').forEach(lEl => {
             const lKey = lEl.id.replace('lane-', '');
-            const cards = lEl.querySelectorAll('.task-card');
-            cards.forEach(c => {
+            lEl.querySelectorAll('.task-card').forEach(c => {
               const task = appData.tasks.find(t => t.id === c.dataset.id);
               if (task) {
-                task.lane = lKey; // Update lane
+                task.lane = lKey;
                 newTasksOrder.push(task);
               }
             });
@@ -812,7 +786,6 @@
 
     function getDragAfterElement(container, y) {
       const draggableElements = [...container.querySelectorAll('.task-card:not(.dragging)')];
-
       return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
@@ -824,11 +797,11 @@
       }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // MODAL & TASK FORM ACTIONS
+    // MODALS AND FORM ACTIONS
     function openTaskModal(laneKey = 'high', taskId = null) {
       const modal = document.getElementById('taskModal');
       const titleEl = document.getElementById('modalTitle');
-      
+
       document.getElementById('taskForm').reset();
       document.getElementById('taskId').value = '';
 
@@ -863,7 +836,6 @@
 
     function saveTaskFromForm(e) {
       e.preventDefault();
-      
       const id = document.getElementById('taskId').value;
       const title = document.getElementById('taskTitle').value.trim();
       const lane = document.getElementById('taskLane').value;
@@ -874,7 +846,6 @@
       if (!title) return;
 
       if (id) {
-        // Edit existing
         const task = appData.tasks.find(t => t.id === id);
         if (task) {
           task.title = title;
@@ -884,16 +855,10 @@
           task.notes = notes;
         }
       } else {
-        // Create new
-        const newTask = {
+        appData.tasks.push({
           id: 'task-' + Date.now(),
-          title,
-          lane,
-          deadline,
-          progress,
-          notes
-        };
-        appData.tasks.push(newTask);
+          title, lane, deadline, progress, notes
+        });
       }
 
       closeTaskModal();
@@ -903,12 +868,10 @@
     }
 
     function deleteTask(taskId) {
-      if (confirm("Are you sure you want to delete this task?")) {
-        appData.tasks = appData.tasks.filter(t => t.id !== taskId);
-        renderBoard();
-        persistData();
-        showToast("Task deleted", "trash-2", "rose");
-      }
+      appData.tasks = appData.tasks.filter(t => t.id !== taskId);
+      renderBoard();
+      persistData();
+      showToast("Task deleted", "trash-2", "rose");
     }
 
     function quickMoveTask(taskId, targetLane) {
@@ -917,29 +880,21 @@
         task.lane = targetLane;
         renderBoard();
         persistData();
-        showToast(`Moved to ${targetLane.toUpperCase()} lane`, "arrow-right-left", "sky");
+        showToast(`Moved task to ${targetLane.toUpperCase()}`, "arrow-right-left", "sky");
       }
     }
 
-    // EVENT LISTENERS SETUP
     function setupEventListeners() {
-      // Header controls
       document.getElementById('globalAddTaskBtn').addEventListener('click', () => openTaskModal('high'));
-      document.getElementById('openFileBtn').addEventListener('click', openFileFromDisk);
-      document.getElementById('saveAsBtn').addEventListener('click', saveFileAsDisk);
-      document.getElementById('quickSaveBtn').addEventListener('click', async () => {
-        const saved = await saveToFileHandle();
-        if (saved) showToast("Changes saved to JSON file!", "check", "emerald");
-      });
+      document.getElementById('reconnectFileBtn').addEventListener('click', openFileFromDisk);
+      document.getElementById('createDefaultFileBtn').addEventListener('click', createDefaultFileOnDisk);
       document.getElementById('downloadFallbackBtn').addEventListener('click', downloadJSONFallback);
       document.getElementById('importFileInput').addEventListener('change', importJSONFallback);
 
-      // Modal controls
       document.getElementById('closeModalBtn').addEventListener('click', closeTaskModal);
       document.getElementById('cancelModalBtn').addEventListener('click', closeTaskModal);
       document.getElementById('taskForm').addEventListener('submit', saveTaskFromForm);
 
-      // Progress sync slider <-> number input
       const range = document.getElementById('taskProgress');
       const numInput = document.getElementById('taskProgressInput');
       const valDisplay = document.getElementById('progressValDisplay');
@@ -949,43 +904,34 @@
         valDisplay.textContent = `${e.target.value}%`;
       });
       numInput.addEventListener('input', (e) => {
-        let val = parseInt(e.target.value, 10);
-        if (isNaN(val)) val = 0;
-        if (val > 100) val = 100;
-        if (val < 0) val = 0;
+        let val = parseInt(e.target.value, 10) || 0;
+        val = Math.max(0, Math.min(100, val));
         range.value = val;
         valDisplay.textContent = `${val}%`;
       });
 
-      // Help Modal controls
       const helpModal = document.getElementById('helpModal');
       document.getElementById('helpBtn').addEventListener('click', () => helpModal.classList.remove('hidden'));
       document.getElementById('closeHelpBtn').addEventListener('click', () => helpModal.classList.add('hidden'));
       document.getElementById('closeHelpFooterBtn').addEventListener('click', () => helpModal.classList.add('hidden'));
 
-      // Outside click close modals
+      document.getElementById('dismissBannerBtn').addEventListener('click', () => {
+        document.getElementById('introBanner').classList.add('hidden');
+      });
+
       window.addEventListener('click', (e) => {
-        const taskModal = document.getElementById('taskModal');
-        if (e.target === taskModal) closeTaskModal();
+        if (e.target === document.getElementById('taskModal')) closeTaskModal();
         if (e.target === helpModal) helpModal.classList.add('hidden');
       });
     }
 
-    // UTILITY: ESCAPE HTML
     function escapeHTML(str) {
       if (!str) return '';
-      return str.replace(/[&<>'"]/g, 
-        tag => ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          "'": '&#39;',
-          '"': '&quot;'
-        }[tag] || tag)
-      );
+      return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[tag] || tag));
     }
 
-    // UTILITY: TOAST NOTIFICATIONS
     function showToast(message, iconName = 'info', color = 'sky') {
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toastMessage');
