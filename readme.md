@@ -2,21 +2,30 @@
 
 Welcome to my **Tools Portal** repository! This is a collection of lightweight, single-page web applications and trackers built with modern HTML5, CSS (Tailwind CSS), and vanilla JavaScript libraries. 
 
-<div align="center" style="background-color: #0d1117; padding: 20px; border-radius: 12px; border: 2px solid #30363d; margin: 20px 0;">
+<div align="center">
 
-  ### 🌐 **LIVE DEMO & PORTAL HUB**
+### 🌐 **LIVE DEMO & PORTAL HUB**
 
-  <p>Access these tools and trackers live in your browser:</p>
+Access these tools and trackers live directly in your browser:
 
-  <a href="https://praneshas19901.github.io/tools/index.html" target="_blank" rel="noopener noreferrer" style="font-size: 18px; font-weight: bold; background-color: #238636; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-    🚀 Launch Tools Portal Hub (Opens in New Tab) ↗
-  </a>
+[![Launch Tools Portal Hub](https://img.shields.io/badge/%F0%9F%9A%80_LAUNCH_TOOLS_PORTAL_HUB-238636?style=for-the-badge&logo=github&logoColor=white)](https://praneshas19901.github.io/tools/index.html)
+
+<sub>*(Tip: Hold <b>Ctrl</b> / <b>Cmd</b> while clicking to open in a new tab)*</sub>
 
 </div>
 
+---
 
+## ⚡ Deployment, Local Use & Hosting
+
+* **Run Locally**: You don't even need a web server! You can simply download or clone this repository and double-click any `.html` file to run it locally in your web browser.
+* **Self-Hosting**: Feel free to clone this repo and host these applications yourself on your preferred hosting platforms, such as **Cloudflare Pages**, **GitHub Pages**, **Vercel**, or **Netlify**.
+
+> ⚠️ **Usage Policy & Bandwidth Warning**:
+> Please respect the usage of the hosted live demo tools site. **Do not abuse, overload, or waste server bandwidth**. GitHub Pages enforces strict bandwidth soft limits (e.g., 100 GB per month). Excessive traffic or automated requests can trigger these limits and cause temporary suspension or throttling of the hosted portal. If you plan to use these tools heavily or for team operations, please clone the repository and host your own instance!
+
+---
 This repository was created out of a belief in **altruism, minimalism, and digital privacy**. All applications are designed to be simple, fast, safe, and respectful of your data.
-
 ---
 
 ## 🔒 Privacy & Safety First
