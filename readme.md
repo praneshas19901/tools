@@ -30,7 +30,7 @@ Access these tools and trackers live directly in your browser:
 
 > *"Software should be simple, lightweight, safe, and completely transparent."*
 
-This repository was created out of a firm belief in **altruism, minimalism, and digital privacy**. All applications are engineered to be zero-bloat, ultra-fast, visually intuitive, and strictly respectful of your personal data.
+This repository was created out of a firm belief in **altruism, minimalism, and digital privacy**. All applications are engineered to be zero-bloat, ultra-fast, visually intuitive, and strictly respectful of your personal data. There is no paid licensing ever, and please do not sell this based on licensing elsewhere - please respect open source and free software and respect our integrity.
 
 ---
 
