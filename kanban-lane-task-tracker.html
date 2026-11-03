@@ -114,6 +114,11 @@
           <span>Help</span>
         </button>
 
+        <button onclick="createInitialJSONFile()" class="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all" title="Create a new inputs-and-data.json file with sample data">
+          <i data-lucide="file-plus" class="w-4 h-4"></i>
+          <span>Create New JSON</span>
+        </button>
+
         <button onclick="connectLocalJSON()" id="syncBtn" class="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all">
           <i data-lucide="folder-open" class="w-4 h-4"></i>
           <span id="syncBtnText">Connect JSON File</span>
@@ -127,11 +132,16 @@
     <div class="max-w-7xl mx-auto w-full flex items-center justify-between gap-4">
       <div class="flex items-center gap-2">
         <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0"></i>
-        <span id="fileStatusText">App is running in single-session mode. Connect to <code class="font-bold">inputs-and-data.json</code> for local automatic persistence.</span>
+        <span id="fileStatusText">App is running in single-session mode. Create or connect to <code class="font-bold">inputs-and-data.json</code> for local automatic persistence.</span>
       </div>
-      <button onclick="reconnectFileHandle()" id="reconnectBtn" class="hidden text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors">
-        Confirm File Access
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="createInitialJSONFile()" id="createBannerBtn" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors">
+          Create inputs-and-data.json
+        </button>
+        <button onclick="reconnectFileHandle()" id="reconnectBtn" class="hidden text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors">
+          Confirm File Access
+        </button>
+      </div>
     </div>
   </div>
 
@@ -608,16 +618,19 @@
       const syncBtn = document.getElementById('syncBtn');
       const fileStatusText = document.getElementById('fileStatusText');
       const reconnectBtn = document.getElementById('reconnectBtn');
+      const createBannerBtn = document.getElementById('createBannerBtn');
 
       if (isConnected) {
         syncBtnText.textContent = 'File Connected';
         syncBtn.className = 'flex items-center gap-2 px-3.5 py-2 bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all';
         fileStatusText.innerHTML = `Active Sync: <code class="font-bold font-mono">${escapeHTML(fileName)}</code>`;
         reconnectBtn.classList.add('hidden');
+        if (createBannerBtn) createBannerBtn.classList.add('hidden');
       } else {
         syncBtnText.textContent = 'Connect JSON File';
         syncBtn.className = 'flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all';
         fileStatusText.innerHTML = escapeHTML(fileName);
+        if (createBannerBtn) createBannerBtn.classList.remove('hidden');
         if (showReconnect) {
           reconnectBtn.classList.remove('hidden');
         } else {
