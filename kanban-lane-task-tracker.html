@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lane Kanban - File-System Task Tracker</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom scrollbar for column content */
+    .lane-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .lane-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 8px;
+    }
+    .lane-scroll::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 8px;
+    }
+    .lane-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(71, 85, 105, 1);
+    }
+    /* Dragging effects */
+    .task-card.dragging {
+      opacity: 0.4;
+      transform: scale(0.98);
+      border: 2px dashed #38bdf8;
+    }
+    .drag-over {
+      background-color: rgba(30, 41, 59, 0.8) !important;
+      border: 2px dashed #0284c7 !important;
+    }
+    /* Simple Pulse Animation for unsaved status */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-unsaved {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-x-hidden selection:bg-sky-500 selection:text-white">
+
+  <!-- TOP HEADER NAVBAR -->
+  <header class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-30 px-4 py-3 sm:px-6 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-gradient-to-tr from-sky-500 to-indigo-600 rounded-xl shadow-md text-white">
+        <i data-lucide="kanban" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-slate-50 flex items-center gap-2">
+          Lane Tracker
+          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 font-medium">Local JSON Sync</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">Manage tasks with direct browser File System Access API</p>
+      </div>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center flex-wrap gap-2 text-sm">
+
+      <!-- File Status Indicator -->
+      <div id="fileStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-700/80 text-xs text-slate-300">
+        <span id="fileStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+        <span id="fileStatusText" class="truncate max-w-[150px] sm:max-w-[220px]">Local Storage Only</span>
+      </div>
+
+      <!-- File System API Buttons -->
+      <div class="flex items-center rounded-lg bg-slate-900 border border-slate-700 p-0.5">
+        <button id="openFileBtn" title="Connect to an existing JSON file" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-200 transition-colors font-medium">
+          <i data-lucide="folder-open" class="w-4 h-4 text-sky-400"></i>
+          <span class="hidden sm:inline">Open JSON</span>
+        </button>
+        <button id="saveAsBtn" title="Save current state to a new JSON file using File System API" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-200 transition-colors font-medium">
+          <i data-lucide="save" class="w-4 h-4 text-emerald-400"></i>
+          <span class="hidden sm:inline">Save File As</span>
+        </button>
+        <button id="quickSaveBtn" title="Directly write back changes to connected file" class="hidden flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white transition-colors font-medium ml-1">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Save</span>
+        </button>
+      </div>
+
+      <!-- Fallback Download / Import -->
+      <div class="flex items-center gap-1">
+        <button id="downloadFallbackBtn" title="Download tasks as JSON file" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors">
+          <i data-lucide="download" class="w-4 h-4"></i>
+        </button>
+        <label id="uploadFallbackLabel" title="Import JSON File (Fallback)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors cursor-pointer">
+          <i data-lucide="upload" class="w-4 h-4"></i>
+          <input type="file" id="importFileInput" accept=".json" class="hidden">
+        </label>
+      </div>
+
+      <div class="h-5 w-[1px] bg-slate-700 my-auto mx-1"></div>
+
+      <!-- Global Add Task Button -->
+      <button id="globalAddTaskBtn" class="flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg transition-colors font-medium shadow-md shadow-sky-900/20">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span class="hidden md:inline">New Task</span>
+      </button>
+
+      <!-- Help Button -->
+      <button id="helpBtn" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg transition-colors flex items-center justify-center" title="How to use this app">
+        <i data-lucide="help-circle" class="w-5 h-5 text-sky-400"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN KANBAN BOARD CONTAINER -->
+  <main class="flex-1 p-4 sm:p-6 overflow-x-auto min-h-0">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 h-full min-w-[320px] max-w-[1920px] mx-auto">
+
+      <!-- LANE 1: HIGH PRIORITY -->
+      <div data-lane="high" class="lane-column flex flex-col bg-slate-800/50 rounded-2xl border border-rose-500/30 overflow-hidden shadow-xl backdrop-blur-sm">
+        <!-- Lane Header -->
+        <div class="p-4 bg-gradient-to-r from-rose-950/60 to-slate-800/80 border-b border-rose-500/20 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-500/50"></span>
+            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">High Priority</h2>
+            <span id="count-high" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">0</span>
+          </div>
+          <button onclick="openTaskModal('high')" class="text-rose-400 hover:text-rose-200 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors" title="Add task to High Priority">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <!-- Task List Area -->
+        <div id="lane-high" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]">
+          <!-- Dynamic Task Cards Rendered Here -->
+        </div>
+      </div>
+
+      <!-- LANE 2: MEDIUM PRIORITY -->
+      <div data-lane="medium" class="lane-column flex flex-col bg-slate-800/50 rounded-2xl border border-amber-500/30 overflow-hidden shadow-xl backdrop-blur-sm">
+        <!-- Lane Header -->
+        <div class="p-4 bg-gradient-to-r from-amber-950/60 to-slate-800/80 border-b border-amber-500/20 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50"></span>
+            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">Medium Priority</h2>
+            <span id="count-medium" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">0</span>
+          </div>
+          <button onclick="openTaskModal('medium')" class="text-amber-400 hover:text-amber-200 hover:bg-amber-500/10 p-1.5 rounded-lg transition-colors" title="Add task to Medium Priority">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <!-- Task List Area -->
+        <div id="lane-medium" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]">
+          <!-- Dynamic Task Cards Rendered Here -->
+        </div>
+      </div>
+
+      <!-- LANE 3: LOW PRIORITY -->
+      <div data-lane="low" class="lane-column flex flex-col bg-slate-800/50 rounded-2xl border border-emerald-500/30 overflow-hidden shadow-xl backdrop-blur-sm">
+        <!-- Lane Header -->
+        <div class="p-4 bg-gradient-to-r from-emerald-950/60 to-slate-800/80 border-b border-emerald-500/20 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
+            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">Low Priority</h2>
+            <span id="count-low" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">0</span>
+          </div>
+          <button onclick="openTaskModal('low')" class="text-emerald-400 hover:text-emerald-200 hover:bg-emerald-500/10 p-1.5 rounded-lg transition-colors" title="Add task to Low Priority">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <!-- Task List Area -->
+        <div id="lane-low" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]">
+          <!-- Dynamic Task Cards Rendered Here -->
+        </div>
+      </div>
+
+      <!-- LANE 4: DE-PRIORITIZED -->
+      <div data-lane="deprioritized" class="lane-column flex flex-col bg-slate-800/50 rounded-2xl border border-slate-600/40 overflow-hidden shadow-xl backdrop-blur-sm">
+        <!-- Lane Header -->
+        <div class="p-4 bg-gradient-to-r from-slate-900/80 to-slate-800/80 border-b border-slate-700/50 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-full bg-slate-400 shadow-lg shadow-slate-500/50"></span>
+            <h2 class="font-bold text-slate-100 tracking-wide text-sm uppercase">De-prioritized</h2>
+            <span id="count-deprioritized" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-700 text-slate-300 border border-slate-600">0</span>
+          </div>
+          <button onclick="openTaskModal('deprioritized')" class="text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 p-1.5 rounded-lg transition-colors" title="Add task to De-prioritized">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <!-- Task List Area -->
+        <div id="lane-deprioritized" class="lane-scroll flex-1 p-3 overflow-y-auto space-y-3 min-h-[150px]">
+          <!-- Dynamic Task Cards Rendered Here -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ADD / EDIT TASK MODAL -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all my-8">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">
+        <h3 id="modalTitle" class="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <i data-lucide="check-square" class="w-5 h-5 text-sky-400"></i>
+          Create New Task
+        </h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <form id="taskForm" class="p-6 space-y-4">
+        <input type="hidden" id="taskId">
+
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Task Title *</label>
+          <input type="text" id="taskTitle" required placeholder="e.g. Implement direct file sync feature"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all text-sm">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Lane / Priority -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Target Lane</label>
+            <select id="taskLane" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-sky-500 text-sm">
+              <option value="high"> High Priority Lane</option>
+              <option value="medium"> Medium Priority Lane</option>
+              <option value="low"> Low Priority Lane</option>
+              <option value="deprioritized"> De-prioritized Lane</option>
+            </select>
+          </div>
+
+          <!-- Deadline -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Deadline</label>
+            <input type="date" id="taskDeadline"
+                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-sky-500 text-sm">
+          </div>
+        </div>
+
+        <!-- Progress Percentage Slider + Number Input -->
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Progress Percentage</label>
+            <span id="progressValDisplay" class="text-xs font-bold text-sky-400 bg-sky-950/80 px-2.5 py-0.5 rounded-full border border-sky-800">0%</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="range" id="taskProgress" min="0" max="100" value="0"
+                   class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+            <input type="number" id="taskProgressInput" min="0" max="100" value="0"
+                   class="w-16 bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-center text-slate-100 text-sm focus:outline-none focus:border-sky-500">
+          </div>
+        </div>
+
+        <!-- Notes / Description -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Notes / Details</label>
+          <textarea id="taskNotes" rows="3" placeholder="Add additional details, links, or sub-checklist items..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 text-sm resize-none"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" id="cancelModalBtn" class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-700/50 rounded-xl transition-colors">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-lg shadow-sky-900/30 transition-all flex items-center gap-2">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Save Task</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HELP & GUIDE MODAL -->
+  <div id="helpModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+        <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <i data-lucide="book-open" class="w-5 h-5 text-sky-400"></i>
+          User Guide & Storage Instructions
+        </h3>
+        <button id="closeHelpBtn" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Content Body -->
+      <div class="p-6 overflow-y-auto space-y-6 text-slate-300 text-sm leading-relaxed">
+        
+        <!-- Section 1 -->
+        <div class="flex gap-4 items-start">
+          <div class="p-2.5 bg-sky-950 border border-sky-800 rounded-xl text-sky-400 shrink-0">
+            <i data-lucide="columns" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-semibold text-slate-100 mb-1">4-Column Priority Lanes</h4>
+            <p>Tasks are organized across 4 distinct lanes: <strong>High Priority</strong>, <strong>Medium Priority</strong>, <strong>Low Priority</strong>, and <strong>De-prioritized</strong>. Each lane and task card features color-coded accents for immediate visual recognition.</p>
+          </div>
+        </div>
+
+        <!-- Section 2 -->
+        <div class="flex gap-4 items-start">
+          <div class="p-2.5 bg-indigo-950 border border-indigo-800 rounded-xl text-indigo-400 shrink-0">
+            <i data-lucide="move" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-semibold text-slate-100 mb-1">Drag, Drop & Reorder</h4>
+            <p>Drag any task card to move it between lanes or reorder tasks within the same lane. Alternatively, use the quick-action move buttons on each card to shift tasks instantly.</p>
+          </div>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="flex gap-4 items-start">
+          <div class="p-2.5 bg-emerald-950 border border-emerald-800 rounded-xl text-emerald-400 shrink-0">
+            <i data-lucide="hard-drive" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-semibold text-slate-100 mb-1">File System Access API (Local JSON)</h4>
+            <p class="mb-2">This app can connect directly to real <code>.json</code> files stored on your disk using modern browser capabilities:</p>
+            <ul class="list-disc list-inside space-y-1 text-slate-400 pl-1">
+              <li><strong class="text-slate-200">Open JSON:</strong> Connect an existing JSON file from your system. Changes will sync directly back to that file!</li>
+              <li><strong class="text-slate-200">Save File As:</strong> Bind a new JSON file on your computer to automatically sync future changes.</li>
+              <li><strong class="text-slate-200">Fallback Mode:</strong> If your browser does not support the File System Access API (or permission is denied), data is stored in standard Browser <code>localStorage</code>, with manual Import/Export available via the toolbar buttons.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Section 4 -->
+        <div class="flex gap-4 items-start">
+          <div class="p-2.5 bg-amber-950 border border-amber-800 rounded-xl text-amber-400 shrink-0">
+            <i data-lucide="globe" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-semibold text-slate-100 mb-1">GitHub Pages Ready</h4>
+            <p>This entire app runs completely client-side in standard browsers (Chrome, Edge, Opera, Safari) with zero external servers required. Perfect for hosting on GitHub Pages!</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3 bg-slate-800/80 border-t border-slate-700 flex justify-end">
+        <button id="closeHelpFooterBtn" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold transition-colors">
+          Got it!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION TOAST -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl text-slate-100 text-sm">
+    <i id="toastIcon" data-lucide="info" class="w-5 h-5 text-sky-400"></i>
+    <span id="toastMessage">Notification message</span>
+  </div>
+
+  <!-- APPLICATION LOGIC SCRIPT -->
+  <script>
+    // Global Application State
+    let appData = {
+      tasks: [
+        {
+          id: 'demo-1',
+          title: 'Review project milestones & deliverables',
+          lane: 'high',
+          deadline: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+          progress: 65,
+          notes: 'Coordinate with lead team on key Q3 objectives.'
+        },
+        {
+          id: 'demo-2',
+          title: 'Update GitHub Pages repository settings',
+          lane: 'medium',
+          deadline: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
+          progress: 30,
+          notes: 'Ensure custom domain SSL certificate is active.'
+        },
+        {
+          id: 'demo-3',
+          title: 'Refactor color themes & dark mode CSS',
+          lane: 'low',
+          deadline: '',
+          progress: 10,
+          notes: 'Check contrast levels for accessibility.'
+        },
+        {
+          id: 'demo-4',
+          title: 'Archived legacy documentation',
+          lane: 'deprioritized',
+          deadline: '',
+          progress: 100,
+          notes: 'Stored in backup drive folder.'
+        }
+      ]
+    };
+
+    // File System Access API handle
+    let fileHandle = null;
+    let isFileSystemSupported = 'showOpenFilePicker' in window;
+
+    // Theme Configs for Lanes
+    const LANE_CONFIGS = {
+      high: {
+        border: 'border-l-rose-500',
+        bgBg: 'bg-rose-950/20',
+        badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+        progressFill: 'bg-rose-500',
+        hoverBorder: 'hover:border-rose-500/60'
+      },
+      medium: {
+        border: 'border-l-amber-500',
+        bgBg: 'bg-amber-950/20',
+        badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        progressFill: 'bg-amber-500',
+        hoverBorder: 'hover:border-amber-500/60'
+      },
+      low: {
+        border: 'border-l-emerald-500',
+        bgBg: 'bg-emerald-950/20',
+        badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        progressFill: 'bg-emerald-500',
+        hoverBorder: 'hover:border-emerald-500/60'
+      },
+      deprioritized: {
+        border: 'border-l-slate-500',
+        bgBg: 'bg-slate-900/40',
+        badgeBg: 'bg-slate-700/50 text-slate-300 border-slate-600/40',
+        progressFill: 'bg-slate-500',
+        hoverBorder: 'hover:border-slate-500/60'
+      }
+    };
+
+    // INITIALIZATION ON DOM READY
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      loadFromLocalStorage();
+      renderBoard();
+      setupEventListeners();
+      setupDragAndDrop();
+      updateFileBadge('LocalStorage', 'amber');
+    });
+
+    // LOCAL STORAGE HANDLING
+    function loadFromLocalStorage() {
+      const saved = localStorage.getItem('lane_kanban_tasks');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.tasks)) {
+            appData.tasks = parsed.tasks;
+          }
+        } catch (e) {
+          console.error("Failed to parse localStorage tasks", e);
+        }
+      }
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('lane_kanban_tasks', JSON.stringify(appData, null, 2));
+    }
+
+    // AUTO SYNC OR PERSIST
+    async function persistData() {
+      saveToLocalStorage();
+
+      // If we have an active File System API file connected
+      if (fileHandle) {
+        const saved = await saveToFileHandle();
+        if (saved) {
+          showToast("Saved to local JSON file!", "check", "emerald");
+        } else {
+          showToast("Auto-save to file failed. LocalStorage updated.", "alert-circle", "amber");
+        }
+      }
+    }
+
+    // FILE SYSTEM ACCESS API METHODS
+    async function openFileFromDisk() {
+      if (!isFileSystemSupported) {
+        showToast("File System API not supported in this browser. Use Import button instead.", "alert-triangle", "amber");
+        return;
+      }
+
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }],
+          multiple: false
+        });
+
+        fileHandle = handle;
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        
+        try {
+          const data = JSON.parse(text);
+          if (data && Array.isArray(data.tasks)) {
+            appData.tasks = data.tasks;
+            renderBoard();
+            saveToLocalStorage();
+            updateFileBadge(fileHandle.name, 'emerald');
+            document.getElementById('quickSaveBtn').classList.remove('hidden');
+            showToast(`Loaded ${data.tasks.length} tasks from ${fileHandle.name}`, "folder-check", "emerald");
+          } else {
+            showToast("Invalid format: File must contain a 'tasks' array.", "alert-triangle", "rose");
+          }
+        } catch (err) {
+          showToast("Could not parse JSON file.", "x-circle", "rose");
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          showToast("Failed to open file.", "x-circle", "rose");
+        }
+      }
+    }
+
+    async function saveFileAsDisk() {
+      if (!isFileSystemSupported) {
+        // Fallback: Trigger download
+        downloadJSONFallback();
+        return;
+      }
+
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: 'tasks-backup.json',
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+
+        fileHandle = handle;
+        const success = await saveToFileHandle();
+        if (success) {
+          updateFileBadge(fileHandle.name, 'emerald');
+          document.getElementById('quickSaveBtn').classList.remove('hidden');
+          showToast(`Bound to ${fileHandle.name} and saved!`, "check-circle-2", "emerald");
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          showToast("Failed to save file.", "x-circle", "rose");
+        }
+      }
+    }
+
+    async function saveToFileHandle() {
+      if (!fileHandle) return false;
+      try {
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(appData, null, 2));
+        await writable.close();
+        return true;
+      } catch (err) {
+        console.error("Error writing to file handle:", err);
+        return false;
+      }
+    }
+
+    // FALLBACK DOWNLOAD / IMPORT
+    function downloadJSONFallback() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `lane-tasks-${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Downloaded tasks JSON file", "download", "sky");
+    }
+
+    function importJSONFallback(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && Array.isArray(parsed.tasks)) {
+            appData.tasks = parsed.tasks;
+            renderBoard();
+            persistData();
+            showToast(`Imported ${parsed.tasks.length} tasks!`, "check", "emerald");
+          } else {
+            showToast("Invalid JSON schema.", "alert-triangle", "rose");
+          }
+        } catch (err) {
+          showToast("Error parsing uploaded JSON file.", "x-circle", "rose");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function updateFileBadge(fileName, color) {
+      const dot = document.getElementById('fileStatusDot');
+      const text = document.getElementById('fileStatusText');
+      text.textContent = fileName;
+
+      dot.className = "w-2.5 h-2.5 rounded-full ";
+      if (color === 'emerald') dot.classList.add('bg-emerald-500', 'shadow-sm', 'shadow-emerald-500');
+      else if (color === 'amber') dot.classList.add('bg-amber-500');
+      else dot.classList.add('bg-slate-500');
+    }
+
+    // RENDER KANBAN BOARD
+    function renderBoard() {
+      const lanes = ['high', 'medium', 'low', 'deprioritized'];
+      
+      lanes.forEach(laneKey => {
+        const laneEl = document.getElementById(`lane-${laneKey}`);
+        const countEl = document.getElementById(`count-${laneKey}`);
+        const tasks = appData.tasks.filter(t => t.lane === laneKey);
+        
+        countEl.textContent = tasks.length;
+        laneEl.innerHTML = '';
+
+        if (tasks.length === 0) {
+          laneEl.innerHTML = `
+            <div class="h-32 flex flex-col items-center justify-center border-2 border-dashed border-slate-700/50 rounded-xl text-slate-500 text-xs gap-1">
+              <span>No tasks in this lane</span>
+              <button onclick="openTaskModal('${laneKey}')" class="text-sky-400 hover:underline">Add one now</button>
+            </div>
+          `;
+          return;
+        }
+
+        tasks.forEach(task => {
+          const card = createTaskCardElement(task);
+          laneEl.appendChild(card);
+        });
+      });
+
+      lucide.createIcons();
+    }
+
+    // CREATE TASK CARD ELEMENT
+    function createTaskCardElement(task) {
+      const config = LANE_CONFIGS[task.lane] || LANE_CONFIGS.deprioritized;
+      const card = document.createElement('div');
+      
+      card.className = `task-card bg-slate-800 border-l-4 ${config.border} border-y border-r border-slate-700/70 hover:${config.hoverBorder} rounded-xl p-3.5 shadow-md transition-all cursor-grab active:cursor-grabbing group relative`;
+      card.draggable = true;
+      card.dataset.id = task.id;
+
+      // Deadline calculation
+      let deadlineBadge = '';
+      if (task.deadline) {
+        const today = new Date().toISOString().split('T')[0];
+        const isOverdue = task.deadline < today && task.progress < 100;
+        const isToday = task.deadline === today;
+        
+        let colorClass = 'text-slate-400 bg-slate-900 border-slate-700';
+        if (isOverdue) colorClass = 'text-rose-300 bg-rose-950/80 border-rose-800';
+        else if (isToday) colorClass = 'text-amber-300 bg-amber-950/80 border-amber-800';
+
+        deadlineBadge = `
+          <div class="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md border ${colorClass}">
+            <i data-lucide="calendar" class="w-3 h-3"></i>
+            <span>${task.deadline}</span>
+          </div>
+        `;
+      }
+
+      // Quick move options
+      const lanes = [
+        { key: 'high', label: 'High' },
+        { key: 'medium', label: 'Med' },
+        { key: 'low', label: 'Low' },
+        { key: 'deprioritized', label: 'De-p' }
+      ];
+
+      const moveButtons = lanes
+        .filter(l => l.key !== task.lane)
+        .map(l => `<button onclick="quickMoveTask('${task.id}', '${l.key}')" class="hover:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-medium transition-colors">→ ${l.label}</button>`)
+        .join('');
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-2 mb-1.5">
+          <h3 class="font-semibold text-slate-100 text-sm leading-snug break-words flex-1">${escapeHTML(task.title)}</h3>
+          <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
+            <button onclick="openTaskModal('${task.lane}', '${task.id}')" class="p-1 hover:bg-slate-700 text-slate-400 hover:text-sky-300 rounded transition-colors" title="Edit Task">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="deleteTask('${task.id}')" class="p-1 hover:bg-slate-700 text-slate-400 hover:text-rose-400 rounded transition-colors" title="Delete Task">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        ${task.notes ? `<p class="text-xs text-slate-400 mb-3 line-clamp-2 leading-relaxed">${escapeHTML(task.notes)}</p>` : ''}
+
+        <!-- Progress Bar -->
+        <div class="mb-3 space-y-1">
+          <div class="flex justify-between items-center text-[11px]">
+            <span class="text-slate-400 font-medium">Progress</span>
+            <span class="font-bold text-slate-200">${task.progress}%</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+            <div class="h-full ${config.progressFill} transition-all duration-300 rounded-full" style="width: ${task.progress}%"></div>
+          </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-700/40">
+          ${deadlineBadge || '<div></div>'}
+          
+          <!-- Move Dropdown/Quick Actions -->
+          <div class="relative group/move">
+            <button class="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-slate-700/50">
+              <span>Move</span>
+              <i data-lucide="chevron-down" class="w-3 h-3"></i>
+            </button>
+            <div class="absolute right-0 bottom-full mb-1 hidden group-hover/move:flex flex-col bg-slate-900 border border-slate-700 rounded-lg p-1 shadow-xl z-20 min-w-[90px]">
+              ${moveButtons}
+            </div>
+          </div>
+        </div>
+      `;
+
+      return card;
+    }
+
+    // DRAG AND DROP HANDLERS
+    let draggedTaskId = null;
+
+    function setupDragAndDrop() {
+      const main = document.querySelector('main');
+
+      main.addEventListener('dragstart', (e) => {
+        const card = e.target.closest('.task-card');
+        if (!card) return;
+        draggedTaskId = card.dataset.id;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      main.addEventListener('dragend', (e) => {
+        const card = e.target.closest('.task-card');
+        if (card) card.classList.remove('dragging');
+        document.querySelectorAll('.lane-scroll').forEach(el => el.classList.remove('drag-over'));
+      });
+
+      const lanes = document.querySelectorAll('.lane-scroll');
+      lanes.forEach(lane => {
+        lane.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          lane.classList.add('drag-over');
+
+          const afterElement = getDragAfterElement(lane, e.clientY);
+          const draggingCard = document.querySelector('.dragging');
+          if (draggingCard) {
+            if (afterElement == null) {
+              lane.appendChild(draggingCard);
+            } else {
+              lane.insertBefore(draggingCard, afterElement);
+            }
+          }
+        });
+
+        lane.addEventListener('dragleave', () => {
+          lane.classList.remove('drag-over');
+        });
+
+        lane.addEventListener('drop', (e) => {
+          e.preventDefault();
+          lane.classList.remove('drag-over');
+
+          const newLaneKey = lane.id.replace('lane-', '');
+          if (!draggedTaskId) return;
+
+          // Reorder tasks in array according to current DOM ordering
+          const newTasksOrder = [];
+          
+          document.querySelectorAll('.lane-scroll').forEach(lEl => {
+            const lKey = lEl.id.replace('lane-', '');
+            const cards = lEl.querySelectorAll('.task-card');
+            cards.forEach(c => {
+              const task = appData.tasks.find(t => t.id === c.dataset.id);
+              if (task) {
+                task.lane = lKey; // Update lane
+                newTasksOrder.push(task);
+              }
+            });
+          });
+
+          appData.tasks = newTasksOrder;
+          renderBoard();
+          persistData();
+          draggedTaskId = null;
+        });
+      });
+    }
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.task-card:not(.dragging)')];
+
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // MODAL & TASK FORM ACTIONS
+    function openTaskModal(laneKey = 'high', taskId = null) {
+      const modal = document.getElementById('taskModal');
+      const titleEl = document.getElementById('modalTitle');
+      
+      document.getElementById('taskForm').reset();
+      document.getElementById('taskId').value = '';
+
+      if (taskId) {
+        const task = appData.tasks.find(t => t.id === taskId);
+        if (task) {
+          document.getElementById('taskId').value = task.id;
+          document.getElementById('taskTitle').value = task.title;
+          document.getElementById('taskLane').value = task.lane;
+          document.getElementById('taskDeadline').value = task.deadline || '';
+          document.getElementById('taskProgress').value = task.progress || 0;
+          document.getElementById('taskProgressInput').value = task.progress || 0;
+          document.getElementById('progressValDisplay').textContent = `${task.progress || 0}%`;
+          document.getElementById('taskNotes').value = task.notes || '';
+          titleEl.innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-sky-400"></i> Edit Task`;
+        }
+      } else {
+        document.getElementById('taskLane').value = laneKey;
+        document.getElementById('taskProgress').value = 0;
+        document.getElementById('taskProgressInput').value = 0;
+        document.getElementById('progressValDisplay').textContent = '0%';
+        titleEl.innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-sky-400"></i> Create New Task`;
+      }
+
+      lucide.createIcons();
+      modal.classList.remove('hidden');
+    }
+
+    function closeTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+    }
+
+    function saveTaskFromForm(e) {
+      e.preventDefault();
+      
+      const id = document.getElementById('taskId').value;
+      const title = document.getElementById('taskTitle').value.trim();
+      const lane = document.getElementById('taskLane').value;
+      const deadline = document.getElementById('taskDeadline').value;
+      const progress = parseInt(document.getElementById('taskProgress').value, 10) || 0;
+      const notes = document.getElementById('taskNotes').value.trim();
+
+      if (!title) return;
+
+      if (id) {
+        // Edit existing
+        const task = appData.tasks.find(t => t.id === id);
+        if (task) {
+          task.title = title;
+          task.lane = lane;
+          task.deadline = deadline;
+          task.progress = progress;
+          task.notes = notes;
+        }
+      } else {
+        // Create new
+        const newTask = {
+          id: 'task-' + Date.now(),
+          title,
+          lane,
+          deadline,
+          progress,
+          notes
+        };
+        appData.tasks.push(newTask);
+      }
+
+      closeTaskModal();
+      renderBoard();
+      persistData();
+      showToast(id ? "Task updated!" : "New task created!", "check", "emerald");
+    }
+
+    function deleteTask(taskId) {
+      if (confirm("Are you sure you want to delete this task?")) {
+        appData.tasks = appData.tasks.filter(t => t.id !== taskId);
+        renderBoard();
+        persistData();
+        showToast("Task deleted", "trash-2", "rose");
+      }
+    }
+
+    function quickMoveTask(taskId, targetLane) {
+      const task = appData.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.lane = targetLane;
+        renderBoard();
+        persistData();
+        showToast(`Moved to ${targetLane.toUpperCase()} lane`, "arrow-right-left", "sky");
+      }
+    }
+
+    // EVENT LISTENERS SETUP
+    function setupEventListeners() {
+      // Header controls
+      document.getElementById('globalAddTaskBtn').addEventListener('click', () => openTaskModal('high'));
+      document.getElementById('openFileBtn').addEventListener('click', openFileFromDisk);
+      document.getElementById('saveAsBtn').addEventListener('click', saveFileAsDisk);
+      document.getElementById('quickSaveBtn').addEventListener('click', async () => {
+        const saved = await saveToFileHandle();
+        if (saved) showToast("Changes saved to JSON file!", "check", "emerald");
+      });
+      document.getElementById('downloadFallbackBtn').addEventListener('click', downloadJSONFallback);
+      document.getElementById('importFileInput').addEventListener('change', importJSONFallback);
+
+      // Modal controls
+      document.getElementById('closeModalBtn').addEventListener('click', closeTaskModal);
+      document.getElementById('cancelModalBtn').addEventListener('click', closeTaskModal);
+      document.getElementById('taskForm').addEventListener('submit', saveTaskFromForm);
+
+      // Progress sync slider <-> number input
+      const range = document.getElementById('taskProgress');
+      const numInput = document.getElementById('taskProgressInput');
+      const valDisplay = document.getElementById('progressValDisplay');
+
+      range.addEventListener('input', (e) => {
+        numInput.value = e.target.value;
+        valDisplay.textContent = `${e.target.value}%`;
+      });
+      numInput.addEventListener('input', (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val)) val = 0;
+        if (val > 100) val = 100;
+        if (val < 0) val = 0;
+        range.value = val;
+        valDisplay.textContent = `${val}%`;
+      });
+
+      // Help Modal controls
+      const helpModal = document.getElementById('helpModal');
+      document.getElementById('helpBtn').addEventListener('click', () => helpModal.classList.remove('hidden'));
+      document.getElementById('closeHelpBtn').addEventListener('click', () => helpModal.classList.add('hidden'));
+      document.getElementById('closeHelpFooterBtn').addEventListener('click', () => helpModal.classList.add('hidden'));
+
+      // Outside click close modals
+      window.addEventListener('click', (e) => {
+        const taskModal = document.getElementById('taskModal');
+        if (e.target === taskModal) closeTaskModal();
+        if (e.target === helpModal) helpModal.classList.add('hidden');
+      });
+    }
+
+    // UTILITY: ESCAPE HTML
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    }
+
+    // UTILITY: TOAST NOTIFICATIONS
+    function showToast(message, iconName = 'info', color = 'sky') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = message;
+      toastIcon.setAttribute('data-lucide', iconName);
+      lucide.createIcons();
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
