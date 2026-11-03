@@ -1,90 +1,133 @@
 # 🛠️ Web Utilities & Trackers Portal
 
-Welcome to my **Tools Portal** repository! This is a collection of lightweight, single-page web applications and trackers built with modern HTML5, CSS (Tailwind CSS), and vanilla JavaScript libraries. 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20HTML5-brightgreen.svg)](#-compatibility--recommended-hardware)
+[![Privacy](https://img.shields.io/badge/Data%20Privacy-100%25%20Local-success.svg)](#-privacy--safety-first)
 
-### 🌐 **LIVE DEMO & PORTAL HUB**
+Welcome to the **Tools Portal** repository! This is a collection of lightweight, single-page web applications and trackers built with modern HTML5, Tailwind CSS, and vanilla JavaScript libraries.
+
+---
+
+<div align="center">
+
+### 🌐 LIVE DEMO & PORTAL HUB
 
 Access these tools and trackers live directly in your browser:
 
-<div align="center">
-  <br />
-  <a href="https://praneshas19901.github.io/tools">
-    <img src="https://img.shields.io/badge/🚀_LAUNCH_TOOLS_PORTAL_HUB-238636?style=for-the-badge&logo=github&logoColor=white" alt="Launch Tools Portal Hub" />
-  </a>
-  <p><sub>*(Tip: Hold <b>Ctrl</b> / <b>Cmd</b> while clicking to open in a new tab)*</sub></p>
+<br />
+
+<a href="https://praneshas19901.github.io/tools">
+  <img src="https://img.shields.io/badge/🚀_LAUNCH_TOOLS_PORTAL_HUB-238636?style=for-the-badge&logo=github&logoColor=white" alt="Launch Tools Portal Hub" />
+</a>
+
+<sub>*(Tip: Hold <b>Ctrl</b> / <b>Cmd</b> while clicking to open in a new tab)*</sub>
+
 </div>
+
+---
+
+## 💡 Core Philosophy
+
+> *"Software should be simple, lightweight, safe, and completely transparent."*
+
+This repository was created out of a firm belief in **altruism, minimalism, and digital privacy**. All applications are engineered to be zero-bloat, ultra-fast, visually intuitive, and strictly respectful of your personal data.
+
+---
 
 ## ⚡ Deployment, Local Use & Hosting
 
-* **Run Locally**: You don't even need a web server! You can simply download or clone this repository and double-click any `.html` file to run it locally in your web browser.
+You have total control over how and where you run these tools:
 
-* **Self-Hosting**: Feel free to clone this repo and host these applications yourself on your preferred hosting platforms, such as **Cloudflare Pages**, **GitHub Pages**, **Vercel**, or **Netlify**.
+| Deployment Method | Setup Instructions |
+| :--- | :--- |
+| 💻 **Run Locally** | Download or clone this repository and double-click any `.html` file. No local web server or `npm install` required! |
+| 🌐 **Self-Hosting** | Clone the repository and push to your favorite static host (**Cloudflare Pages**, **GitHub Pages**, **Vercel**, **Netlify**). |
 
-<br />
+> [!WARNING]
+> ### ⚠️ Usage Policy & Bandwidth Warning
+> Please respect the hosted live demo site. **Do not abuse, overload, or waste server bandwidth.**
+> 
+> GitHub Pages enforces strict bandwidth soft limits (*~100 GB per month*). Excessive traffic or automated testing can trigger these limits and cause temporary suspension or throttling of the hosted portal. If you plan to use these tools heavily or for team operations, please clone the repository and host your own instance!
 
-<div style="background-color: #2d1600; color: #ffcc80; padding: 16px; border-radius: 8px; border-left: 5px solid #ff9800;">
-  <h3 style="margin-top: 0; color: #ffa726;">⚠️ Usage Policy & Bandwidth Warning</h3>
-  <p>Please respect the usage of the hosted live demo tools site. <b>Do not abuse, overload, or waste server bandwidth.</b></p>
-  <p>GitHub Pages enforces strict bandwidth soft limits (e.g., 100 GB per month). Excessive traffic or automated requests can trigger these limits and cause temporary suspension or throttling of the hosted portal. If you plan to use these tools heavily or for team operations, please clone the repository and host your own instance!</p>
-</div>
-
-<br />
-
-
----
-## This repository was created out of a belief in **altruism, minimalism, and digital privacy**. All applications are designed to be simple, fast, safe, and respectful of your data.
 ---
 
 ## 🔒 Privacy & Safety First
 
-- **100% Client-Side & Local**: Unless explicitly stated otherwise, **no user data is tracked, transmitted, or stored on external servers**. All your logs, notes, and habits live entirely within your browser's local storage (`LocalStorage`).
-- **Data Ownership**: Your data belongs to you. Working with local JSON files or exports might have a slight **learning curve**, but it ensures complete control over your private information.
-- **Open & Free**: You are completely free to clone this repository, fork it, or run the files locally on your own machine.
+```
++-------------------------------------------------------------------+
+|                        YOUR LOCAL BROWSER                         |
+|  +--------------------+   +--------------------+   +-----------+  |
+|  | Kanban Task Engine |   | Workout & Health   |   | Daily Log |  |
+|  +--------------------+   +--------------------+   +-----------+  |
+|            |                        |                    |        |
+|            +------------------------+--------------------+        |
+|                                     v                             |
+|                        [ Browser LocalStorage ]                   |
++-------------------------------------------------------------------+
+                                  X  (No Data Leaves Browser)
+                       [ External Servers / Trackers ]
+```
 
-> ⚠️ **Note on Calorie Tracker v2**: 
-> Unlike the local-first tools, **Calorie Tracker v2** utilizes [Supabase](https://supabase.com/) for backend data storage to enable advanced features. However, your data remains strictly personalized and privatized through **Row Level Security (RLS)**—ensuring only you can access your records. *Please note this specific application is currently in active development.*
+- 🛡️ **100% Client-Side Storage**: Unless explicitly stated otherwise, **no user data is tracked, transmitted, or stored on external servers**. All your logs, notes, and metrics remain entirely within your browser's `LocalStorage`.
+- 🔑 **Complete Data Ownership**: Your data belongs solely to you. Managing local JSON file exports might carry a minor learning curve, but it guarantees full control over your sensitive information.
+- 🔓 **Open & Unrestricted**: You are free to inspect, clone, fork, or adapt these files locally on your own machine.
+
+> [!IMPORTANT]
+> **Note on Calorie Tracker v2**:
+> Unlike the local-first applications, **Calorie Tracker v2** utilizes [Supabase](https://supabase.com/) for backend data synchronization across devices. Your data remains strictly privatized using **Row Level Security (RLS)**—ensuring only authenticated owners can access their records. *This specific tool is currently in active development.*
 
 ---
 
-## 💻 Compatibility & Recommended Hardware
+## 💻 Compatibility & Hardware Recommendations
 
-- **Smartphone Friendly**: All tools are responsive and mobile-friendly for on-the-go tracking.
-- **Optimal Experience**: Using a **large screen device** (e.g., laptop or desktop) is recommended for the best layout clarity and workflow experience.
-- **Platform Support**: Extensively tested and verified to work seamlessly on **Windows laptops**. Expanded testing, optimizations, and support for additional OS platforms and devices are currently in the pipeline!
+| Feature | Details | Status |
+| :--- | :--- | :---: |
+| 📱 **Mobile Responsiveness** | Fully responsive interface optimized for smartphones on the go. | ✅ Supported |
+| 🖥️ **Optimal Screen View** | Large display (laptop/desktop) recommended for maximum dashboard clarity. | 🌟 Recommended |
+| 🪟 **Tested Platform** | Extensively tested and verified for smooth performance on **Windows OS**. | ✅ Verified |
+| 🐧 **Cross-Platform** | Optimizations and official support for Linux, macOS, and mobile OS versions. | 🔄 In Progress |
 
 ---
 
 ## 🚀 Available Tools & Applications
 
-Below is an overview of the tools included in this suite:
+Below is an overview of the tools currently available in this repository:
 
-| Application | Category | Description |
-| :--- | :--- | :--- |
-| 📋 **Kanban Lane Task Tracker** | `Productivity` | Organize work items into priority lanes, manage active task status, and track execution bottlenecks efficiently. |
-| 🥗 **Calorie Tracker v2** *(In Dev)* | `Nutrition` | Advanced nutrition logging using Supabase RLS with macro breakdowns and daily caloric goal visualization. |
-| 🍎 **Calorie Tracker** *(Standard)* | `Nutrition` | Classic, lightweight local caloric intake recorder to log daily food items and monitor total energy intake. |
-| 📅 **Daily Tracker** | `Routines` | Organize daily tasks, track habit streaks, schedule sleep, and foster day-to-day wellness goals. |
-| 🩺 **Health Tracker** | `Clinical` | Monitor physiological metrics including blood pressure, arterial pulse, and blood sugar with clinical evaluations. |
-| 🏋️ **Workout Tracker** | `Fitness` | Log physical training sessions, track exercise sets, repetitions, weight loads, and monitor muscle progression. |
-| 🎓 **Certifications & Degrees Tracker** | `Education` | Track educational progress, log notes, and set/reset milestones for degrees and professional certifications. |
+| Status | Tool Name | Category | Key Capabilities |
+| :---: | :--- | :--- | :--- |
+| 🟢 | 📋 **Kanban Task Tracker** | `Productivity` | Priority lane management, visual task statuses, and workflow bottleneck tracking. |
+| 🟡 | 🥗 **Calorie Tracker v2** | `Nutrition` | Advanced macro logging powered by Supabase RLS with interactive calorie goal visualizations. |
+| 🟢 | 🍎 **Calorie Tracker** *(Std)* | `Nutrition` | Streamlined offline caloric intake logger to quickly record food items and daily totals. |
+| 🟢 | 📅 **Daily Tracker** | `Routines` | Task checklists, habit streak tracking, sleep logs, and day-to-day wellness goals. |
+| 🟢 | 🩺 **Health Tracker** | `Clinical` | Monitor vital metrics (blood pressure, pulse rate, blood glucose) with clinical ranges. |
+| 🟢 | 🏋️ **Workout Tracker** | `Fitness` | Log strength sessions, set rep/weight targets, and track progressive overload. |
+| 🟢 | 🎓 **Certifications Tracker** | `Education` | Milestone tracking for degrees and professional credentials with custom notes and reset options. |
+
+*Legend: 🟢 Production Ready & Offline Local | 🟡 Active Development (Cloud Synced)*
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Architecture
 
-- **HTML5 & Modern JavaScript (ES6+)**
-- **Tailwind CSS** (via CDN for clean, minimal styling)
-- **FontAwesome** (for sleek visual iconography)
-- **Browser LocalStorage API** (for offline data retention)
-- **Supabase** (used specifically in *Calorie Tracker v2* with RLS policies)
+- **Frontend Core**: Standard HTML5 & Modern ES6+ JavaScript
+- **Styling**: Tailwind CSS (loaded via CDN for clean, utility-first styling)
+- **UI Assets**: FontAwesome icon library
+- **Persistence**: Browser `LocalStorage` API (Offline-first)
+- **Database / Auth**: Supabase PostgreSQL + RLS (*Calorie Tracker v2 only*)
 
 ---
 
 ## 🤝 Feedback, Feature Requests & Contact
 
-I value user feedback and continuous improvement! If you encounter any issues, have suggestions for new tools, or want to request features:
+Your feedback drives continuous refinement! If you encounter bugs, have questions, or want to suggest new features:
 
-- **Open an Issue**: Feel free to create an issue right here on GitHub.
-- **Contact Me - pranesh.sathyanarayan@outlook.com or praneshas19901@gmail.com**: Reach out anytime with your ideas or feedback.
+- 🐛 **GitHub Issues**: [Open an Issue](https://github.com/praneshas19901/tools/issues) in this repository.
+- 📬 **Direct Email**: Reach out anytime at:
+  - 📧 `pranesh.sathyanarayan@outlook.com`
+  - 📧 `praneshas19901@gmail.com`
 
-Happy tracking! Feel free to clone, customize, and make these tools your own.
+---
+
+<div align="center">
+  <sub>Built with care for simplicity and data privacy. Feel free to clone, customize, and make these tools your own!</sub>
+</div>
