@@ -930,16 +930,27 @@
 
     function sortTasksByDueDate() {
       appData.tasks.sort((a, b) => {
-        // If one of the tasks is completed, keep completion ordering
+        // Active tasks stay grouped together before completed ones
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
 
-        // Tasks with missing deadlines go to the end
-        if (!a.deadline && !b.deadline) return 0;
-        if (!a.deadline) return 1;
-        if (!b.deadline) return -1;
+        // Parse YYYY-MM-DD string cleanly to epoch timestamps
+        const parseDate = (dateStr) => {
+          if (!dateStr || typeof dateStr !== 'string' || !dateStr.trim()) return Infinity;
+          const parts = dateStr.trim().split('-');
+          if (parts.length !== 3) return Infinity;
+          const [year, month, day] = parts.map(Number);
+          if (isNaN(year) || isNaN(month) || isNaN(day)) return Infinity;
+          return new Date(year, month - 1, day).getTime();
+        };
 
-        // Earliest deadline first
-        return new Date(a.deadline) - new Date(b.deadline);
+        const timeA = parseDate(a.deadline);
+        const timeB = parseDate(b.deadline);
+
+        // If due dates are equal, maintain fallback ordering
+        if (timeA === timeB) return 0;
+        
+        // Earliest due date first, tasks without due dates at the bottom
+        return timeA - timeB;
       });
 
       renderBoard();
