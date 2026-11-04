@@ -42,7 +42,7 @@
         .project-title-area h2 { font-size: 1.25rem; font-weight: 600; }
         .project-desc { color: var(--text-muted); font-size: 0.875rem; margin-top: 4px; }
         
-        .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px; font-size: 0.85rem; }
+        .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px; font-size: 0.85rem; }
         .meta-item { display: flex; flex-direction: column; }
         .meta-label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
 
@@ -52,12 +52,13 @@
 
         .milestone-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin-top: 16px; }
         .milestone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-        .milestone-title { font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .milestone-title { font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .milestone-submeta { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; display: flex; gap: 16px; flex-wrap: wrap; }
 
         .task-list { list-style: none; margin-top: 8px; }
         .task-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 8px; font-size: 0.875rem; flex-wrap: wrap; gap: 8px; }
         .task-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px; }
-        .task-meta { color: var(--text-muted); font-size: 0.75rem; display: flex; gap: 12px; }
+        .task-meta { color: var(--text-muted); font-size: 0.75rem; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 
         .notes-section { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 8px; width: 100%; }
         .notes-list { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; }
@@ -93,7 +94,7 @@
 
     <div class="header">
         <div>
-            <h1>Project Tracker</h1>
+            <h1>Project & Milestone Tracker</h1>
             <span id="storageStatus" class="storage-status status-disconnected">● File Disconnected</span>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -127,12 +128,12 @@
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Budget Allowed</label>
-                    <input type="number" id="projBudget" min="0" step="any">
+                    <label>Budget Allowed (in Lakhs ₹)</label>
+                    <input type="number" id="projBudget" min="0" step="any" required>
                 </div>
                 <div class="form-group">
-                    <label>Time Allowed</label>
-                    <input type="text" id="projTimeAllowed" placeholder="e.g. 30 Days / 120 Hrs">
+                    <label>Project Deadline Date</label>
+                    <input type="date" id="projDeadline" required>
                 </div>
             </div>
             <div class="modal-actions">
@@ -154,9 +155,25 @@
                 <label>Milestone Title</label>
                 <input type="text" id="msTitle" required>
             </div>
-            <div class="form-group">
-                <label>Weight Percentage (%)</label>
-                <input type="number" id="msWeight" min="1" max="100" value="10">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Weight Percentage (%) [Sum = 100%]</label>
+                    <input type="number" id="msWeight" min="1" max="100" value="10" required>
+                </div>
+                <div class="form-group">
+                    <label>Milestone Budget (Lakhs ₹)</label>
+                    <input type="number" id="msBudget" min="0" step="any" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="msStartDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Deadline Date</label>
+                    <input type="date" id="msDeadline" required>
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('milestoneModal')">Cancel</button>
@@ -180,12 +197,18 @@
             </div>
             <div class="form-row">
                 <div class="form-group">
+                    <label>Task Budget (Lakhs ₹)</label>
+                    <input type="number" id="taskBudget" min="0" step="any" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
                     <label>Start Date</label>
-                    <input type="date" id="taskStartDate">
+                    <input type="date" id="taskStartDate" required>
                 </div>
                 <div class="form-group">
                     <label>Deadline Date</label>
-                    <input type="date" id="taskDeadline">
+                    <input type="date" id="taskDeadline" required>
                 </div>
             </div>
             <div class="modal-actions">
@@ -205,22 +228,32 @@
                 <h3>📁 Local Storage & File Access API</h3>
                 <p>This app reads and writes directly to a <code>.json</code> file on your local machine using the native File System Access API.</p>
                 <ul>
-                    <li><strong>First Time Setup:</strong> Click <code>📁 Create New File</code> to initialize a local JSON file (e.g., <code>projects.json</code>).</li>
-                    <li><strong>Revisiting Users:</strong> The browser automatically reconnects to your last-used handle. If prompted, confirm write access permissions.</li>
-                    <li><strong>Manual Reconnect:</strong> Click <code>📂 Connect Existing File</code> to select your previously saved JSON file.</li>
+                    <li><strong>First Time Setup:</strong> Click <code>📁 Create New File</code> to initialize a local JSON file.</li>
+                    <li><strong>Revisiting Users:</strong> The browser automatically reconnects to your last-used file handle.</li>
+                </ul>
+
+                <h3>💰 Budget Management (in Lakhs ₹)</h3>
+                <ul>
+                    <li><strong>Project Level:</strong> Enter total budget in Lakhs. Shows allocated vs. remaining budget based on milestone budgets.</li>
+                    <li><strong>Milestone Level:</strong> Milestone budgets are distributed from the project budget and cannot exceed remaining limits.</li>
+                    <li><strong>Task Level:</strong> Allocate specific budgets for individual tasks within milestones.</li>
+                </ul>
+
+                <h3>⏳ Time & Deadlines</h3>
+                <ul>
+                    <li>Projects display real-time days remaining from today's date based on the project deadline.</li>
+                    <li>Milestones and tasks have dedicated start and deadline dates distributed across the project schedule.</li>
                 </ul>
 
                 <h3>🚩 Milestones & Weighted Progress</h3>
                 <ul>
-                    <li>Each project's overall progress is calculated from weighted milestones.</li>
-                    <li>Assign percentage weights to milestones (the sum of all milestone weights across a project should target 100%).</li>
-                    <li>Completing tasks inside a milestone dynamically updates that milestone's completion percentage and recalculates the total project progress.</li>
+                    <li>Assign percentage weights to milestones (total across project must sum to 100%).</li>
+                    <li>Completing tasks updates milestone completion and total project progress.</li>
                 </ul>
 
                 <h3>📝 Timestamped Notes</h3>
                 <ul>
-                    <li>You can attach notes at both the <strong>Milestone level</strong> and <strong>Task level</strong>.</li>
-                    <li>Notes are automatically prefixed with the exact local timestamp when posted.</li>
+                    <li>Attach timestamped notes at both <strong>Milestone</strong> and <strong>Task</strong> levels.</li>
                 </ul>
             </div>
             <div class="modal-actions">
@@ -232,11 +265,10 @@
     <script>
         let appData = [];
         let fileHandle = null;
-        const DB_NAME = 'ProjectTrackerFSDB';
+        const DB_NAME = 'ProjectTrackerFSDB_v2';
         const STORE_NAME = 'handles';
         const HANDLE_KEY = 'currentFileHandle';
 
-        // IndexedDB Helper to persist FileHandle across reloads
         function openDB() {
             return new Promise((resolve, reject) => {
                 const req = indexedDB.open(DB_NAME, 1);
@@ -263,7 +295,6 @@
             });
         }
 
-        // File System Access Core Logic
         async function autoLoadFile() {
             try {
                 const storedHandle = await getStoredHandle();
@@ -277,7 +308,7 @@
                     }
                 }
             } catch (err) {
-                console.warn('Auto-load failed or permission denied:', err);
+                console.warn('Auto-load failed:', err);
             }
             updateStatus(false);
             render();
@@ -304,7 +335,7 @@
 
         async function openFile() {
             if (!('showOpenFilePicker' in window)) {
-                return alert('File System Access API is not supported in this browser. Please use Chrome, Edge, or Opera.');
+                return alert('File System Access API is not supported in this browser.');
             }
             try {
                 const [handle] = await window.showOpenFilePicker({
@@ -330,11 +361,8 @@
 
         async function writeDataToFile() {
             if (!fileHandle) {
-                // Fallback prompt if no file handle exists
-                const userChoice = confirm('No local JSON file is connected. Would you like to create or select a JSON file now to save your changes?');
-                if (userChoice) {
-                    await createNewFile();
-                }
+                const userChoice = confirm('No local JSON file connected. Create or select a JSON file now?');
+                if (userChoice) await createNewFile();
                 return;
             }
             try {
@@ -367,27 +395,48 @@
             return d.toISOString().replace('T', ' ').substring(0, 16);
         }
 
-        function calculateProjectProgress(project) {
-            if (!project.milestones || project.milestones.length === 0) return { progress: 0, totalWeight: 0 };
-            
+        function getDaysRemaining(dateStr) {
+            if (!dateStr) return null;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const target = new Date(dateStr);
+            target.setHours(0,0,0,0);
+            const diffTime = target - today;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        function calculateProjectMetrics(project) {
             let totalWeight = 0;
             let weightedProgress = 0;
+            let allocatedBudget = 0;
 
-            project.milestones.forEach(ms => {
-                const weight = parseFloat(ms.weight) || 0;
-                totalWeight += weight;
-                
-                if (ms.tasks && ms.tasks.length > 0) {
-                    const completedTasks = ms.tasks.filter(t => t.completed).length;
-                    const msCompletion = completedTasks / ms.tasks.length;
-                    weightedProgress += msCompletion * weight;
-                }
-            });
+            if (project.milestones) {
+                project.milestones.forEach(ms => {
+                    totalWeight += parseFloat(ms.weight) || 0;
+                    allocatedBudget += parseFloat(ms.budget) || 0;
 
-            return {
-                progress: totalWeight > 0 ? Math.min(100, Math.round(weightedProgress)) : 0,
-                totalWeight: Math.round(totalWeight)
-            };
+                    if (ms.tasks && ms.tasks.length > 0) {
+                        const completedTasks = ms.tasks.filter(t => t.completed).length;
+                        weightedProgress += (completedTasks / ms.tasks.length) * (parseFloat(ms.weight) || 0);
+                    }
+                });
+            }
+
+            const totalBudget = parseFloat(project.budget) || 0;
+            const remainingBudget = totalBudget - allocatedBudget;
+            const progress = totalWeight > 0 ? Math.min(100, Math.round(weightedProgress)) : 0;
+            const daysLeft = getDaysRemaining(project.deadline);
+
+            return { progress, totalWeight: Math.round(totalWeight), allocatedBudget, remainingBudget, daysLeft };
+        }
+
+        function calculateMilestoneBudget(milestone) {
+            let allocated = 0;
+            if (milestone.tasks) {
+                milestone.tasks.forEach(t => { allocated += parseFloat(t.budget) || 0; });
+            }
+            const total = parseFloat(milestone.budget) || 0;
+            return { allocated, remaining: total - allocated };
         }
 
         function render() {
@@ -403,8 +452,11 @@
             }
 
             container.innerHTML = appData.map(proj => {
-                const { progress, totalWeight } = calculateProjectProgress(proj);
+                const { progress, totalWeight, allocatedBudget, remainingBudget, daysLeft } = calculateProjectMetrics(proj);
                 const weightWarning = totalWeight !== 100 ? `<div class="weight-warn">⚠️ Milestone total weight: ${totalWeight}% (Target: 100%)</div>` : '';
+                const budgetWarning = remainingBudget < 0 ? `<div class="weight-warn">⚠️ Budget exceeded by ₹${Math.abs(remainingBudget).toFixed(2)} Lakhs!</div>` : '';
+                
+                const deadlineText = daysLeft !== null ? (daysLeft >= 0 ? `${daysLeft} days remaining` : `${Math.abs(daysLeft)} days overdue`) : 'N/A';
 
                 return `
                 <div class="project-card">
@@ -426,12 +478,14 @@
                             <span>${escapeHtml(proj.targets || 'N/A')}</span>
                         </div>
                         <div class="meta-item">
-                            <span class="meta-label">Budget Allowed</span>
-                            <span>${proj.budget ? proj.budget : 'N/A'}</span>
+                            <span class="meta-label">Budget (Total / Remaining)</span>
+                            <span><strong>₹${proj.budget || 0} L</strong> / <span style="color: ${remainingBudget < 0 ? 'var(--danger)' : 'var(--success)'}">₹${remainingBudget.toFixed(2)} L</span></span>
+                            ${budgetWarning}
                         </div>
                         <div class="meta-item">
-                            <span class="meta-label">Time Allowed</span>
-                            <span>${escapeHtml(proj.timeAllowed || 'N/A')}</span>
+                            <span class="meta-label">Project Timeline</span>
+                            <span>📅 Due: ${proj.deadline || 'N/A'}</span>
+                            <span style="font-size: 0.75rem; color: var(--warning);">${deadlineText}</span>
                         </div>
                         <div class="meta-item">
                             <span class="meta-label">Project Completion</span>
@@ -447,6 +501,8 @@
                         const msTasks = ms.tasks || [];
                         const completedCount = msTasks.filter(t => t.completed).length;
                         const msPercent = msTasks.length > 0 ? Math.round((completedCount / msTasks.length) * 100) : 0;
+                        const { allocated: msAllocated, remaining: msRemaining } = calculateMilestoneBudget(ms);
+                        const msBudgetWarn = msRemaining < 0 ? `<span style="color: var(--danger)"> (Exceeded by ₹${Math.abs(msRemaining).toFixed(2)}L)</span>` : '';
 
                         return `
                         <div class="milestone-card">
@@ -460,6 +516,11 @@
                                     <button class="btn-danger btn-sm" onclick="deleteMilestone('${proj.id}', '${ms.id}')">Delete</button>
                                     <button class="btn-sm" onclick="openTaskModal('${proj.id}', '${ms.id}')">+ Task</button>
                                 </div>
+                            </div>
+
+                            <div class="milestone-submeta">
+                                <span>💰 Budget: ₹${ms.budget || 0}L (Allocated: ₹${msAllocated.toFixed(2)}L | Remaining: ₹${msRemaining.toFixed(2)}L)${msBudgetWarn}</span>
+                                <span>⏱️ Timeline: ${ms.startDate || 'N/A'} to ${ms.deadline || 'N/A'}</span>
                             </div>
 
                             <div class="notes-section">
@@ -480,6 +541,7 @@
                                             <span style="${task.completed ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${escapeHtml(task.title)}</span>
                                         </div>
                                         <div class="task-meta">
+                                            <span>💰 ₹${task.budget || 0}L</span>
                                             <span>📅 Start: ${task.startDate || 'N/A'}</span>
                                             <span>🏁 Due: ${task.deadline || 'N/A'}</span>
                                             <button class="btn-secondary btn-sm" onclick="openTaskModal('${proj.id}', '${ms.id}', '${task.id}')">Edit</button>
@@ -506,7 +568,6 @@
             }).join('');
         }
 
-        // Modal Controllers
         function openProjectModal(id = null) {
             document.getElementById('projId').value = id || '';
             document.getElementById('projectModalTitle').innerText = id ? 'Edit Project' : 'Create Project';
@@ -517,13 +578,13 @@
                 document.getElementById('projDesc').value = proj.desc || '';
                 document.getElementById('projTargets').value = proj.targets || '';
                 document.getElementById('projBudget').value = proj.budget || '';
-                document.getElementById('projTimeAllowed').value = proj.timeAllowed || '';
+                document.getElementById('projDeadline').value = proj.deadline || '';
             } else {
                 document.getElementById('projName').value = '';
                 document.getElementById('projDesc').value = '';
                 document.getElementById('projTargets').value = '';
                 document.getElementById('projBudget').value = '';
-                document.getElementById('projTimeAllowed').value = '';
+                document.getElementById('projDeadline').value = '';
             }
             document.getElementById('projectModal').classList.add('active');
         }
@@ -538,9 +599,15 @@
                 const ms = proj.milestones.find(m => m.id === msId);
                 document.getElementById('msTitle').value = ms.title;
                 document.getElementById('msWeight').value = ms.weight;
+                document.getElementById('msBudget').value = ms.budget || '';
+                document.getElementById('msStartDate').value = ms.startDate || '';
+                document.getElementById('msDeadline').value = ms.deadline || '';
             } else {
                 document.getElementById('msTitle').value = '';
                 document.getElementById('msWeight').value = '10';
+                document.getElementById('msBudget').value = '';
+                document.getElementById('msStartDate').value = '';
+                document.getElementById('msDeadline').value = '';
             }
             document.getElementById('milestoneModal').classList.add('active');
         }
@@ -556,10 +623,12 @@
                 const ms = proj.milestones.find(m => m.id === msId);
                 const task = ms.tasks.find(t => t.id === taskId);
                 document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskBudget').value = task.budget || '';
                 document.getElementById('taskStartDate').value = task.startDate || '';
                 document.getElementById('taskDeadline').value = task.deadline || '';
             } else {
                 document.getElementById('taskTitle').value = '';
+                document.getElementById('taskBudget').value = '';
                 document.getElementById('taskStartDate').value = '';
                 document.getElementById('taskDeadline').value = '';
             }
@@ -574,21 +643,31 @@
             document.getElementById(modalId).classList.remove('active');
         }
 
-        // Data Modifications
         async function saveProject() {
             const id = document.getElementById('projId').value;
             const name = document.getElementById('projName').value.trim();
+            const budget = parseFloat(document.getElementById('projBudget').value) || 0;
+            const deadline = document.getElementById('projDeadline').value;
+
             if (!name) return alert('Project Name is required.');
+            if (!deadline) return alert('Project Deadline is required.');
 
             const projectData = {
                 id: id || Date.now().toString(),
                 name: name,
                 desc: document.getElementById('projDesc').value.trim(),
                 targets: document.getElementById('projTargets').value.trim(),
-                budget: document.getElementById('projBudget').value,
-                timeAllowed: document.getElementById('projTimeAllowed').value.trim(),
+                budget: budget,
+                deadline: deadline,
                 milestones: id ? (appData.find(p => p.id === id).milestones || []) : []
             };
+
+            // Validate that new total project budget doesn't fall below already allocated milestone budgets
+            let allocatedMilestones = 0;
+            projectData.milestones.forEach(m => allocatedMilestones += parseFloat(m.budget) || 0);
+            if (budget < allocatedMilestones) {
+                return alert(`Project budget (₹${budget}L) cannot be less than total already allocated to milestones (₹${allocatedMilestones}L).`);
+            }
 
             if (id) {
                 const idx = appData.findIndex(p => p.id === id);
@@ -605,21 +684,41 @@
             const msId = document.getElementById('msId').value;
             const title = document.getElementById('msTitle').value.trim();
             const weight = parseFloat(document.getElementById('msWeight').value) || 0;
+            const budget = parseFloat(document.getElementById('msBudget').value) || 0;
+            const startDate = document.getElementById('msStartDate').value;
+            const deadline = document.getElementById('msDeadline').value;
 
             if (!title) return alert('Milestone Title is required.');
+            if (!startDate || !deadline) return alert('Start and Deadline dates are required.');
 
             const proj = appData.find(p => p.id === projId);
             if (!proj.milestones) proj.milestones = [];
+
+            // Validate milestone budget against remaining project budget
+            let otherMilestonesBudget = 0;
+            proj.milestones.forEach(m => {
+                if (m.id !== msId) otherMilestonesBudget += parseFloat(m.budget) || 0;
+            });
+
+            if ((otherMilestonesBudget + budget) > (proj.budget || 0)) {
+                return alert(`Milestone budget exceeds available project budget. Max available: ₹${((proj.budget || 0) - otherMilestonesBudget).toFixed(2)} Lakhs.`);
+            }
 
             if (msId) {
                 const ms = proj.milestones.find(m => m.id === msId);
                 ms.title = title;
                 ms.weight = weight;
+                ms.budget = budget;
+                ms.startDate = startDate;
+                ms.deadline = deadline;
             } else {
                 proj.milestones.push({
                     id: Date.now().toString(),
                     title,
                     weight,
+                    budget,
+                    startDate,
+                    deadline,
                     tasks: [],
                     notes: []
                 });
@@ -633,24 +732,40 @@
             const msId = document.getElementById('taskMsId').value;
             const taskId = document.getElementById('taskId').value;
             const title = document.getElementById('taskTitle').value.trim();
+            const budget = parseFloat(document.getElementById('taskBudget').value) || 0;
+            const startDate = document.getElementById('taskStartDate').value;
+            const deadline = document.getElementById('taskDeadline').value;
 
             if (!title) return alert('Task Title is required.');
+            if (!startDate || !deadline) return alert('Start and Deadline dates are required.');
 
             const proj = appData.find(p => p.id === projId);
             const ms = proj.milestones.find(m => m.id === msId);
             if (!ms.tasks) ms.tasks = [];
 
+            // Validate task budget against remaining milestone budget
+            let otherTasksBudget = 0;
+            ms.tasks.forEach(t => {
+                if (t.id !== taskId) otherTasksBudget += parseFloat(t.budget) || 0;
+            });
+
+            if ((otherTasksBudget + budget) > (ms.budget || 0)) {
+                return alert(`Task budget exceeds available milestone budget. Max available: ₹${((ms.budget || 0) - otherTasksBudget).toFixed(2)} Lakhs.`);
+            }
+
             if (taskId) {
                 const task = ms.tasks.find(t => t.id === taskId);
                 task.title = title;
-                task.startDate = document.getElementById('taskStartDate').value;
-                task.deadline = document.getElementById('taskDeadline').value;
+                task.budget = budget;
+                task.startDate = startDate;
+                task.deadline = deadline;
             } else {
                 ms.tasks.push({
                     id: Date.now().toString(),
                     title,
-                    startDate: document.getElementById('taskStartDate').value,
-                    deadline: document.getElementById('taskDeadline').value,
+                    budget,
+                    startDate,
+                    deadline,
                     completed: false,
                     notes: []
                 });
@@ -721,7 +836,6 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Initialize App & File Handling
         autoLoadFile();
     </script>
 </body>
