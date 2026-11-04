@@ -929,29 +929,33 @@
     }
 
     function sortTasksByDueDate() {
-      appData.tasks.sort((a, b) => {
-        // Active tasks stay grouped together before completed ones
-        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      // Parse YYYY-MM-DD string cleanly to epoch timestamps
+      const parseDate = (dateStr) => {
+        if (!dateStr || typeof dateStr !== 'string' || !dateStr.trim()) return Infinity;
+        const parts = dateStr.trim().split('-');
+        if (parts.length !== 3) return Infinity;
+        const [year, month, day] = parts.map(Number);
+        if (isNaN(year) || isNaN(month) || isNaN(day)) return Infinity;
+        return new Date(year, month - 1, day).getTime();
+      };
 
-        // Parse YYYY-MM-DD string cleanly to epoch timestamps
-        const parseDate = (dateStr) => {
-          if (!dateStr || typeof dateStr !== 'string' || !dateStr.trim()) return Infinity;
-          const parts = dateStr.trim().split('-');
-          if (parts.length !== 3) return Infinity;
-          const [year, month, day] = parts.map(Number);
-          if (isNaN(year) || isNaN(month) || isNaN(day)) return Infinity;
-          return new Date(year, month - 1, day).getTime();
-        };
+      const lanes = ['high', 'medium', 'low', 'deprioritized'];
+      let sortedActiveTasks = [];
 
-        const timeA = parseDate(a.deadline);
-        const timeB = parseDate(b.deadline);
-
-        // If due dates are equal, maintain fallback ordering
-        if (timeA === timeB) return 0;
-        
-        // Earliest due date first, tasks without due dates at the bottom
-        return timeA - timeB;
+      // Sort tasks within each lane individually so lane structure remains intact
+      lanes.forEach(laneKey => {
+        const laneTasks = appData.tasks.filter(t => t.lane === laneKey && !t.completed);
+        laneTasks.sort((a, b) => {
+          const timeA = parseDate(a.deadline);
+          const timeB = parseDate(b.deadline);
+          return timeA - timeB; // Earliest date first
+        });
+        sortedActiveTasks = sortedActiveTasks.concat(laneTasks);
       });
+
+      // Keep completed tasks at the end
+      const completedTasks = appData.tasks.filter(t => t.completed);
+      appData.tasks = [...sortedActiveTasks, ...completedTasks];
 
       renderBoard();
       persistData();
