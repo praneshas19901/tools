@@ -40,11 +40,18 @@
         .view-banner { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: rgba(255, 255, 255, 0.05); padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); }
         .view-banner h2 { font-size: 1.1rem; font-weight: 600; }
 
-        .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
-        .project-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
-        .project-title-area h2 { font-size: 1.25rem; font-weight: 600; }
+        .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; transition: all 0.2s ease; }
+        .project-card.minimized { padding: 14px 20px; }
+        
+        .project-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .project-card:not(.minimized) .project-header { margin-bottom: 16px; }
+        
+        .project-title-area h2 { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .project-desc { color: var(--text-muted); font-size: 0.875rem; margin-top: 4px; }
         
+        .minimized-summary { display: flex; gap: 16px; align-items: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
+        .minimized-summary span { display: inline-flex; align-items: center; gap: 4px; }
+
         .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px; font-size: 0.85rem; }
         .meta-item { display: flex; flex-direction: column; }
         .meta-label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -234,11 +241,16 @@
                 <span>How to Use Project Tracker</span>
             </div>
             <div class="help-body">
+                <h3>↕️ Minimizing Project Cards</h3>
+                <ul>
+                    <li>Click the <code>Minimize</code> / <code>Expand</code> button on any project card to toggle its view.</li>
+                    <li>When minimized, the card collapses all milestones, tasks, and notes, displaying only the <strong>Project Name</strong>, <strong>Budget</strong>, and <strong>Deadline Date</strong>.</li>
+                </ul>
+
                 <h3>🏆 Completed Projects Archive</h3>
                 <ul>
-                    <li>Projects that reach <strong>100% completion</strong> are automatically moved into a dedicated Completed Projects view.</li>
-                    <li>Click the <code>🏆 Completed Projects</code> button in the top navigation bar to toggle between active and completed views.</li>
-                    <li>You can restore any completed project or mark tasks as incomplete to move it back to Active Projects.</li>
+                    <li>Projects reaching <strong>100% completion</strong> are automatically moved into the Completed Projects view.</li>
+                    <li>Toggle between active and completed projects using the <code>🏆 Completed Projects</code> button.</li>
                 </ul>
 
                 <h3>📁 Local Storage & File Access API</h3>
@@ -246,17 +258,6 @@
                 <ul>
                     <li><strong>First Time Setup:</strong> Click <code>📁 Create New File</code> to initialize a local JSON file.</li>
                     <li><strong>Revisiting Users:</strong> The browser automatically reconnects to your last-used file handle.</li>
-                </ul>
-
-                <h3>💰 Budget Management (in Lakhs ₹)</h3>
-                <ul>
-                    <li><strong>Project Level:</strong> Total budget in Lakhs. Tracks allocated vs. remaining budget.</li>
-                    <li><strong>Milestone & Task Levels:</strong> Allocations are budgeted hierarchically and cannot exceed limits.</li>
-                </ul>
-
-                <h3>⏳ Time & Deadlines</h3>
-                <ul>
-                    <li>Projects display real-time days remaining counting down to the deadline.</li>
                 </ul>
             </div>
             <div class="modal-actions">
@@ -270,7 +271,7 @@
         let fileHandle = null;
         let showCompletedView = false;
 
-        const DB_NAME = 'ProjectTrackerFSDB_v3';
+        const DB_NAME = 'ProjectTrackerFSDB_v4';
         const STORE_NAME = 'handles';
         const HANDLE_KEY = 'currentFileHandle';
 
@@ -449,11 +450,18 @@
             render();
         }
 
+        async function toggleMinimizeProject(projId) {
+            const proj = appData.find(p => p.id === projId);
+            if (proj) {
+                proj.minimized = !proj.minimized;
+                await saveData();
+            }
+        }
+
         async function restoreProject(projId) {
             const proj = appData.find(p => p.id === projId);
             if (!proj) return;
 
-            // Uncheck the last task in the project or set completed state false on tasks to break 100%
             let taskUnchecked = false;
             if (proj.milestones) {
                 for (let ms of proj.milestones) {
@@ -513,22 +521,38 @@
                 const budgetWarning = remainingBudget < 0 ? `<div class="weight-warn">⚠️ Budget exceeded by ₹${Math.abs(remainingBudget).toFixed(2)} Lakhs!</div>` : '';
                 
                 const deadlineText = daysLeft !== null ? (daysLeft >= 0 ? `${daysLeft} days remaining` : `${Math.abs(daysLeft)} days overdue`) : 'N/A';
+                const isMinimized = !!proj.minimized;
 
                 return `
-                <div class="project-card">
+                <div class="project-card ${isMinimized ? 'minimized' : ''}">
                     <div class="project-header">
                         <div class="project-title-area">
-                            <h2>${escapeHtml(proj.name)} ${progress === 100 ? '<span class="badge badge-completed">Completed</span>' : ''}</h2>
-                            <div class="project-desc">${escapeHtml(proj.desc || 'No description provided.')}</div>
+                            <h2>
+                                ${escapeHtml(proj.name)} 
+                                ${progress === 100 ? '<span class="badge badge-completed">Completed</span>' : ''}
+                            </h2>
+                            ${isMinimized ? `
+                                <div class="minimized-summary">
+                                    <span>💰 <strong>Budget:</strong> ₹${proj.budget || 0} Lakhs</span>
+                                    <span>📅 <strong>Deadline:</strong> ${proj.deadline || 'N/A'} (${deadlineText})</span>
+                                    <span>📊 <strong>Progress:</strong> ${progress}%</span>
+                                </div>
+                            ` : `
+                                <div class="project-desc">${escapeHtml(proj.desc || 'No description provided.')}</div>
+                            `}
                         </div>
-                        <div>
-                            ${progress === 100 ? `<button class="btn-secondary btn-sm" style="color: var(--success); border-color: var(--success);" onclick="restoreProject('${proj.id}')">↩ Restore / Mark Incomplete</button>` : ''}
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button class="btn-secondary btn-sm" onclick="toggleMinimizeProject('${proj.id}')">
+                                ${isMinimized ? '▶ Expand' : '▼ Minimize'}
+                            </button>
+                            ${progress === 100 ? `<button class="btn-secondary btn-sm" style="color: var(--success); border-color: var(--success);" onclick="restoreProject('${proj.id}')">↩ Restore</button>` : ''}
                             <button class="btn-secondary btn-sm" onclick="openProjectModal('${proj.id}')">Edit</button>
                             <button class="btn-danger btn-sm" onclick="deleteProject('${proj.id}')">Delete</button>
-                            <button class="btn-sm" onclick="openMilestoneModal('${proj.id}')">+ Add Milestone</button>
+                            ${!isMinimized ? `<button class="btn-sm" onclick="openMilestoneModal('${proj.id}')">+ Add Milestone</button>` : ''}
                         </div>
                     </div>
 
+                    ${!isMinimized ? `
                     <div class="meta-grid">
                         <div class="meta-item">
                             <span class="meta-label">Target / Deliverables</span>
@@ -620,6 +644,7 @@
                         </div>
                         `;
                     }).join('')}
+                    ` : ''}
                 </div>
                 `;
             }).join('');
@@ -716,6 +741,7 @@
                 targets: document.getElementById('projTargets').value.trim(),
                 budget: budget,
                 deadline: deadline,
+                minimized: id ? (appData.find(p => p.id === id).minimized || false) : false,
                 milestones: id ? (appData.find(p => p.id === id).milestones || []) : []
             };
 
