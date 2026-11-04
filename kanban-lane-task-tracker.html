@@ -155,10 +155,17 @@
         <span id="totalTasksCount" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-bold">0 Tasks</span>
       </div>
 
-      <button onclick="openTaskModal()" class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-sm text-xs transition-all transform active:scale-95">
-        <i data-lucide="plus" class="w-4 h-4"></i>
-        <span>Add New Task</span>
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="sortTasksByDueDate()" class="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all shadow-2xs">
+          <i data-lucide="arrow-down-narrow-wide" class="w-4 h-4 text-slate-500"></i>
+          <span>Sort by Due Date</span>
+        </button>
+
+        <button onclick="openTaskModal()" class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-sm text-xs transition-all transform active:scale-95">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Add New Task</span>
+        </button>
+      </div>
     </div>
 
     <!-- 4 Priority Columns Grid -->
@@ -348,9 +355,9 @@
         <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
           <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
             <i data-lucide="arrow-left-right" class="w-4 h-4 text-rose-600"></i>
-            3. Swim Lanes & Task Reordering
+            3. Swim Lanes, Reordering & Sorting
           </h4>
-          <p>Drag task cards between any of the 4 priority columns (High, Medium, Low, De-prioritized). To reorder tasks within a column, drag them vertically or use the <b>Up/Down arrow buttons</b> on each card.</p>
+          <p>Drag task cards between any of the 4 priority columns (High, Medium, Low, De-prioritized). Reorder tasks manually using drag & drop or vertical arrows, or click <b>"Sort by Due Date"</b> to organize all cards chronologically by deadline.</p>
         </div>
 
         <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
@@ -919,6 +926,24 @@
         renderBoard();
         persistData();
       }
+    }
+
+    function sortTasksByDueDate() {
+      appData.tasks.sort((a, b) => {
+        // If one of the tasks is completed, keep completion ordering
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+
+        // Tasks with missing deadlines go to the end
+        if (!a.deadline && !b.deadline) return 0;
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+
+        // Earliest deadline first
+        return new Date(a.deadline) - new Date(b.deadline);
+      });
+
+      renderBoard();
+      persistData();
     }
 
     function toggleMoveMenu(e, taskId) {
