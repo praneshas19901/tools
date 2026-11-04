@@ -37,6 +37,9 @@
         button.btn-danger:hover { background: #dc2626; }
         button.btn-sm { padding: 4px 8px; font-size: 0.75rem; }
 
+        .view-banner { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: rgba(255, 255, 255, 0.05); padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); }
+        .view-banner h2 { font-size: 1.1rem; font-weight: 600; }
+
         .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
         .project-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
         .project-title-area h2 { font-size: 1.25rem; font-weight: 600; }
@@ -100,9 +103,15 @@
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button onclick="createNewFile()" class="btn-secondary">📁 Create New File</button>
             <button onclick="openFile()" class="btn-secondary">📂 Connect Existing File</button>
+            <button onclick="toggleCompletedView()" class="btn-secondary" id="completedToggleBtn">🏆 Completed Projects (0)</button>
             <button onclick="openHelpModal()" class="btn-secondary">❓ Help</button>
             <button onclick="openProjectModal()">+ New Project</button>
         </div>
+    </div>
+
+    <div class="view-banner" id="viewBanner">
+        <h2 id="viewTitle">Active Projects</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);" id="viewSubtitle">Showing currently active projects</span>
     </div>
 
     <div id="projectContainer"></div>
@@ -225,6 +234,13 @@
                 <span>How to Use Project Tracker</span>
             </div>
             <div class="help-body">
+                <h3>🏆 Completed Projects Archive</h3>
+                <ul>
+                    <li>Projects that reach <strong>100% completion</strong> are automatically moved into a dedicated Completed Projects view.</li>
+                    <li>Click the <code>🏆 Completed Projects</code> button in the top navigation bar to toggle between active and completed views.</li>
+                    <li>You can restore any completed project or mark tasks as incomplete to move it back to Active Projects.</li>
+                </ul>
+
                 <h3>📁 Local Storage & File Access API</h3>
                 <p>This app reads and writes directly to a <code>.json</code> file on your local machine using the native File System Access API.</p>
                 <ul>
@@ -234,26 +250,13 @@
 
                 <h3>💰 Budget Management (in Lakhs ₹)</h3>
                 <ul>
-                    <li><strong>Project Level:</strong> Enter total budget in Lakhs. Shows allocated vs. remaining budget based on milestone budgets.</li>
-                    <li><strong>Milestone Level:</strong> Milestone budgets are distributed from the project budget and cannot exceed remaining limits.</li>
-                    <li><strong>Task Level:</strong> Allocate specific budgets for individual tasks within milestones.</li>
+                    <li><strong>Project Level:</strong> Total budget in Lakhs. Tracks allocated vs. remaining budget.</li>
+                    <li><strong>Milestone & Task Levels:</strong> Allocations are budgeted hierarchically and cannot exceed limits.</li>
                 </ul>
 
                 <h3>⏳ Time & Deadlines</h3>
                 <ul>
-                    <li>Projects display real-time days remaining from today's date based on the project deadline.</li>
-                    <li>Milestones and tasks have dedicated start and deadline dates distributed across the project schedule.</li>
-                </ul>
-
-                <h3>🚩 Milestones & Weighted Progress</h3>
-                <ul>
-                    <li>Assign percentage weights to milestones (total across project must sum to 100%).</li>
-                    <li>Completing tasks updates milestone completion and total project progress.</li>
-                </ul>
-
-                <h3>📝 Timestamped Notes</h3>
-                <ul>
-                    <li>Attach timestamped notes at both <strong>Milestone</strong> and <strong>Task</strong> levels.</li>
+                    <li>Projects display real-time days remaining counting down to the deadline.</li>
                 </ul>
             </div>
             <div class="modal-actions">
@@ -265,7 +268,9 @@
     <script>
         let appData = [];
         let fileHandle = null;
-        const DB_NAME = 'ProjectTrackerFSDB_v2';
+        let showCompletedView = false;
+
+        const DB_NAME = 'ProjectTrackerFSDB_v3';
         const STORE_NAME = 'handles';
         const HANDLE_KEY = 'currentFileHandle';
 
@@ -439,19 +444,70 @@
             return { allocated, remaining: total - allocated };
         }
 
+        function toggleCompletedView() {
+            showCompletedView = !showCompletedView;
+            render();
+        }
+
+        async function restoreProject(projId) {
+            const proj = appData.find(p => p.id === projId);
+            if (!proj) return;
+
+            // Uncheck the last task in the project or set completed state false on tasks to break 100%
+            let taskUnchecked = false;
+            if (proj.milestones) {
+                for (let ms of proj.milestones) {
+                    if (ms.tasks && ms.tasks.length > 0) {
+                        for (let t of ms.tasks) {
+                            if (t.completed) {
+                                t.completed = false;
+                                taskUnchecked = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (taskUnchecked) break;
+                }
+            }
+
+            if (!taskUnchecked) {
+                alert('Restored project to Active view.');
+            }
+            await saveData();
+        }
+
         function render() {
+            const completedCount = appData.filter(p => calculateProjectMetrics(p).progress === 100).length;
+            document.getElementById('completedToggleBtn').innerText = `🏆 Completed Projects (${completedCount})`;
+
+            const viewTitle = document.getElementById('viewTitle');
+            const viewSubtitle = document.getElementById('viewSubtitle');
+
+            if (showCompletedView) {
+                viewTitle.innerText = "🏆 Completed Projects Archive";
+                viewSubtitle.innerText = "Showing projects that reached 100% completion";
+            } else {
+                viewTitle.innerText = "Active Projects";
+                viewSubtitle.innerText = "Showing currently active projects in progress";
+            }
+
+            const filteredProjects = appData.filter(proj => {
+                const { progress } = calculateProjectMetrics(proj);
+                return showCompletedView ? (progress === 100) : (progress < 100);
+            });
+
             const container = document.getElementById('projectContainer');
-            if (appData.length === 0) {
+            if (filteredProjects.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <p style="font-size: 1.1rem; margin-bottom: 8px;">No projects found.</p>
-                        <p style="margin-bottom: 16px;">Create a project to start, or connect a local JSON file.</p>
-                        <button onclick="openProjectModal()">+ Create First Project</button>
+                        <p style="font-size: 1.1rem; margin-bottom: 8px;">No ${showCompletedView ? 'completed' : 'active'} projects found.</p>
+                        <p style="margin-bottom: 16px;">${showCompletedView ? 'Projects reaching 100% completion will automatically appear here.' : 'Create a new project to get started.'}</p>
+                        ${!showCompletedView ? '<button onclick="openProjectModal()">+ Create First Project</button>' : ''}
                     </div>`;
                 return;
             }
 
-            container.innerHTML = appData.map(proj => {
+            container.innerHTML = filteredProjects.map(proj => {
                 const { progress, totalWeight, allocatedBudget, remainingBudget, daysLeft } = calculateProjectMetrics(proj);
                 const weightWarning = totalWeight !== 100 ? `<div class="weight-warn">⚠️ Milestone total weight: ${totalWeight}% (Target: 100%)</div>` : '';
                 const budgetWarning = remainingBudget < 0 ? `<div class="weight-warn">⚠️ Budget exceeded by ₹${Math.abs(remainingBudget).toFixed(2)} Lakhs!</div>` : '';
@@ -462,10 +518,11 @@
                 <div class="project-card">
                     <div class="project-header">
                         <div class="project-title-area">
-                            <h2>${escapeHtml(proj.name)}</h2>
+                            <h2>${escapeHtml(proj.name)} ${progress === 100 ? '<span class="badge badge-completed">Completed</span>' : ''}</h2>
                             <div class="project-desc">${escapeHtml(proj.desc || 'No description provided.')}</div>
                         </div>
                         <div>
+                            ${progress === 100 ? `<button class="btn-secondary btn-sm" style="color: var(--success); border-color: var(--success);" onclick="restoreProject('${proj.id}')">↩ Restore / Mark Incomplete</button>` : ''}
                             <button class="btn-secondary btn-sm" onclick="openProjectModal('${proj.id}')">Edit</button>
                             <button class="btn-danger btn-sm" onclick="deleteProject('${proj.id}')">Delete</button>
                             <button class="btn-sm" onclick="openMilestoneModal('${proj.id}')">+ Add Milestone</button>
@@ -662,7 +719,6 @@
                 milestones: id ? (appData.find(p => p.id === id).milestones || []) : []
             };
 
-            // Validate that new total project budget doesn't fall below already allocated milestone budgets
             let allocatedMilestones = 0;
             projectData.milestones.forEach(m => allocatedMilestones += parseFloat(m.budget) || 0);
             if (budget < allocatedMilestones) {
@@ -694,7 +750,6 @@
             const proj = appData.find(p => p.id === projId);
             if (!proj.milestones) proj.milestones = [];
 
-            // Validate milestone budget against remaining project budget
             let otherMilestonesBudget = 0;
             proj.milestones.forEach(m => {
                 if (m.id !== msId) otherMilestonesBudget += parseFloat(m.budget) || 0;
@@ -743,7 +798,6 @@
             const ms = proj.milestones.find(m => m.id === msId);
             if (!ms.tasks) ms.tasks = [];
 
-            // Validate task budget against remaining milestone budget
             let otherTasksBudget = 0;
             ms.tasks.forEach(t => {
                 if (t.id !== taskId) otherTasksBudget += parseFloat(t.budget) || 0;
