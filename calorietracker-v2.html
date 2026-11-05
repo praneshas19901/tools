@@ -989,17 +989,20 @@
 
                     try {
                         if (this.isSignUp) {
-                            const { data, error } = await self.supabaseClient.auth.signUp({
-                                email: self.authEmail,
-                                password: self.authPassword
-                            });
-                            if (error) throw error;
-                            self.showToast('Registration complete! Check your email to verify if required.', '✅');
+                                                const { data, error } = await self.supabaseClient.auth.signUp({
+                                                email: self.authEmail,
+                                                password: self.authPassword,
+                                                options: {
+                                                    emailRedirectTo: 'https://praneshas19901.github.io/tools/calorietracker-v2.html'
+                                                }
+                                            });
+                        if (error) throw error;
+                        self.showToast('Registration complete! Check your email to verify.', '✅');
                         } else {
-                            const { data, error } = await self.supabaseClient.auth.signInWithPassword({
-                                email: self.authEmail,
-                                password: self.authPassword
-                            });
+                        const { data, error } = await self.supabaseClient.auth.signInWithPassword({
+                        email: self.authEmail,
+                        password: self.authPassword
+                        });
                             if (error) throw error;
                             self.dbConnected = true;
                             self.userEmail = data.user.email;
