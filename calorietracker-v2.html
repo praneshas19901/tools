@@ -897,66 +897,84 @@
                 },
 
                 async initApp() {
-                    var self = this;
-                    this.validateRepositorySecrets();
+    var self = this;
+    this.validateRepositorySecrets();
 
-                    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                        this.darkMode = true;
-                        document.documentElement.classList.add('dark');
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        this.darkMode = true;
+        document.documentElement.classList.add('dark');
+    }
+
+    const savedTarget = localStorage.getItem('dailyTarget');
+    if (savedTarget && !isNaN(parseInt(savedTarget))) {
+        this.dailyTarget = parseInt(savedTarget);
+    }
+    this.tempTarget = this.dailyTarget;
+
+    const savedMacros = localStorage.getItem('macroTargets');
+    if (savedMacros) {
+        try { 
+            var parsed = JSON.parse(savedMacros); 
+            this.macroTargets = Object.assign({}, { sodium: 2000, potassium: 3500, calcium: 1000, iron: 19, vitaminC: 80 }, parsed);
+        } catch(e){}
+    } else {
+        this.recalculateMacroPresets();
+    }
+    this.tempMacroTargets = { ...this.macroTargets };
+
+    const savedLibrary = localStorage.getItem('customFoodLibrary');
+    if (savedLibrary) {
+        try { this.customFoodLibrary = JSON.parse(savedLibrary); } catch(e){}
+    }
+
+    if (this.secretsValidated && window.supabase) {
+        self.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // 1. Check for active session or token returned from confirmation email link
+        const { data: { session } } = await self.supabaseClient.auth.getSession();
+        
+        // Check URL hash for confirmation token parameters
+        const isEmailConfirmation = window.location.hash.includes('access_token') || window.location.hash.includes('type=signup');
+
+        if (session && session.user) {
+            self.dbConnected = true;
+            self.userEmail = session.user.email;
+            await self.syncCustomLibraryFromCloud();
+
+            if (isEmailConfirmation) {
+                self.showToast('Email verified successfully! Welcome back.', '🎉');
+                // Clean URL hash so refreshing doesn't re-trigger toast
+                history.replaceState(null, '', window.location.pathname);
+            }
+        }
+
+        // 2. Listen for auth state transitions
+        self.supabaseClient.auth.onAuthStateChange(async function(event, session) {
+            if (event === 'SIGNED_IN' || (session && session.user)) {
+                self.dbConnected = true;
+                self.userEmail = session.user.email;
+                await self.syncCustomLibraryFromCloud();
+                await self.loadDayData();
+
+                if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
+                    if (window.location.hash.includes('access_token')) {
+                        self.showToast('Account confirmed and logged in!', '✅');
+                        history.replaceState(null, '', window.location.pathname);
                     }
+                }
+            } else if (event === 'SIGNED_OUT') {
+                self.dbConnected = false;
+                self.userEmail = '';
+                self.foodEntries = [];
+                self.customFoodLibrary = [];
+            }
+        });
+    }
 
-                    const savedTarget = localStorage.getItem('dailyTarget');
-                    if (savedTarget && !isNaN(parseInt(savedTarget))) {
-                        this.dailyTarget = parseInt(savedTarget);
-                    }
-                    this.tempTarget = this.dailyTarget;
-
-                    const savedMacros = localStorage.getItem('macroTargets');
-                    if (savedMacros) {
-                        try { 
-                            var parsed = JSON.parse(savedMacros); 
-                            this.macroTargets = Object.assign({}, { sodium: 2000, potassium: 3500, calcium: 1000, iron: 19, vitaminC: 80 }, parsed);
-                        } catch(e){}
-                    } else {
-                        this.recalculateMacroPresets();
-                    }
-                    this.tempMacroTargets = { ...this.macroTargets };
-
-                    const savedLibrary = localStorage.getItem('customFoodLibrary');
-                    if (savedLibrary) {
-                        try { this.customFoodLibrary = JSON.parse(savedLibrary); } catch(e){}
-                    }
-
-                    if (this.secretsValidated && window.supabase) {
-                        self.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                        
-                        const { data: { session } } = await self.supabaseClient.auth.getSession();
-                        if (session && session.user) {
-                            self.dbConnected = true;
-                            self.userEmail = session.user.email;
-                            await self.syncCustomLibraryFromCloud();
-                        }
-
-                        self.supabaseClient.auth.onAuthStateChange(async function(event, session) {
-                            if (session && session.user) {
-                                self.dbConnected = true;
-                                self.userEmail = session.user.email;
-                                await self.syncCustomLibraryFromCloud();
-                                await self.loadDayData();
-                            } else {
-                                self.dbConnected = false;
-                                self.userEmail = '';
-                                self.foodEntries = [];
-                                self.customFoodLibrary = [];
-                            }
-                        });
-                    }
-
-                    this.selectedDate = this.getTodayString();
-                    await this.loadDayData();
-                    this.refreshSearchResults();
-                },
-
+    this.selectedDate = this.getTodayString();
+    await this.loadDayData();
+    this.refreshSearchResults();
+},
                 openAuthModal() {
                     this.validateRepositorySecrets();
                     this.showAuthModal = true;
