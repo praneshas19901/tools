@@ -694,8 +694,26 @@
                 selectedDate: '',
                 dailyTarget: 2000,
                 tempTarget: 2000,
-                macroTargets: { protein: 150, carbs: 200, fat: 65 },
-                tempMacroTargets: { protein: 150, carbs: 200, fat: 65 },
+                macroTargets: { 
+                protein: 150,    // g/day
+                carbs: 200,      // g/day
+                fat: 65,         // g/day
+                sodium: 2000,    // mg/day (Recommended max for low-sodium focus)
+                potassium: 3500, // mg/day
+                calcium: 1000,   // mg/day
+                iron: 19,        // mg/day (Standard adult RDA)
+                vitaminC: 80     // mg/day
+                },
+                tempMacroTargets: { 
+                protein: 150, 
+                carbs: 200, 
+                fat: 65, 
+                sodium: 2000, 
+                potassium: 3500, 
+                calcium: 1000, 
+                iron: 19, 
+                vitaminC: 80 
+                },
 
                 foodEntries: [],
                 customFoodLibrary: [],
@@ -1551,13 +1569,23 @@
                 },
 
                 recalculateMacroPresets() {
-                    var target = Number(this.tempTarget) || 2000;
-                    this.tempMacroTargets = {
-                        protein: Math.round((target * 0.30) / 4),
-                        carbs: Math.round((target * 0.45) / 4),
-                        fat: Math.round((target * 0.25) / 9)
-                    };
-                },
+    var target = Number(this.tempTarget) || 2000;
+    
+    // Preserve existing micronutrient values or fallback to default RDAs
+    var existingMicros = {
+        sodium: (this.tempMacroTargets && this.tempMacroTargets.sodium) || 2000,
+        potassium: (this.tempMacroTargets && this.tempMacroTargets.potassium) || 3500,
+        calcium: (this.tempMacroTargets && this.tempMacroTargets.calcium) || 1000,
+        iron: (this.tempMacroTargets && this.tempMacroTargets.iron) || 19,
+        vitaminC: (this.tempMacroTargets && this.tempMacroTargets.vitaminC) || 80
+    };
+
+    this.tempMacroTargets = Object.assign({}, existingMicros, {
+        protein: Math.round((target * 0.30) / 4),
+        carbs: Math.round((target * 0.45) / 4),
+        fat: Math.round((target * 0.25) / 9)
+    });
+}
 
                 applyGoalPreset(targetCalories) {
                     this.tempTarget = targetCalories;
