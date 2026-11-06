@@ -68,10 +68,18 @@
                         <svg x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                     </button>
 
+                    <!-- Prominent Authorization Status Pill -->
+                    <template x-if="dbConnected">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center space-x-1"
+                              :class="isUserApproved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
+                            <span class="w-2 h-2 rounded-full" :class="isUserApproved ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'"></span>
+                            <span x-text="isUserApproved ? '✓ Authorized' : '⏳ Pending Authorization'"></span>
+                        </span>
+                    </template>
+
                     <!-- Auth / Account Indicator Button -->
                     <button @click="openAuthModal()" class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition"
-                            :class="dbConnected ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
-                        <span class="w-2 h-2 rounded-full" :class="dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
+                            :class="dbConnected ? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
                         <span x-text="dbConnected ? (userEmail ? userEmail.split('@')[0] : 'Connected') : 'Sign In / Register'"></span>
                     </button>
 
@@ -108,6 +116,20 @@
 
         <!-- Main Body -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+            <!-- Unapproved User Warning Banner -->
+            <template x-if="dbConnected && !isUserApproved">
+                <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">⏳</span>
+                        <div>
+                            <h3 class="font-bold text-amber-800 dark:text-amber-300 text-sm">Account Pending Admin Approval</h3>
+                            <p class="text-xs text-amber-700 dark:text-amber-400">You are signed in, but cloud database sync and saving modifications are currently locked until an administrator reviews and authorizes your account.</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-3 py-1.5 rounded-xl">Read-Only Mode</span>
+                </div>
+            </template>
 
             <!-- Date Selector Banner -->
             <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -796,6 +818,7 @@
                 // Supabase & Auth State
                 supabaseClient: null,
                 dbConnected: false,
+                isUserApproved: false,
                 showAuthModal: false,
                 userEmail: '',
                 isSignUp: false,
@@ -897,180 +920,178 @@
                 },
 
                 async initApp() {
-    var self = this;
-    this.validateRepositorySecrets();
+                    var self = this;
+                    this.validateRepositorySecrets();
 
-    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        this.darkMode = true;
-        document.documentElement.classList.add('dark');
-    }
-
-    const savedTarget = localStorage.getItem('dailyTarget');
-    if (savedTarget && !isNaN(parseInt(savedTarget))) {
-        this.dailyTarget = parseInt(savedTarget);
-    }
-    this.tempTarget = this.dailyTarget;
-
-    const savedMacros = localStorage.getItem('macroTargets');
-    if (savedMacros) {
-        try { 
-            var parsed = JSON.parse(savedMacros); 
-            this.macroTargets = Object.assign({}, { sodium: 2000, potassium: 3500, calcium: 1000, iron: 19, vitaminC: 80 }, parsed);
-        } catch(e){}
-    } else {
-        this.recalculateMacroPresets();
-    }
-    this.tempMacroTargets = { ...this.macroTargets };
-
-    const savedLibrary = localStorage.getItem('customFoodLibrary');
-    if (savedLibrary) {
-        try { this.customFoodLibrary = JSON.parse(savedLibrary); } catch(e){}
-    }
-
-    if (this.secretsValidated && window.supabase) {
-        self.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // 1. Check for active session or token returned from confirmation email link
-        const { data: { session } } = await self.supabaseClient.auth.getSession();
-        
-        // Check URL hash for confirmation token parameters
-        const isEmailConfirmation = window.location.hash.includes('access_token') || window.location.hash.includes('type=signup');
-
-        if (session && session.user) {
-            // Check approval status in user_profiles
-            const { data: profileData } = await self.supabaseClient
-                .from('user_profiles')
-                .select('is_approved')
-                .eq('id', session.user.id)
-                .single();
-
-            if (!profileData || !profileData.is_approved) {
-                await self.supabaseClient.auth.signOut();
-                self.showToast('Account is pending admin authorization.', '⏳');
-                return; // Stop initialization for unapproved users
-            }
-
-            self.dbConnected = true;
-            self.userEmail = session.user.email;
-            await self.syncCustomLibraryFromCloud();
-
-            if (isEmailConfirmation) {
-                self.showToast('Email verified successfully! Welcome back.', '🎉');
-                // Clean URL hash so refreshing doesn't re-trigger toast
-                history.replaceState(null, '', window.location.pathname);
-            }
-        }
-
-        // 2. Listen for auth state transitions
-        self.supabaseClient.auth.onAuthStateChange(async function(event, session) {
-            if (event === 'SIGNED_IN' || (session && session.user)) {
-                // Check approval status on auth state change
-                const { data: profileData } = await self.supabaseClient
-                    .from('user_profiles')
-                    .select('is_approved')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (!profileData || !profileData.is_approved) {
-                    await self.supabaseClient.auth.signOut();
-                    self.showToast('Account is pending admin authorization.', '⏳');
-                    return;
-                }
-
-                self.dbConnected = true;
-                self.userEmail = session.user.email;
-                await self.syncCustomLibraryFromCloud();
-                await self.loadDayData();
-
-                if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
-                    if (window.location.hash.includes('access_token')) {
-                        self.showToast('Account confirmed and logged in!', '✅');
-                        history.replaceState(null, '', window.location.pathname);
+                    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                        this.darkMode = true;
+                        document.documentElement.classList.add('dark');
                     }
-                }
-            } else if (event === 'SIGNED_OUT') {
-                self.dbConnected = false;
-                self.userEmail = '';
-                self.foodEntries = [];
-                self.customFoodLibrary = [];
-            }
-        });
-    }
 
-    this.selectedDate = this.getTodayString();
-    await this.loadDayData();
-    this.refreshSearchResults();
-},
+                    const savedTarget = localStorage.getItem('dailyTarget');
+                    if (savedTarget && !isNaN(parseInt(savedTarget))) {
+                        this.dailyTarget = parseInt(savedTarget);
+                    }
+                    this.tempTarget = this.dailyTarget;
+
+                    const savedMacros = localStorage.getItem('macroTargets');
+                    if (savedMacros) {
+                        try { 
+                            var parsed = JSON.parse(savedMacros); 
+                            this.macroTargets = Object.assign({}, { sodium: 2000, potassium: 3500, calcium: 1000, iron: 19, vitaminC: 80 }, parsed);
+                        } catch(e){}
+                    } else {
+                        this.recalculateMacroPresets();
+                    }
+                    this.tempMacroTargets = { ...this.macroTargets };
+
+                    const savedLibrary = localStorage.getItem('customFoodLibrary');
+                    if (savedLibrary) {
+                        try { this.customFoodLibrary = JSON.parse(savedLibrary); } catch(e){}
+                    }
+
+                    if (this.secretsValidated && window.supabase) {
+                        self.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        
+                        const { data: { session } } = await self.supabaseClient.auth.getSession();
+                        const isEmailConfirmation = window.location.hash.includes('access_token') || window.location.hash.includes('type=signup');
+
+                        if (session && session.user) {
+                            self.dbConnected = true;
+                            self.userEmail = session.user.email;
+
+                            const { data: profileData } = await self.supabaseClient
+                                .from('user_profiles')
+                                .select('is_approved')
+                                .eq('id', session.user.id)
+                                .single();
+
+                            self.isUserApproved = profileData ? profileData.is_approved : false;
+
+                            if (self.isUserApproved) {
+                                await self.syncCustomLibraryFromCloud();
+                            } else {
+                                self.fallbackLocalLoad();
+                                self.showToast('Logged in, but awaiting admin authorization.', '⏳');
+                            }
+
+                            if (isEmailConfirmation) {
+                                self.showToast('Email verified successfully! Welcome back.', '🎉');
+                                history.replaceState(null, '', window.location.pathname);
+                            }
+                        }
+
+                        self.supabaseClient.auth.onAuthStateChange(async function(event, session) {
+                            if (event === 'SIGNED_IN' || (session && session.user)) {
+                                self.dbConnected = true;
+                                self.userEmail = session.user.email;
+
+                                const { data: profileData } = await self.supabaseClient
+                                    .from('user_profiles')
+                                    .select('is_approved')
+                                    .eq('id', session.user.id)
+                                    .single();
+
+                                self.isUserApproved = profileData ? profileData.is_approved : false;
+
+                                if (self.isUserApproved) {
+                                    await self.syncCustomLibraryFromCloud();
+                                    await self.loadDayData();
+                                } else {
+                                    self.fallbackLocalLoad();
+                                }
+
+                                if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
+                                    if (window.location.hash.includes('access_token')) {
+                                        self.showToast('Account confirmed and logged in!', '✅');
+                                        history.replaceState(null, '', window.location.pathname);
+                                    }
+                                }
+                            } else if (event === 'SIGNED_OUT') {
+                                self.dbConnected = false;
+                                self.isUserApproved = false;
+                                self.userEmail = '';
+                                self.foodEntries = [];
+                                self.customFoodLibrary = [];
+                            }
+                        });
+                    }
+
+                    this.selectedDate = this.getTodayString();
+                    await this.loadDayData();
+                    this.refreshSearchResults();
+                },
+
                 openAuthModal() {
                     this.validateRepositorySecrets();
                     this.showAuthModal = true;
                 },
 
                 async handleEmailAuth() {
-    var self = this;
-    if (!this.authEmail || !this.authPassword) {
-        this.showToast('Please provide email and password', '⚠️');
-        return;
-    }
+                    var self = this;
+                    if (!this.authEmail || !this.authPassword) {
+                        this.showToast('Please provide email and password', '⚠️');
+                        return;
+                    }
 
-    try {
-        if (this.isSignUp) {
-            const { data, error } = await self.supabaseClient.auth.signUp({
-                email: self.authEmail,
-                password: self.authPassword,
-                options: {
-                    emailRedirectTo: 'https://praneshas19901.github.io/tools/calorietracker-v2.html'
-                }
-            });
-            if (error) throw error;
-            self.showToast('Registration complete! Check your email to verify.', '✅');
-        } 
-        else {
-            const { data, error } = await self.supabaseClient.auth.signInWithPassword({
-                email: self.authEmail,
-                password: self.authPassword
-            });
-            if (error) throw error;
+                    try {
+                        if (this.isSignUp) {
+                            const { data, error } = await self.supabaseClient.auth.signUp({
+                                email: self.authEmail,
+                                password: self.authPassword,
+                                options: {
+                                    emailRedirectTo: 'https://praneshas19901.github.io/tools/calorietracker-v2.html'
+                                }
+                            });
+                            if (error) throw error;
+                            self.showToast('Registration complete! Check your email to verify.', '✅');
+                        } 
+                        else {
+                            const { data, error } = await self.supabaseClient.auth.signInWithPassword({
+                                email: self.authEmail,
+                                password: self.authPassword
+                            });
+                            if (error) throw error;
 
-            // Check if user is approved in user_profiles (Fixed property from err to error)
-            const { data: profileData, error: profileErr } = await self.supabaseClient
-                .from('user_profiles')
-                .select('is_approved')
-                .eq('id', data.user.id)
-                .single();
+                            self.dbConnected = true;
+                            self.userEmail = data.user.email;
 
-            if (profileErr || !profileData || !profileData.is_approved) {
-                // Not approved yet - sign them out immediately
-                await self.supabaseClient.auth.signOut();
-                self.showToast('Account created/signed in, but waiting for admin authorization.', '⏳');
-                return;
-            }
+                            const { data: profileData } = await self.supabaseClient
+                                .from('user_profiles')
+                                .select('is_approved')
+                                .eq('id', data.user.id)
+                                .single();
 
-            // Approved! Proceed into the app
-            self.dbConnected = true;
-            self.userEmail = data.user.email;
-            self.showAuthModal = false;
-            self.showToast('Successfully signed in!', '⚡');
-            await self.syncCustomLibraryFromCloud();
-            await self.loadDayData();
-        }
-    } 
-    catch (err) {
-        console.error(err);
-        if (err.message && err.message.includes('Access denied')) {
-            self.showToast('Access Denied: Your email is not authorized by the administrator.', '❌');
-        } 
-        else {
-            self.showToast(err.message || 'Authentication error', '❌');
-        }
-    }
-},
+                            self.isUserApproved = profileData ? profileData.is_approved : false;
+                            self.showAuthModal = false;
+
+                            if (!self.isUserApproved) {
+                                self.showToast('Successfully signed in! Awaiting admin authorization.', '⏳');
+                                self.fallbackLocalLoad();
+                            } else {
+                                self.showToast('Successfully signed in!', '⚡');
+                                await self.syncCustomLibraryFromCloud();
+                                await self.loadDayData();
+                            }
+                        }
+                    } 
+                    catch (err) {
+                        console.error(err);
+                        if (err.message && err.message.includes('Access denied')) {
+                            self.showToast('Access Denied: Your email is not authorized by the administrator.', '❌');
+                        } 
+                        else {
+                            self.showToast(err.message || 'Authentication error', '❌');
+                        }
+                    }
+                },
 
                 async logoutUser() {
                     var self = this;
                     if (self.supabaseClient) {
                         await self.supabaseClient.auth.signOut();
                         self.dbConnected = false;
+                        self.isUserApproved = false;
                         self.userEmail = '';
                         self.foodEntries = [];
                         self.customFoodLibrary = [];
@@ -1082,7 +1103,7 @@
                 loadDayData() {
                     var self = this;
                     return new Promise(function(resolve) {
-                        if (self.dbConnected && self.supabaseClient) {
+                        if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
                             self.supabaseClient
                                 .from('daily_logs')
                                 .select('*')
@@ -1141,7 +1162,7 @@
 
                 syncCustomLibraryFromCloud() {
                     var self = this;
-                    if (!this.dbConnected || !this.supabaseClient) return Promise.resolve();
+                    if (!this.dbConnected || !this.supabaseClient || !this.isUserApproved) return Promise.resolve();
                     return this.supabaseClient.from('custom_foods').select('*').then(function(res) {
                         if (!res.error && res.data) {
                             self.customFoodLibrary = res.data.map(function(item) {
@@ -1265,7 +1286,6 @@
                             var offProducts = offData.products.map(function(p) {
                                 var nut = p.nutriments || {};
                                 var kcal = nut['energy-kcal_100g'] || nut['energy-kcal'] || 0;
-                                // Convert sodium from g to mg if needed
                                 var sodiumMg = nut['sodium_100g'] ? Number(nut['sodium_100g']) * 1000 : (nut['salt_100g'] ? (Number(nut['salt_100g']) / 2.5) * 1000 : 0);
                                 return {
                                     id: 'off_' + (p._id || p.code || Math.random()),
@@ -1361,6 +1381,11 @@
 
                 addSelectedFoodToLog() {
                     if (!this.selectedFood) return;
+                    if (this.dbConnected && !this.isUserApproved) {
+                        this.showToast('Action blocked: Account pending admin authorization.', '⚠️');
+                        return;
+                    }
+
                     var self = this;
                     var now = new Date();
                     var timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1385,7 +1410,7 @@
                     };
 
                     (async function() {
-                        if (self.dbConnected && self.supabaseClient) {
+                        if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
                             try {
                                 const { data, error } = await self.supabaseClient.from('daily_logs').insert([{
                                     log_date: self.selectedDate,
@@ -1424,6 +1449,11 @@
                 },
 
                 saveCustomOrEditedEntry() {
+                    if (this.dbConnected && !this.isUserApproved) {
+                        this.showToast('Action blocked: Account pending admin authorization.', '⚠️');
+                        return;
+                    }
+
                     if (!this.customFood.name.trim() || !this.customFood.calories) {
                         this.showToast('Please provide a name and calorie value', '⚠️');
                         return;
@@ -1449,7 +1479,7 @@
                                     iron: Number(self.customFood.iron) || 0
                                 });
 
-                                if (self.dbConnected && self.supabaseClient) {
+                                if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
                                     try {
                                         const { error } = await self.supabaseClient.from('daily_logs').update({
                                             item_name: updated.name,
@@ -1491,7 +1521,7 @@
                                 isCustom: true
                             };
 
-                            if (self.dbConnected && self.supabaseClient) {
+                            if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
                                 try {
                                     const { data, error } = await self.supabaseClient.from('daily_logs').insert([{
                                         log_date: self.selectedDate,
@@ -1539,7 +1569,7 @@
                                     iron: Number(self.customFood.iron) || 0
                                 };
 
-                                if (self.dbConnected && self.supabaseClient) {
+                                if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
                                     try {
                                         const { data, error } = await self.supabaseClient.from('custom_foods').insert([{
                                             food_id: libraryItem.foodId,
@@ -1596,9 +1626,13 @@
                 },
 
                 deleteFromLibrary(id) {
+                    if (this.dbConnected && !this.isUserApproved) {
+                        this.showToast('Action blocked: Account pending admin authorization.', '⚠️');
+                        return;
+                    }
                     var self = this;
                     (async function() {
-                        if (self.dbConnected && self.supabaseClient) {
+                        if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
                             try {
                                 const { error } = await self.supabaseClient.from('custom_foods').delete().eq('id', id);
                                 if (error) throw error;
@@ -1616,9 +1650,13 @@
                 },
 
                 deleteEntry(id) {
+                    if (this.dbConnected && !this.isUserApproved) {
+                        this.showToast('Action blocked: Account pending admin authorization.', '⚠️');
+                        return;
+                    }
                     var self = this;
                     (async function() {
-                        if (self.dbConnected && self.supabaseClient) {
+                        if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
                             try {
                                 const { error } = await self.supabaseClient
                                     .from('daily_logs')
