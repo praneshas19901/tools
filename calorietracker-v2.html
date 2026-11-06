@@ -988,37 +988,41 @@
                     }
 
                     try {
-    if (this.isSignUp) {
-        const { data, error } = await self.supabaseClient.auth.signUp({
-            email: self.authEmail,
-            password: self.authPassword,
-            options: {
-                emailRedirectTo: 'https://praneshas19901.github.io/tools/calorietracker-v2.html'
-            }
-        });
-        if (error) throw error;
-        self.showToast('Registration complete! Check your email to verify.', '✅');
-    } else {
-        const { data, error } = await self.supabaseClient.auth.signInWithPassword({
-            email: self.authEmail,
-            password: self.authPassword
-        });
-        if (error) throw error;
-        self.dbConnected = true;
-        self.userEmail = data.user.email;
-        self.showAuthModal = false;
-        self.showToast('Successfully signed in!', '⚡');
-        await self.syncCustomLibraryFromCloud();
-        await self.loadDayData();
-    }
-} catch (err) {
-    console.error(err);
-    if (err.message && err.message.includes('Access denied')) {
-        self.showToast('Access Denied: Your email is not authorized by the administrator.', '❌');
-    } else {
-        self.showToast(err.message || 'Authentication error', '❌');
-    }
-},
+                        if (this.isSignUp) {
+                        const { data, error } = await self.supabaseClient.auth.signUp({
+                        email: self.authEmail,
+                        password: self.authPassword,
+                        options: {
+                        emailRedirectTo: 'https://praneshas19901.github.io/tools/calorietracker-v2.html'
+                        }
+                        });
+                        if (error) throw error;
+                        self.showToast('Registration complete! Check your email to verify.', '✅');
+                        } 
+                        else 
+                        {
+                        const { data, error } = await self.supabaseClient.auth.signInWithPassword({
+                        email: self.authEmail,
+                        password: self.authPassword
+                        });
+                        if (error) throw error;
+                        self.dbConnected = true;
+                        self.userEmail = data.user.email;
+                        self.showAuthModal = false;
+                        self.showToast('Successfully signed in!', '⚡');
+                        await self.syncCustomLibraryFromCloud();
+                        await self.loadDayData();
+                        }
+                        } catch (err) {
+                        console.error(err);
+                        if (err.message && err.message.includes('Access denied')) {
+                        self.showToast('Access Denied: Your email is not authorized by the administrator.', '❌');
+                        } 
+                        else {
+                        self.showToast(err.message || 'Authentication error', '❌');
+                        }
+                        }
+                        },
 
                 async logoutUser() {
                     var self = this;
