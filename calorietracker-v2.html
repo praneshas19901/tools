@@ -937,6 +937,19 @@
         const isEmailConfirmation = window.location.hash.includes('access_token') || window.location.hash.includes('type=signup');
 
         if (session && session.user) {
+            // Check approval status in user_profiles
+            const { data: profileData } = await self.supabaseClient
+                .from('user_profiles')
+                .select('is_approved')
+                .eq('id', session.user.id)
+                .single();
+
+            if (!profileData || !profileData.is_approved) {
+                await self.supabaseClient.auth.signOut();
+                self.showToast('Account is pending admin authorization.', '⏳');
+                return; // Stop initialization for unapproved users
+            }
+
             self.dbConnected = true;
             self.userEmail = session.user.email;
             await self.syncCustomLibraryFromCloud();
@@ -951,6 +964,19 @@
         // 2. Listen for auth state transitions
         self.supabaseClient.auth.onAuthStateChange(async function(event, session) {
             if (event === 'SIGNED_IN' || (session && session.user)) {
+                // Check approval status on auth state change
+                const { data: profileData } = await self.supabaseClient
+                    .from('user_profiles')
+                    .select('is_approved')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (!profileData || !profileData.is_approved) {
+                    await self.supabaseClient.auth.signOut();
+                    self.showToast('Account is pending admin authorization.', '⏳');
+                    return;
+                }
+
                 self.dbConnected = true;
                 self.userEmail = session.user.email;
                 await self.syncCustomLibraryFromCloud();
