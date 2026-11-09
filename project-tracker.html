@@ -736,41 +736,54 @@
                 return;
             }
 
-            const minDate = Math.min(...dates);
-            const maxDate = Math.max(...dates);
-            const rangeStart = minDate - 86400000;
-            const rangeEnd = maxDate + 86400000;
-            const totalDuration = Math.max(rangeEnd - rangeStart, 86400000 * 7);
+            const rawMinDate = Math.min(...dates);
+            const rawMaxDate = Math.max(...dates);
+            
+            // Buffer timeline slightly
+            const rangeStart = rawMinDate - 86400000;
+            
+            // Clamp long timelines to a max horizon of 3 years (1095 days) to prevent extreme scrolling
+            const MAX_SPAN_MS = 3 * 365 * 86400000;
+            const isCapped = (rawMaxDate - rangeStart) > MAX_SPAN_MS;
+            const rangeEnd = isCapped ? (rangeStart + MAX_SPAN_MS) : (rawMaxDate + 86400000);
+            
+            const ONE_YEAR_MS = 365 * 86400000;
+            const actualSpanMs = Math.max(rangeEnd - rangeStart, 86400000 * 14); // Min 2 weeks
+            
+            // Dynamically scale timeline container so 1 year = 100% of visible viewport area (~1200px)
+            // Long projects scroll horizontally proportionally without endless pixel bloating
+            const yearRatio = actualSpanMs / ONE_YEAR_MS;
+            const timelineWidthPx = Math.max(1000, Math.round(yearRatio * 1200));
 
             function calcPercent(dateStr) {
                 if (!dateStr) return 0;
                 const time = new Date(dateStr).getTime();
-                return Math.max(0, Math.min(100, ((time - rangeStart) / totalDuration) * 100));
+                return Math.max(0, Math.min(100, ((time - rangeStart) / actualSpanMs) * 100));
             }
 
             function calcWidth(startStr, endStr) {
-                if (!startStr || !endStr) return 3;
+                if (!startStr || !endStr) return 2;
                 const s = new Date(startStr).getTime();
                 const e = new Date(endStr).getTime();
                 const diff = Math.max(e - s, 86400000);
-                return Math.max(1.5, (diff / totalDuration) * 100);
+                return Math.max(1, (diff / actualSpanMs) * 100);
             }
 
             const formatDateLabel = (ts) => new Date(ts).toISOString().substring(0, 10);
 
             let html = `
-                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>📅 Scope: <strong>${formatDateLabel(minDate)}</strong> to <strong>${formatDateLabel(maxDate)}</strong></span>
+                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                    <span>📅 Scope: <strong>${formatDateLabel(rawMinDate)}</strong> to <strong>${formatDateLabel(rawMaxDate)}</strong> ${isCapped ? '<span style="color: var(--warning);">(Timeline capped to 3-Year max view horizon)</span>' : ''}</span>
                     <span>💰 Total Budget: <strong>₹${proj.budget || 0} Lakhs</strong></span>
                 </div>
                 <div class="gantt-scroll-wrapper">
-                    <div class="gantt-table">
+                    <div class="gantt-table" style="min-width: ${320 + timelineWidthPx}px;">
                         <div class="gantt-header">
                             <div class="gantt-header-label">Item / Budget Breakdown</div>
                             <div class="gantt-header-timeline">
                                 <span>🏁 Start: ${formatDateLabel(rangeStart)}</span>
-                                <span>📅 Project Schedule Timeline</span>
-                                <span>🏁 End: ${formatDateLabel(rangeEnd)}</span>
+                                <span>📅 Timeline View (${(actualSpanMs / ONE_YEAR_MS).toFixed(1)} Yrs Scope)</span>
+                                <span>🏁 Max Horizon: ${formatDateLabel(rangeEnd)}</span>
                             </div>
                         </div>
             `;
