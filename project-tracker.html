@@ -94,7 +94,7 @@
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px); }
         .modal.active { display: flex; }
         .modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 100%; max-width: 600px; padding: 24px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .modal-content.modal-lg { max-width: 900px; }
+        .modal-content.modal-lg { max-width: 95vw; width: 95vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px; }
         .modal-header { font-size: 1.15rem; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .form-group { margin-bottom: 14px; }
         .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
@@ -111,20 +111,22 @@
         .empty-state { text-align: center; padding: 48px; color: var(--text-muted); background: var(--surface); border-radius: 8px; border: 1px dashed var(--border); }
         
         /* Gantt View Styles */
-        .gantt-container { overflow-x: auto; margin-top: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
-        .gantt-header { display: flex; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px; font-weight: 600; font-size: 0.8rem; color: var(--text-muted); }
-        .gantt-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.825rem; height: 36px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .gantt-label { width: 220px; min-width: 220px; padding-right: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; flex-direction: column; justify-content: center; }
-        .gantt-label-title { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
-        .gantt-label-sub { font-size: 0.7rem; color: var(--text-muted); }
-        .gantt-timeline { flex: 1; position: relative; height: 100%; display: flex; align-items: center; min-width: 450px; background: rgba(255,255,255,0.01); border-radius: 4px; }
-        .gantt-bar { position: absolute; height: 22px; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 0.7rem; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .gantt-scroll-wrapper { flex: 1; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; position: relative; margin-top: 10px; }
+        .gantt-table { display: table; min-width: 1600px; width: 100%; border-collapse: collapse; }
+        .gantt-header { display: flex; position: sticky; top: 0; z-index: 20; background: #111827; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.8rem; color: var(--text-muted); }
+        .gantt-header-label { width: 320px; min-width: 320px; padding: 10px 12px; position: sticky; left: 0; z-index: 30; background: #111827; border-right: 1px solid var(--border); box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
+        .gantt-header-timeline { flex: 1; display: flex; justify-content: space-between; padding: 10px 16px; align-items: center; }
+        
+        .gantt-row { display: flex; align-items: center; font-size: 0.825rem; height: 42px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .gantt-label { width: 320px; min-width: 320px; padding: 0 12px; position: sticky; left: 0; z-index: 10; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; height: 100%; box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
+        .gantt-label-title { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .gantt-label-sub { font-size: 0.725rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .gantt-timeline { flex: 1; position: relative; height: 100%; display: flex; align-items: center; background: rgba(255,255,255,0.01); padding: 0 8px; }
+        .gantt-bar { position: absolute; height: 26px; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 0.75rem; color: white; white-space: nowrap; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.4); font-weight: 500; }
         .gantt-bar-proj { background: linear-gradient(90deg, #3b82f6, #1d4ed8); border: 1px solid #60a5fa; }
         .gantt-bar-ms { background: linear-gradient(90deg, #8b5cf6, #6d28d9); border: 1px solid #a78bfa; }
         .gantt-bar-task { background: linear-gradient(90deg, #10b981, #047857); border: 1px solid #34d399; }
-        .gantt-bar-task.completed { background: linear-gradient(90deg, #475569, #334155); opacity: 0.7; text-decoration: line-through; }
-        .gantt-grid-lines { position: absolute; top: 0; bottom: 0; left: 0; right: 0; display: flex; pointer-events: none; }
-        .gantt-grid-col { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.05); }
+        .gantt-bar-task.completed { background: linear-gradient(90deg, #475569, #334155); opacity: 0.75; text-decoration: line-through; }
 
         .help-body h3 { font-size: 0.95rem; color: var(--primary); margin: 14px 0 4px 0; }
         .help-body p, .help-body ul { font-size: 0.85rem; color: var(--text-muted); }
@@ -736,10 +738,9 @@
 
             const minDate = Math.min(...dates);
             const maxDate = Math.max(...dates);
-            // Add a buffer of 1 day before and after
             const rangeStart = minDate - 86400000;
             const rangeEnd = maxDate + 86400000;
-            const totalDuration = Math.max(rangeEnd - rangeStart, 86400000 * 7); // At least 7 days scope
+            const totalDuration = Math.max(rangeEnd - rangeStart, 86400000 * 7);
 
             function calcPercent(dateStr) {
                 if (!dateStr) return 0;
@@ -748,43 +749,44 @@
             }
 
             function calcWidth(startStr, endStr) {
-                if (!startStr || !endStr) return 5;
+                if (!startStr || !endStr) return 3;
                 const s = new Date(startStr).getTime();
                 const e = new Date(endStr).getTime();
-                const diff = Math.max(e - s, 86400000); // minimum 1 day width
-                return Math.max(2, (diff / totalDuration) * 100);
+                const diff = Math.max(e - s, 86400000);
+                return Math.max(1.5, (diff / totalDuration) * 100);
             }
 
             const formatDateLabel = (ts) => new Date(ts).toISOString().substring(0, 10);
 
             let html = `
-                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; display: flex; justify-content: space-between;">
-                    <span>📅 Timeline Span: <strong>${formatDateLabel(minDate)}</strong> to <strong>${formatDateLabel(maxDate)}</strong></span>
-                    <span>💰 Project Budget: <strong>₹${proj.budget || 0} Lakhs</strong></span>
+                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>📅 Scope: <strong>${formatDateLabel(minDate)}</strong> to <strong>${formatDateLabel(maxDate)}</strong></span>
+                    <span>💰 Total Budget: <strong>₹${proj.budget || 0} Lakhs</strong></span>
                 </div>
-                <div class="gantt-container">
-                    <div class="gantt-header">
-                        <div style="width: 220px; min-width: 220px;">Item / Budget</div>
-                        <div style="flex: 1; display: flex; justify-content: space-between; padding: 0 4px;">
-                            <span>${formatDateLabel(rangeStart)}</span>
-                            <span>Timeline Schedule</span>
-                            <span>${formatDateLabel(rangeEnd)}</span>
+                <div class="gantt-scroll-wrapper">
+                    <div class="gantt-table">
+                        <div class="gantt-header">
+                            <div class="gantt-header-label">Item / Budget Breakdown</div>
+                            <div class="gantt-header-timeline">
+                                <span>🏁 Start: ${formatDateLabel(rangeStart)}</span>
+                                <span>📅 Project Schedule Timeline</span>
+                                <span>🏁 End: ${formatDateLabel(rangeEnd)}</span>
+                            </div>
                         </div>
-                    </div>
             `;
 
             // Project Row
             const projStart = calcPercent(proj.startDate);
             const projWidth = calcWidth(proj.startDate, proj.deadline);
             html += `
-                <div class="gantt-row" style="background: rgba(59, 130, 246, 0.08);">
-                    <div class="gantt-label">
+                <div class="gantt-row" style="background: rgba(59, 130, 246, 0.12);">
+                    <div class="gantt-label" style="background: #1e293b;">
                         <span class="gantt-label-title">📁 ${escapeHtml(proj.name)}</span>
-                        <span class="gantt-label-sub">Budget: ₹${proj.budget || 0}L</span>
+                        <span class="gantt-label-sub">Total Project Budget: ₹${proj.budget || 0}L</span>
                     </div>
                     <div class="gantt-timeline">
                         <div class="gantt-bar gantt-bar-proj" style="left: ${projStart}%; width: ${projWidth}%;" title="Project: ${proj.startDate || 'N/A'} to ${proj.deadline || 'N/A'}">
-                            📁 ${escapeHtml(proj.name)} (₹${proj.budget || 0}L)
+                            📁 ${escapeHtml(proj.name)} (${proj.startDate || 'N/A'} - ${proj.deadline || 'N/A'}) [₹${proj.budget || 0}L]
                         </div>
                     </div>
                 </div>
@@ -795,14 +797,14 @@
                 const msStart = calcPercent(ms.startDate);
                 const msWidth = calcWidth(ms.startDate, ms.deadline);
                 html += `
-                    <div class="gantt-row" style="background: rgba(139, 92, 246, 0.05);">
-                        <div class="gantt-label" style="padding-left: 12px;">
+                    <div class="gantt-row" style="background: rgba(139, 92, 246, 0.08);">
+                        <div class="gantt-label" style="padding-left: 20px; background: #1e293b;">
                             <span class="gantt-label-title">🚩 ${escapeHtml(ms.title)}</span>
                             <span class="gantt-label-sub">Budget: ₹${ms.budget || 0}L | Weight: ${ms.weight}%</span>
                         </div>
                         <div class="gantt-timeline">
                             <div class="gantt-bar gantt-bar-ms" style="left: ${msStart}%; width: ${msWidth}%;" title="Milestone: ${ms.startDate || 'N/A'} to ${ms.deadline || 'N/A'}">
-                                🚩 ${escapeHtml(ms.title)} (₹${ms.budget || 0}L)
+                                🚩 ${escapeHtml(ms.title)} (${ms.startDate || 'N/A'} - ${ms.deadline || 'N/A'}) [₹${ms.budget || 0}L]
                             </div>
                         </div>
                     </div>
@@ -813,13 +815,13 @@
                     const tWidth = calcWidth(t.startDate, t.deadline);
                     html += `
                         <div class="gantt-row">
-                            <div class="gantt-label" style="padding-left: 28px;">
+                            <div class="gantt-label" style="padding-left: 38px; background: #1e293b;">
                                 <span class="gantt-label-title" style="font-weight: normal; font-size: 0.8rem;">${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)}</span>
                                 <span class="gantt-label-sub">Budget: ₹${t.budget || 0}L</span>
                             </div>
                             <div class="gantt-timeline">
                                 <div class="gantt-bar gantt-bar-task ${t.completed ? 'completed' : ''}" style="left: ${tStart}%; width: ${tWidth}%;" title="Task: ${t.startDate || 'N/A'} to ${t.deadline || 'N/A'}">
-                                    ${escapeHtml(t.title)} (₹${t.budget || 0}L)
+                                    ${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)} (${t.startDate || 'N/A'} - ${t.deadline || 'N/A'}) [₹${t.budget || 0}L]
                                 </div>
                             </div>
                         </div>
@@ -827,7 +829,9 @@
                 });
             });
 
-            html += `</div>`;
+            html += `
+                    </div>
+                </div>`;
             document.getElementById('ganttModalBody').innerHTML = html;
             document.getElementById('ganttModal').classList.add('active');
         }
