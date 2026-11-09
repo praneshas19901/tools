@@ -226,7 +226,6 @@
                                 <th class="py-3 px-4">Activity & Subtasks</th>
                                 <th class="py-3 px-4">Category</th>
                                 <th class="py-3 px-4">Type</th>
-                                <th class="py-3 px-4">Flags</th>
                                 <th class="py-3 px-4 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -392,21 +391,12 @@
                         class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
                 </div>
 
-                <!-- Productive & Special Checkboxes -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div class="flex items-center">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" id="taskIsProductive" class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
-                            <span class="text-xs text-slate-300 font-medium">Productive Activity</span>
-                        </label>
-                    </div>
-
-                    <div class="flex items-center">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" id="taskIsSpecial" class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
-                            <span class="text-xs text-slate-300 font-medium">Flag Special (e.g. F&O/Stocks)</span>
-                        </label>
-                    </div>
+                <!-- Productive Checkbox -->
+                <div class="pt-2">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="taskIsProductive" class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                        <span class="text-xs text-slate-300 font-medium">Productive Activity</span>
+                    </label>
                 </div>
 
                 <!-- Footer -->
@@ -481,7 +471,7 @@
             </div>
             
             <form id="noteForm" onsubmit="saveNoteForm(event)" class="p-6 space-y-4">
-                <input type="hidden" id="noteTargetType"> <!-- 'task' or 'subtask' -->
+                <input type="hidden" id="noteTargetType">
                 <input type="hidden" id="noteTargetId">
 
                 <div>
@@ -523,7 +513,7 @@
         const DB_NAME = 'EliteTrackerDB';
         const STORE_NAME = 'handles';
 
-        // Default seed schedule using startTime and endTime for precision and subtask capabilities
+        // Default seed schedule without isSpecial
         const DEFAULT_SCHEDULE = [
             { 
                 id: 'task-1', 
@@ -533,8 +523,7 @@
                 activity: 'Morning Workout & Physical Training', 
                 desc: 'Cardio exercise and weight lifting routine', 
                 category: 'Health', 
-                isProductive: true, 
-                isSpecial: false,
+                isProductive: true,
                 subtasks: [
                     { id: 'sub-1-1', startTime: '06:00', endTime: '06:30', title: 'Cardio & Warm-up' },
                     { id: 'sub-1-2', startTime: '06:30', endTime: '07:00', title: 'Strength Training Routine' }
@@ -548,8 +537,7 @@
                 activity: 'German Language Learning', 
                 desc: 'Duolingo & vocabulary practice for A2 proficiency', 
                 category: 'Lang', 
-                isProductive: true, 
-                isSpecial: false,
+                isProductive: true,
                 subtasks: []
             },
             { 
@@ -560,8 +548,7 @@
                 activity: 'DevOps & Cloud Engineering Focus', 
                 desc: 'Kubernetes, Terraform, & CI/CD pipeline development', 
                 category: 'CI', 
-                isProductive: true, 
-                isSpecial: false,
+                isProductive: true,
                 subtasks: []
             },
             { 
@@ -572,8 +559,7 @@
                 activity: 'Stock Market & Equity Options Analysis', 
                 desc: 'Review market trends, technicals, and investments', 
                 category: 'Finance', 
-                isProductive: true, 
-                isSpecial: true,
+                isProductive: true,
                 subtasks: []
             },
             { 
@@ -584,8 +570,7 @@
                 activity: 'Technical Content & System Architecture', 
                 desc: 'Video editing, documentation, and cloud architecture study', 
                 category: 'CI', 
-                isProductive: true, 
-                isSpecial: false,
+                isProductive: true,
                 subtasks: []
             }
         ];
@@ -597,7 +582,6 @@
             return `${year}-${month}-${day}`;
         }
 
-        // Helper to format 24h time string (e.g., "06:00") to 12h AM/PM format (e.g., "6:00 AM")
         function formatTime12h(time24) {
             if (!time24) return '';
             const parts = time24.split(':');
@@ -610,7 +594,6 @@
             return `${h}:${m} ${modifier}`;
         }
 
-        // Generate combined display range string from startTime and endTime
         function formatTimeRange(startTime, endTime) {
             if (startTime && endTime) {
                 return `${formatTime12h(startTime)} - ${formatTime12h(endTime)}`;
@@ -625,7 +608,6 @@
             return task.time || '';
         }
 
-        // Accurate duration calculation using start and end time inputs
         function calculateTaskDurationHours(task) {
             if (task.startTime && task.endTime) {
                 const [startH, startM] = task.startTime.split(':').map(Number);
@@ -641,7 +623,6 @@
             return 0;
         }
 
-        // Calculate Total Target & Checked Completed Hours for Productive Tasks
         function calculateProductiveMetrics(checkedSet) {
             let totalTarget = 0;
             let completedHours = 0;
@@ -664,7 +645,6 @@
             return { totalTarget: roundTarget, completedHours: roundCompleted, percentage };
         }
 
-        // IndexedDB helpers for persistent handle caching
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, 1);
@@ -726,7 +706,6 @@
             }
         });
 
-        // Connect or Restore Folder Access
         async function connectFolder() {
             try {
                 if (!dirHandle) {
@@ -774,7 +753,6 @@
                     const taskFile = await taskFileHandle.getFile();
                     const taskText = await taskFile.text();
                     scheduleData = JSON.parse(taskText);
-                    // Ensure subtasks array exists on all tasks
                     scheduleData.forEach(t => { if (!t.subtasks) t.subtasks = []; });
                 } catch (e) {
                     scheduleData = DEFAULT_SCHEDULE;
@@ -821,7 +799,6 @@
             }
         }
 
-        // Ensure current date object exists in trackerData structure
         function ensureTrackerDateStructure(dateStr) {
             if (!trackerData[dateStr]) {
                 trackerData[dateStr] = { checkedTasks: [], notes: { taskNotes: {}, subtaskNotes: {} } };
@@ -840,7 +817,6 @@
             }
         }
 
-        // Tab Switcher
         function switchTab(tab) {
             ['tracker', 'history', 'manage', 'deploy'].forEach(t => {
                 document.getElementById(`view${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
@@ -932,7 +908,6 @@
             const checkedSet = new Set(record.checkedTasks);
             const dateNotes = record.notes || { taskNotes: {}, subtaskNotes: {} };
 
-            // Update Dynamic Productive Target Hours Progress Bar & Numbers
             const prodMetrics = calculateProductiveMetrics(checkedSet);
             document.getElementById('prodTargetPercent').innerText = `${prodMetrics.percentage}%`;
             document.getElementById('prodProgressBar').style.width = `${prodMetrics.percentage}%`;
@@ -941,7 +916,7 @@
             if (scheduleData.length === 0) {
                 document.getElementById('scheduleList').innerHTML = `
                     <div class="p-8 text-center text-slate-400">
-                        Please click <strong class="text-indigo-400">"Connect Data Folder"</strong> (or <strong class="text-amber-400">"Restore Folder Access"</strong>) above to load your files.
+                        Please click <strong class="text-indigo-400">"Connect Data Folder"</strong> above to load your files.
                     </div>
                 `;
                 return;
@@ -954,7 +929,6 @@
                 const displayTime = getFormattedTimeRange(item);
                 const taskNote = (dateNotes.taskNotes && dateNotes.taskNotes[item.id]) || '';
 
-                // Subtask markup build
                 let subtasksHtml = '';
                 if (item.subtasks && item.subtasks.length > 0) {
                     subtasksHtml += `<div class="mt-3 pl-4 border-l-2 border-slate-700 space-y-2">`;
@@ -1006,7 +980,6 @@
                                         <span class="font-mono text-xs font-semibold px-2.5 py-1 bg-slate-900 border border-slate-700 text-indigo-300 rounded-lg">${displayTime}</span>
                                         <h4 class="font-semibold text-slate-100 text-base ${isChecked ? 'line-through text-slate-400' : ''}">${item.activity}</h4>
                                         ${!isProd ? '<span class="px-2 py-0.5 bg-slate-700/50 text-slate-400 border border-slate-600 text-[10px] font-medium rounded-full"><i class="fa-solid fa-mug-hot mr-1"></i>Non-Productive</span>' : ''}
-                                        ${item.isSpecial ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-medium rounded-full"><i class="fa-solid fa-chart-pie mr-1"></i>Includes F&O/Stocks</span>' : ''}
                                     </div>
                                     <p class="text-xs text-slate-400 mt-1">${item.desc}</p>
                                 </div>
@@ -1121,13 +1094,12 @@
             document.getElementById('historyListContainer').innerHTML = containerHtml;
         }
 
-        // TASK & SUBTASK MANAGEMENT RENDERING & ACTIONS
         function renderManageView() {
             const tbody = document.getElementById('manageTaskTableBody');
             if (scheduleData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="py-8 text-center text-slate-400">
+                        <td colspan="6" class="py-8 text-center text-slate-400">
                             No tasks available. Click <strong class="text-indigo-400">"Add New Task"</strong> to create one.
                         </td>
                     </tr>
@@ -1161,7 +1133,6 @@
                             <div class="font-medium text-slate-200">${task.activity}</div>
                             <div class="text-xs text-slate-400">${task.desc || ''}</div>
                             
-                            <!-- Subtask Section in Management -->
                             <div class="pt-2 border-t border-slate-700/50 space-y-1.5">
                                 <div class="flex items-center justify-between">
                                     <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Subtasks (${subtasks.length})</span>
@@ -1201,11 +1172,6 @@
                                 ${isProd ? '<span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 text-[10px] rounded-full">Productive</span>' : '<span class="px-2 py-0.5 bg-slate-700/50 text-slate-400 border border-slate-600 text-[10px] rounded-full">Non-Productive</span>'}
                             </div>
                         </td>
-                        <td class="py-3 px-4 align-top">
-                            <div class="mt-1">
-                                ${task.isSpecial ? '<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] rounded-full">Special</span>' : '<span class="text-xs text-slate-500">-</span>'}
-                            </div>
-                        </td>
                         <td class="py-3 px-4 text-right space-x-2 align-top">
                             <div class="mt-1">
                                 <button onclick="openTaskModal('${task.id}')" class="p-1.5 text-indigo-400 hover:text-indigo-300 transition" title="Edit Task">
@@ -1223,7 +1189,6 @@
             tbody.innerHTML = html;
         }
 
-        // TASK FORM MODAL HANDLING
         function openTaskModal(taskId = null) {
             if (!dirHandle) {
                 alert('Please connect your local data folder first.');
@@ -1246,7 +1211,6 @@
                     document.getElementById('taskDesc').value = task.desc || '';
                     document.getElementById('taskCategory').value = task.category;
                     document.getElementById('taskIsProductive').checked = task.isProductive === true;
-                    document.getElementById('taskIsSpecial').checked = !!task.isSpecial;
                 }
             } else {
                 title.innerText = 'Add New Task';
@@ -1278,7 +1242,6 @@
             const desc = document.getElementById('taskDesc').value.trim();
             const category = document.getElementById('taskCategory').value.trim();
             const isProductive = document.getElementById('taskIsProductive').checked;
-            const isSpecial = document.getElementById('taskIsSpecial').checked;
 
             const timeStr = formatTimeRange(startTime, endTime);
 
@@ -1295,7 +1258,6 @@
                         desc, 
                         category, 
                         isProductive, 
-                        isSpecial,
                         subtasks: existingSubtasks 
                     };
                 }
@@ -1310,7 +1272,6 @@
                     desc, 
                     category, 
                     isProductive, 
-                    isSpecial,
                     subtasks: [] 
                 });
             }
@@ -1345,7 +1306,6 @@
             renderApp();
         }
 
-        // SUBTASK MODAL HANDLING
         function openSubtaskModal(parentId, subtaskId = null) {
             if (!dirHandle) {
                 alert('Please connect your local data folder first.');
@@ -1433,7 +1393,6 @@
             }
         }
 
-        // NOTE MODAL HANDLING (Saves into tasks-tracker.json under currentDateStr)
         function openNoteModal(type, targetId, itemTitle) {
             if (!dirHandle) {
                 alert('Please connect your local data folder first.');
@@ -1517,7 +1476,6 @@
             showNotification('Note deleted.', 'info');
         }
 
-        // HELP MODAL CONTROLS
         function openHelpModal() {
             const modal = document.getElementById('helpModal');
             const card = document.getElementById('helpModalCard');
@@ -1534,7 +1492,6 @@
             modal.classList.add('opacity-0', 'pointer-events-none');
         }
 
-        // UTILS
         function escapeHtml(str) {
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
