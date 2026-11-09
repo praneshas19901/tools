@@ -58,7 +58,7 @@
 
                 <!-- Tabs -->
                 <nav class="hidden md:flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
-                    <button onclick="switchTab('tracker')" id="tabTracker" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-600 text-white shadow">Today</button>
+                    <button onclick="goToToday()" id="tabTracker" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-600 text-white shadow">Today</button>
                     <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">History & Missed</button>
                     <button onclick="switchTab('manage')" id="tabManage" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">Manage Tasks</button>
                     <button onclick="switchTab('deploy')" id="tabDeploy" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">GitHub Pages Guide</button>
@@ -67,7 +67,7 @@
         </div>
         <!-- Mobile Navigation bar -->
         <div class="md:hidden flex justify-around bg-slate-900/90 border-t border-slate-800 py-2">
-            <button onclick="switchTab('tracker')" id="mobTabTracker" class="text-xs font-medium text-indigo-400 flex flex-col items-center"><i class="fa-solid fa-list-check mb-1"></i>Tracker</button>
+            <button onclick="goToToday()" id="mobTabTracker" class="text-xs font-medium text-indigo-400 flex flex-col items-center"><i class="fa-solid fa-list-check mb-1"></i>Tracker</button>
             <button onclick="switchTab('history')" id="mobTabHistory" class="text-xs font-medium text-slate-400 flex flex-col items-center"><i class="fa-solid fa-chart-line mb-1"></i>History</button>
             <button onclick="switchTab('manage')" id="mobTabManage" class="text-xs font-medium text-slate-400 flex flex-col items-center"><i class="fa-solid fa-sliders mb-1"></i>Manage</button>
             <button onclick="switchTab('deploy')" id="mobTabDeploy" class="text-xs font-medium text-slate-400 flex flex-col items-center"><i class="fa-brands fa-github mb-1"></i>Deploy</button>
@@ -513,7 +513,6 @@
         const DB_NAME = 'EliteTrackerDB';
         const STORE_NAME = 'handles';
 
-        // Default seed schedule without isSpecial
         const DEFAULT_SCHEDULE = [
             { 
                 id: 'task-1', 
@@ -849,6 +848,14 @@
             } else if(tab === 'manage') {
                 renderManageView();
             }
+        }
+
+        // Dedicated helper to switch back to Today's tracker date and view
+        function goToToday() {
+            currentDateStr = getLocalDateString(new Date());
+            document.getElementById('trackerDate').value = currentDateStr;
+            switchTab('tracker');
+            renderApp();
         }
 
         async function toggleTask(taskId) {
