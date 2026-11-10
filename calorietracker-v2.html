@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriTrack Pro - Supabase storage along with Local JSON DB Engine</title>
+    <title>NutriTrack Pro - Cloud Sync & Local JSON DB</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -56,7 +56,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg font-bold bg-gradient-to-r from-brand-600 to-emerald-500 bg-clip-text text-transparent">NutriTrack Pro</h1>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Local JSON DB Matrix & Cloud Sync</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Cloud Sync & Local JSON DB Matrix</p>
                     </div>
                 </div>
 
@@ -106,12 +106,54 @@
                             :class="dbConnected ? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
                         <span x-text="dbConnected ? (userEmail ? userEmail.split('@')[0] : 'Connected') : 'Sign In / Register'"></span>
                     </button>
+
+                    <!-- Logout button when active -->
+                    <template x-if="dbConnected">
+                        <button @click="logoutUser()" class="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 transition" title="Sign Out">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </button>
+                    </template>
+
+                    <!-- Data Backup Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-2 rounded-lg text-sm font-medium transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            <span class="hidden sm:inline">Data</span>
+                        </button>
+                        <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50" x-cloak>
+                            <button @click="exportData(); open = false;" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-2">
+                                <span>📥 Export JSON Backup</span>
+                            </button>
+                            <label class="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-2 cursor-pointer">
+                                <span>📤 Import JSON Backup</span>
+                                <input type="file" accept=".json" class="hidden" @change="importData($event); open = false;">
+                            </label>
+                            <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+                            <button @click="confirmClearData(); open = false;" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center space-x-2">
+                                <span>🗑️ Reset All Data</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
 
         <!-- Main Body -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+            <!-- Unapproved User Warning Banner -->
+            <template x-if="dbConnected && !isUserApproved">
+                <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">⏳</span>
+                        <div>
+                            <h3 class="font-bold text-amber-800 dark:text-amber-300 text-sm">Account Pending Admin Approval</h3>
+                            <p class="text-xs text-amber-700 dark:text-amber-400">You are signed in, but cloud database sync and saving modifications are currently locked until an administrator reviews and authorizes your account.</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-3 py-1.5 rounded-xl">Read-Only Mode</span>
+                </div>
+            </template>
 
             <!-- Date Selector Banner -->
             <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -264,6 +306,62 @@
         </main>
     </div>
 
+    <!-- MODAL: SUPABASE AUTHENTICATION (SIGN IN / SIGN UP) -->
+    <div x-show="showAuthModal" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">🔐</span>
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100" x-text="isSignUp ? 'Create Supabase Account' : 'Sign In to Cloud Sync'"></h3>
+                </div>
+                <button @click="showAuthModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <template x-if="dbConnected">
+                    <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-3 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
+                        <span>Currently logged in as: <strong x-text="userEmail"></strong></span>
+                    </div>
+                </template>
+
+                <template x-if="!dbConnected">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Email Address</label>
+                            <input type="email" x-model="authEmail" placeholder="you@example.com" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Password</label>
+                            <input type="password" x-model="authPassword" placeholder="••••••••••••" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 font-mono">
+                        </div>
+                        
+                        <div class="flex items-center justify-between text-xs pt-1">
+                            <button @click="isSignUp = !isSignUp" class="text-brand-600 dark:text-brand-400 hover:underline font-medium" x-text="isSignUp ? 'Already have an account? Sign In' : 'Need an account? Register'">
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="flex space-x-3 pt-2">
+                    <button @click="showAuthModal = false" class="w-1/2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl text-sm font-semibold transition">
+                        Cancel
+                    </button>
+                    <template x-if="!dbConnected">
+                        <button @click="handleEmailAuth()" class="w-1/2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center space-x-1">
+                            <span x-text="isSignUp ? 'Sign Up' : 'Sign In'"></span>
+                        </button>
+                    </template>
+                    <template x-if="dbConnected">
+                        <button @click="logoutUser(); showAuthModal = false;" class="w-1/2 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition">
+                            Sign Out
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: HELP, PRIVACY & FILE SYSTEM API GUIDE -->
     <div x-show="showHelpModal" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
@@ -283,7 +381,7 @@
                         <span>🚀</span><span>1. How to Use NutriTrack Pro</span>
                     </h4>
                     <p class="text-xs leading-relaxed">
-                        NutriTrack Pro tracks your daily calorie and macronutrient intake using a local JSON database file. Click <strong>"Add Food / Search"</strong> to search across your local database or query Open Food Facts.
+                        NutriTrack Pro tracks your daily calorie and macronutrient intake using a local JSON database file or Supabase cloud sync. Click <strong>"Add Food / Search"</strong> to search across your local database or query Open Food Facts.
                     </p>
                 </div>
 
@@ -307,7 +405,6 @@
                     </p>
                     <ul class="list-disc pl-5 space-y-1 text-xs">
                         <li><strong>Sandboxed Browser Permissions:</strong> The app utilizes the W3C File System Access API. Your browser strictly isolates file access—the app can <em>only</em> read or write to the specific <code class="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">food-database.json</code> file that you explicitly select.</li>
-                        <li><strong>No Tracking:</strong> Daily meal logs remain stored in your browser's private <code class="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">localStorage</code>.</li>
                     </ul>
                 </div>
             </div>
@@ -499,6 +596,55 @@
         </div>
     </div>
 
+    <!-- MODAL 2: TARGET & MACRO/MICRO GOALS MODAL -->
+    <div x-show="showSettingsModal" 
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">🎯</span>
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Daily Calorie & Nutrient Goals</h3>
+                </div>
+                <button @click="showSettingsModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Daily Calorie Target (kcal)</label>
+                    <input type="number" min="500" max="10000" x-model.number="tempTarget" @input="recalculateMacroPresets()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-base font-semibold focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div class="border-t border-slate-100 dark:border-slate-700 pt-3">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">Macronutrient Goals (g)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-500 mb-1">Protein (g)</label>
+                            <input type="number" x-model.number="tempMacroTargets.protein" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-sm font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-500 mb-1">Carbs (g)</label>
+                            <input type="number" x-model.number="tempMacroTargets.carbs" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-sm font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-500 mb-1">Fat (g)</label>
+                            <input type="number" x-model.number="tempMacroTargets.fat" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-sm font-semibold">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button @click="showSettingsModal = false" class="w-1/2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl text-sm font-semibold transition">
+                        Cancel
+                    </button>
+                    <button @click="saveSettingsModal(); showSettingsModal = false;" class="w-1/2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-semibold transition">
+                        Save Goals
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION -->
     <div x-show="toast.show" x-transition class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-sm font-medium" x-cloak>
         <span x-text="toast.icon"></span>
@@ -507,6 +653,12 @@
 
     <!-- Application Script Logic -->
     <script>
+        const ENV_SUPABASE_URL = "__SUPABASE_URL__";
+        const ENV_SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
+
+        const SUPABASE_URL = (typeof ENV_SUPABASE_URL !== 'undefined' && !ENV_SUPABASE_URL.startsWith('__')) ? ENV_SUPABASE_URL : '';
+        const SUPABASE_ANON_KEY = (typeof ENV_SUPABASE_ANON_KEY !== 'undefined' && !ENV_SUPABASE_ANON_KEY.startsWith('__')) ? ENV_SUPABASE_ANON_KEY : '';
+
         const INITIAL_DEFAULT_FOOD_DB = [
             { id: 'db_1', name: 'Apple', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, sodium: 1, potassium: 107, calcium: 6, iron: 0.1, vitaminC: 4.6, baseQty: 100, baseUnit: 'g' },
             { id: 'db_2', name: 'Banana', calories: 89, protein: 1.1, carbs: 23, fat: 0.3, sodium: 1, potassium: 358, calcium: 5, iron: 0.3, vitaminC: 8.7, baseQty: 100, baseUnit: 'g' },
@@ -533,7 +685,9 @@
                 darkMode: false,
                 selectedDate: '',
                 dailyTarget: 2000,
-                macroTargets: { protein: 150, carbs: 200, fat: 65 },
+                tempTarget: 2000,
+                macroTargets: { protein: 150, carbs: 200, fat: 65, sodium: 2000, potassium: 3500, calcium: 1000, iron: 19, vitaminC: 80 },
+                tempMacroTargets: { protein: 150, carbs: 200, fat: 65, sodium: 2000, potassium: 3500, calcium: 1000, iron: 19, vitaminC: 80 },
 
                 foodEntries: [],
                 builtinFoodDatabase: [],
@@ -542,8 +696,19 @@
                 toast: { show: false, message: '', icon: '✅' },
                 showHelpModal: false,
                 showAddModal: false,
+                showSettingsModal: false,
+                showAuthModal: false,
                 editingEntryId: null,
                 addMode: 'search',
+
+                // Supabase & Auth State
+                supabaseClient: null,
+                dbConnected: false,
+                isUserApproved: false,
+                userEmail: '',
+                isSignUp: false,
+                authEmail: '',
+                authPassword: '',
 
                 searchQuery: '',
                 searchResults: [],
@@ -582,10 +747,100 @@
                 },
 
                 async initApp() {
+                    var self = this;
                     this.selectedDate = this.getTodayString();
                     await this.loadLocalFoodDbJson();
-                    this.loadDayData();
+
+                    if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+                        self.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        
+                        const { data: { session } } = await self.supabaseClient.auth.getSession();
+                        if (session && session.user) {
+                            self.dbConnected = true;
+                            self.userEmail = session.user.email;
+                            const { data: profileData } = await self.supabaseClient
+                                .from('user_profiles')
+                                .select('is_approved')
+                                .eq('id', session.user.id)
+                                .single();
+                            self.isUserApproved = profileData ? profileData.is_approved : false;
+                        }
+
+                        self.supabaseClient.auth.onAuthStateChange(async function(event, session) {
+                            if (session && session.user) {
+                                self.dbConnected = true;
+                                self.userEmail = session.user.email;
+                                const { data: profileData } = await self.supabaseClient
+                                    .from('user_profiles')
+                                    .select('is_approved')
+                                    .eq('id', session.user.id)
+                                    .single();
+                                self.isUserApproved = profileData ? profileData.is_approved : false;
+                                await self.loadDayData();
+                            } else {
+                                self.dbConnected = false;
+                                self.isUserApproved = false;
+                                self.userEmail = '';
+                            }
+                        });
+                    }
+
+                    await this.loadDayData();
                     this.refreshSearchResults();
+                },
+
+                openAuthModal() {
+                    this.showAuthModal = true;
+                },
+
+                async handleEmailAuth() {
+                    var self = this;
+                    if (!this.authEmail || !this.authPassword) {
+                        this.showToast('Please provide email and password', '⚠️');
+                        return;
+                    }
+
+                    try {
+                        if (this.isSignUp) {
+                            const { error } = await self.supabaseClient.auth.signUp({
+                                email: self.authEmail,
+                                password: self.authPassword
+                            });
+                            if (error) throw error;
+                            self.showToast('Registration complete! Check your email to verify.', '✅');
+                        } else {
+                            const { data, error } = await self.supabaseClient.auth.signInWithPassword({
+                                email: self.authEmail,
+                                password: self.authPassword
+                            });
+                            if (error) throw error;
+                            self.dbConnected = true;
+                            self.userEmail = data.user.email;
+                            const { data: profileData } = await self.supabaseClient
+                                .from('user_profiles')
+                                .select('is_approved')
+                                .eq('id', data.user.id)
+                                .single();
+                            self.isUserApproved = profileData ? profileData.is_approved : false;
+                            self.showAuthModal = false;
+                            self.showToast('Successfully signed in!', '⚡');
+                            await self.loadDayData();
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        self.showToast(err.message || 'Authentication error', '❌');
+                    }
+                },
+
+                async logoutUser() {
+                    if (this.supabaseClient) {
+                        await this.supabaseClient.auth.signOut();
+                        this.dbConnected = false;
+                        this.isUserApproved = false;
+                        this.userEmail = '';
+                        this.loadDayData();
+                        this.showToast('Signed out securely', '🔒');
+                    }
                 },
 
                 async loadLocalFoodDbJson() {
@@ -777,7 +1032,7 @@
                     return Math.round((Number(this.selectedFood[m]) || 0) * (Number(this.servingQuantity) / (Number(this.selectedFood.baseQty) || 1)) * 10) / 10;
                 },
 
-                addSelectedFoodToLog() {
+                async addSelectedFoodToLog() {
                     if (!this.selectedFood) return;
                     const newEntry = {
                         id: 'log_' + Date.now(),
@@ -792,12 +1047,12 @@
                     };
 
                     this.foodEntries.push(newEntry);
-                    this.saveDayData();
+                    await this.saveDayData();
                     this.showAddModal = false;
                     this.showToast(`Logged ${newEntry.name}`, '🍏');
                 },
 
-                saveCustomOrEditedEntry() {
+                async saveCustomOrEditedEntry() {
                     if (!this.customFood.name || !this.customFood.calories) return;
                     const newEntry = {
                         id: 'custom_' + Date.now(),
@@ -812,27 +1067,61 @@
                     };
 
                     this.foodEntries.push(newEntry);
-                    this.saveDayData();
+                    await this.saveDayData();
                     this.showAddModal = false;
                     this.showToast(`Logged ${newEntry.name}`, '✏️');
                 },
 
-                loadDayData() {
+                async loadDayData() {
+                    var self = this;
+                    if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
+                        try {
+                            const { data, error } = await self.supabaseClient
+                                .from('daily_logs')
+                                .select('*')
+                                .eq('log_date', self.selectedDate);
+                            if (!error && data) {
+                                self.foodEntries = data.map(item => ({
+                                    id: item.id,
+                                    name: item.item_name,
+                                    calories: Number(item.calories),
+                                    servingQty: Number(item.serving_qty),
+                                    servingUnit: item.serving_unit,
+                                    protein: Number(item.protein) || 0,
+                                    carbs: Number(item.carbs) || 0,
+                                    fat: Number(item.fat) || 0,
+                                    timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Logged'
+                                }));
+                                self.calculateTotals();
+                                return;
+                            }
+                        } catch (e) {
+                            console.warn('Cloud load failed, using local storage', e);
+                        }
+                    }
                     const logs = JSON.parse(localStorage.getItem('calorieLogs') || '{}');
                     this.foodEntries = logs[this.selectedDate] || [];
                     this.calculateTotals();
                 },
 
-                saveDayData() {
+                async saveDayData() {
                     const logs = JSON.parse(localStorage.getItem('calorieLogs') || '{}');
                     logs[this.selectedDate] = this.foodEntries;
                     localStorage.setItem('calorieLogs', JSON.stringify(logs));
                     this.calculateTotals();
                 },
 
-                deleteEntry(id) {
+                async deleteEntry(id) {
+                    var self = this;
+                    if (self.dbConnected && self.supabaseClient && self.isUserApproved) {
+                        try {
+                            await self.supabaseClient.from('daily_logs').delete().eq('id', id);
+                        } catch (e) {
+                            console.warn('Cloud delete failed', e);
+                        }
+                    }
                     this.foodEntries = this.foodEntries.filter(i => i.id !== id);
-                    this.saveDayData();
+                    await this.saveDayData();
                     this.showToast('Entry removed', '🗑️');
                 },
 
@@ -858,8 +1147,30 @@
                     this.refreshSearchResults();
                 },
 
-                openSettingsModal() {},
-                openAuthModal() {},
+                openSettingsModal() {
+                    this.tempTarget = this.dailyTarget;
+                    this.tempMacroTargets = { ...this.macroTargets };
+                    this.showSettingsModal = true;
+                },
+
+                saveSettingsModal() {
+                    this.dailyTarget = Number(this.tempTarget) || 2000;
+                    this.macroTargets = { ...this.tempMacroTargets };
+                    localStorage.setItem('dailyTarget', this.dailyTarget.toString());
+                    localStorage.setItem('macroTargets', JSON.stringify(this.macroTargets));
+                    this.showSettingsModal = false;
+                    this.showToast('Goals updated!', '🎯');
+                },
+
+                recalculateMacroPresets() {
+                    const target = Number(this.tempTarget) || 2000;
+                    this.tempMacroTargets = {
+                        protein: Math.round((target * 0.30) / 4),
+                        carbs: Math.round((target * 0.45) / 4),
+                        fat: Math.round((target * 0.25) / 9),
+                        sodium: 2000, potassium: 3500, calcium: 1000, iron: 19, vitaminC: 80
+                    };
+                },
 
                 showToast(message, icon = '✅') {
                     this.toast = { show: true, message, icon };
