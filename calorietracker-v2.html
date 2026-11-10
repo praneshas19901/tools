@@ -73,7 +73,7 @@
                     <div class="flex items-center space-x-1">
                         <button @click="connectLocalDbFile()" class="flex items-center space-x-1 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-3 py-2 rounded-lg text-xs font-semibold transition" title="Link food-database.json on disk">
                             <span>📁</span>
-                            <span class="hidden sm:inline" x-text="fileHandle ? 'DB File Connected' : 'Connect DB File'"></span>
+                            <span class="hidden sm:inline" x-text="fileHandle ? 'DB File Connected' : 'Reconnect DB File'"></span>
                         </button>
                         <button @click="generateAndDownloadDefaultDb()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition text-xs font-medium" title="Generate Default food-database.json">
                             ✨
@@ -234,6 +234,68 @@
                 </div>
             </div>
 
+            <!-- MICRONUTRIENTS & RDA TRACKING PANEL -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg mb-4">Micronutrients & Electrolytes (RDA Limits)</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- Sodium -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600 dark:text-slate-300">Sodium</span>
+                            <span x-text="`${totalSodium}mg / 2300mg`"></span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all" :class="totalSodium > 2300 ? 'bg-red-500' : 'bg-brand-500'" :style="`width: ${Math.min((totalSodium/2300)*100, 100)}%`"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Limit: &lt;2,300 mg</p>
+                    </div>
+                    <!-- Potassium -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600 dark:text-slate-300">Potassium</span>
+                            <span x-text="`${totalPotassium}mg / 3400mg`"></span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div class="bg-purple-500 h-full rounded-full transition-all" :style="`width: ${Math.min((totalPotassium/3400)*100, 100)}%`"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Target: ~3,400 mg</p>
+                    </div>
+                    <!-- Calcium -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600 dark:text-slate-300">Calcium</span>
+                            <span x-text="`${totalCalcium}mg / 1000mg`"></span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div class="bg-teal-500 h-full rounded-full transition-all" :style="`width: ${Math.min((totalCalcium/1000)*100, 100)}%`"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Target: 1,000 mg</p>
+                    </div>
+                    <!-- Iron -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600 dark:text-slate-300">Iron</span>
+                            <span x-text="`${totalIron}mg / 18mg`"></span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div class="bg-orange-500 h-full rounded-full transition-all" :style="`width: ${Math.min((totalIron/18)*100, 100)}%`"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Target: 18 mg</p>
+                    </div>
+                    <!-- Vitamin C -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600 dark:text-slate-300">Vitamin C</span>
+                            <span x-text="`${totalVitaminC}mg / 90mg`"></span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div class="bg-yellow-500 h-full rounded-full transition-all" :style="`width: ${Math.min((totalVitaminC/90)*100, 100)}%`"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Target: 90 mg</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Daily Food Log Table -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
@@ -269,6 +331,7 @@
                                         <span>P: <strong class="text-blue-600 dark:text-blue-400" x-text="(entry.protein || 0) + 'g'"></strong></span>
                                         <span class="mx-1">C: <strong class="text-amber-600 dark:text-amber-400" x-text="(entry.carbs || 0) + 'g'"></strong></span>
                                         <span class="mx-1">F: <strong class="text-rose-600 dark:text-rose-400" x-text="(entry.fat || 0) + 'g'"></strong></span>
+                                        <span class="mx-1">• Na: <strong class="text-slate-600 dark:text-slate-300" x-text="(entry.sodium || 0) + 'mg'"></strong></span>
                                     </p>
                                 </div>
                             </div>
@@ -344,13 +407,13 @@
         </div>
     </div>
 
-    <!-- MODAL: HELP, PRIVACY & SLIDER GUIDE -->
+    <!-- MODAL: HELP & PERSISTENT FILE API GUIDE -->
     <div x-show="showHelpModal" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
             <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-brand-50 dark:bg-brand-950/40">
                 <div class="flex items-center space-x-2">
                     <span class="text-xl">📖</span>
-                    <h3 class="font-bold text-lg text-brand-800 dark:text-brand-300">Help, Privacy & Target Slider Guide</h3>
+                    <h3 class="font-bold text-lg text-brand-800 dark:text-brand-300">Help, Micronutrients & File Persistence Guide</h3>
                 </div>
                 <button @click="showHelpModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -360,19 +423,19 @@
             <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-sm text-slate-600 dark:text-slate-300">
                 <div class="space-y-1.5">
                     <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-                        <span>🎯</span><span>1. Calorie Target Slider (1,200 - 2,000 kcal)</span>
+                        <span>🧪</span><span>1. Full Micronutrients & RDA Limits</span>
                     </h4>
                     <p class="text-xs leading-relaxed">
-                        Use the interactive calorie slider on the dashboard (or inside settings) to instantly adjust your target between 1,200 kcal and 2,000 kcal. All progress metrics, remaining calories, and macronutrient targets update automatically in real time.
+                        Tracks Sodium, Potassium, Calcium, Iron, and Vitamin C in real-time as you log meals. Visual progress bars highlight when you approach or exceed daily limits (e.g. low-sodium framework).
                     </p>
                 </div>
 
                 <div class="space-y-1.5 border-t border-slate-100 dark:border-slate-700 pt-4">
                     <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-                        <span>📁</span><span>2. Local JSON Database File Sync</span>
+                        <span>📁</span><span>2. Reconnecting food-database.json After Refresh</span>
                     </h4>
                     <p class="text-xs leading-relaxed">
-                        Click <strong>"Connect DB File"</strong> to link your local <code class="bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded">food-database.json</code> file on disk. Your file connection is cached so you can easily resume your session after page refreshes.
+                        Browser security prevents file handle pointers from surviving page reloads automatically. However, clicking <strong>"Reconnect DB File"</strong> checks your cached IndexedDB handle reference so you can instantly re-verify disk access with a single click without searching your file picker.
                     </p>
                 </div>
             </div>
@@ -474,7 +537,8 @@
                                     <p class="text-xs text-slate-400 mt-0.5">
                                         P: <span x-text="(item.protein || 0) + 'g'"></span> | 
                                         C: <span x-text="(item.carbs || 0) + 'g'"></span> | 
-                                        F: <span x-text="(item.fat || 0) + 'g'"></span> 
+                                        F: <span x-text="(item.fat || 0) + 'g'"></span> | 
+                                        Na: <span x-text="(item.sodium || 0) + 'mg'"></span>
                                         (per <span x-text="item.baseQty || 100"></span><span x-text="item.baseUnit || 'g'"></span>)
                                     </p>
                                 </div>
@@ -528,7 +592,7 @@
                             <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">Local JSON DB Matrix Manager</h4>
                             <p class="text-xs text-slate-500 dark:text-slate-400">Direct modifications to food-database.json file</p>
                         </div>
-                        <button @click="editingDbItem = { id: '', name: '', calories: '', baseQty: 100, baseUnit: 'g', protein: '', carbs: '', fat: '', sodium: '' }; showDbEditForm = true;" class="text-xs bg-brand-600 hover:bg-brand-700 text-white font-semibold px-3 py-1.5 rounded-lg transition">
+                        <button @click="editingDbItem = { id: '', name: '', calories: '', baseQty: 100, baseUnit: 'g', protein: '', carbs: '', fat: '', sodium: '', potassium: '', calcium: '', iron: '', vitaminC: '' }; showDbEditForm = true;" class="text-xs bg-brand-600 hover:bg-brand-700 text-white font-semibold px-3 py-1.5 rounded-lg transition">
                             + Add Entry
                         </button>
                     </div>
@@ -545,6 +609,10 @@
                             <input type="number" x-model.number="editingDbItem.carbs" placeholder="Carbs (g)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
                             <input type="number" x-model.number="editingDbItem.fat" placeholder="Fat (g)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
                             <input type="number" x-model.number="editingDbItem.sodium" placeholder="Sodium (mg)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                            <input type="number" x-model.number="editingDbItem.potassium" placeholder="Potassium (mg)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                            <input type="number" x-model.number="editingDbItem.calcium" placeholder="Calcium (mg)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                            <input type="number" x-model.number="editingDbItem.iron" placeholder="Iron (mg)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                            <input type="number" x-model.number="editingDbItem.vitaminC" placeholder="Vitamin C (mg)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
                         </div>
                         <button @click="saveEntryToLocalDbJson()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg text-xs font-bold transition">
                             💾 Save & Persist to food-database.json
@@ -601,6 +669,16 @@
                             <input type="number" x-model.number="customFood.fat" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm">
                         </div>
                     </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Sodium (mg)</label>
+                            <input type="number" x-model.number="customFood.sodium" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Potassium (mg)</label>
+                            <input type="number" x-model.number="customFood.potassium" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                    </div>
                     <button @click="saveCustomOrEditedEntry()" class="w-full mt-2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-semibold transition">
                         Log Custom Food
                     </button>
@@ -622,6 +700,46 @@
 
         const SUPABASE_URL = (typeof ENV_SUPABASE_URL !== 'undefined' && !ENV_SUPABASE_URL.startsWith('__')) ? ENV_SUPABASE_URL : '';
         const SUPABASE_ANON_KEY = (typeof ENV_SUPABASE_ANON_KEY !== 'undefined' && !ENV_SUPABASE_ANON_KEY.startsWith('__')) ? ENV_SUPABASE_ANON_KEY : '';
+
+        // IndexedDB helper for FileHandle persistence across refreshes
+        const IDB_NAME = 'NutriTrackFileHandleDB';
+        const IDB_STORE = 'handles';
+
+        function openFileHandleDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onerror = () => reject(req.error);
+                req.onsuccess = () => resolve(req.result);
+                req.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+                };
+            });
+        }
+
+        async function saveHandleToIDB(handle) {
+            try {
+                const db = await openFileHandleDB();
+                const tx = db.transaction(IDB_STORE, 'readwrite');
+                tx.objectStore(IDB_STORE).put(handle, 'dbFileHandle');
+            } catch (e) {
+                console.warn('Could not save file handle to IndexedDB', e);
+            }
+        }
+
+        async function getHandleFromIDB() {
+            try {
+                const db = await openFileHandleDB();
+                return new Promise((resolve) => {
+                    const tx = db.transaction(IDB_STORE, 'readonly');
+                    const req = tx.objectStore(IDB_STORE).get('dbFileHandle');
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (e) {
+                return null;
+            }
+        }
 
         const INITIAL_DEFAULT_FOOD_DB = [
             { id: 'db_1', name: 'Apple', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, sodium: 1, potassium: 107, calcium: 6, iron: 0.1, vitaminC: 4.6, baseQty: 100, baseUnit: 'g' },
@@ -655,6 +773,16 @@
                 builtinFoodDatabase: [],
                 fileHandle: null,
 
+                totalCalories: 0,
+                totalProtein: 0,
+                totalCarbs: 0,
+                totalFat: 0,
+                totalSodium: 0,
+                totalPotassium: 0,
+                totalCalcium: 0,
+                totalIron: 0,
+                totalVitaminC: 0,
+
                 toast: { show: false, message: '', icon: '✅' },
                 showHelpModal: false,
                 showAddModal: false,
@@ -680,8 +808,8 @@
                 servingUnit: 'g',
 
                 showDbEditForm: false,
-                editingDbItem: { id: '', name: '', calories: '', baseQty: 100, baseUnit: 'g', protein: '', carbs: '', fat: '', sodium: '' },
-                customFood: { name: '', calories: '', servingUnit: '1 serving', carbs: '', protein: '', fat: '' },
+                editingDbItem: { id: '', name: '', calories: '', baseQty: 100, baseUnit: 'g', protein: '', carbs: '', fat: '', sodium: '', potassium: '', calcium: '', iron: '', vitaminC: '' },
+                customFood: { name: '', calories: '', servingUnit: '1 serving', carbs: '', protein: '', fat: '', sodium: '', potassium: '' },
 
                 getTodayString() {
                     const today = new Date();
@@ -711,7 +839,24 @@
                 async initApp() {
                     var self = this;
                     this.selectedDate = this.getTodayString();
-                    await this.loadLocalFoodDbJson();
+
+                    // Attempt to restore file handle from previous session
+                    const cachedHandle = await getHandleFromIDB();
+                    if (cachedHandle) {
+                        try {
+                            if ((await cachedHandle.queryPermission({ mode: 'readwrite' })) === 'granted') {
+                                self.fileHandle = cachedHandle;
+                                const file = await cachedHandle.getFile();
+                                self.builtinFoodDatabase = JSON.parse(await file.text());
+                            }
+                        } catch (e) {
+                            console.warn('Cached handle permission expired or invalid', e);
+                        }
+                    }
+
+                    if (!self.fileHandle || self.builtinFoodDatabase.length === 0) {
+                        await this.loadLocalFoodDbJson();
+                    }
 
                     const savedTarget = localStorage.getItem('dailyTarget');
                     if (savedTarget && !isNaN(parseInt(savedTarget))) {
@@ -844,10 +989,12 @@
                     localStorage.setItem('localFoodDatabaseJson', JSON.stringify(this.builtinFoodDatabase, null, 2));
                     if (this.fileHandle) {
                         try {
-                            const writable = await this.fileHandle.createWritable();
-                            await writable.write(JSON.stringify(this.builtinFoodDatabase, null, 2));
-                            await writable.close();
-                            this.showToast('Persisted to food-database.json on disk!', '💾');
+                            if ((await this.fileHandle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+                                const writable = await this.fileHandle.createWritable();
+                                await writable.write(JSON.stringify(this.builtinFoodDatabase, null, 2));
+                                await writable.close();
+                                this.showToast('Persisted to food-database.json on disk!', '💾');
+                            }
                         } catch (e) {
                             console.error('Disk write error:', e);
                         }
@@ -861,11 +1008,27 @@
                         return;
                     }
                     try {
-                        const [handle] = await window.showOpenFilePicker({
-                            types: [{ description: 'JSON Database File', accept: { 'application/json': ['.json'] } }],
-                            multiple: false
-                        });
-                        this.fileHandle = handle;
+                        let handle = this.fileHandle;
+                        if (!handle) {
+                            const [pickedHandle] = await window.showOpenFilePicker({
+                                types: [{ description: 'JSON Database File', accept: { 'application/json': ['.json'] } }],
+                                multiple: false
+                            });
+                            handle = pickedHandle;
+                            this.fileHandle = handle;
+                            await saveHandleToIDB(handle);
+                        } else {
+                            if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') {
+                                const [pickedHandle] = await window.showOpenFilePicker({
+                                    types: [{ description: 'JSON Database File', accept: { 'application/json': ['.json'] } }],
+                                    multiple: false
+                                });
+                                handle = pickedHandle;
+                                this.fileHandle = handle;
+                                await saveHandleToIDB(handle);
+                            }
+                        }
+
                         const file = await handle.getFile();
                         const text = await file.text();
                         this.builtinFoodDatabase = JSON.parse(text);
@@ -941,6 +1104,10 @@
                         carbs: Number(item.carbs) || 0,
                         fat: Number(item.fat) || 0,
                         sodium: Number(item.sodium) || 0,
+                        potassium: Number(item.potassium) || 0,
+                        calcium: Number(item.calcium) || 0,
+                        iron: Number(item.iron) || 0,
+                        vitaminC: Number(item.vitaminC) || 0,
                         baseQty: item.baseQty || 100,
                         baseUnit: item.baseUnit || 'g'
                     };
@@ -982,6 +1149,11 @@
                                 protein: Math.round((Number(p.nutriments?.proteins_100g) || 0) * 10) / 10,
                                 carbs: Math.round((Number(p.nutriments?.carbohydrates_100g) || 0) * 10) / 10,
                                 fat: Math.round((Number(p.nutriments?.fat_100g) || 0) * 10) / 10,
+                                sodium: Math.round((Number(p.nutriments?.sodium_100g) || 0) * 1000) || 0,
+                                potassium: Math.round((Number(p.nutriments?.potassium_100g) || 0) * 1000) || 0,
+                                calcium: Math.round((Number(p.nutriments?.calcium_100g) || 0) * 1000) || 0,
+                                iron: Math.round((Number(p.nutriments?.iron_100g) || 0) * 1000) || 0,
+                                vitaminC: Math.round((Number(p.nutriments?.['vitamin-c_100g'] || 0) * 1000) || 0,
                                 baseQty: 100,
                                 baseUnit: 'g',
                                 source: 'Open Food Facts'
@@ -1010,9 +1182,9 @@
                     return Math.round(Number(this.selectedFood.calories) * (Number(this.servingQuantity) / (Number(this.selectedFood.baseQty) || 1)));
                 },
 
-                calculatePortionMacro(m) {
+                calculatePortionNutrient(field) {
                     if (!this.selectedFood) return 0;
-                    return Math.round((Number(this.selectedFood[m]) || 0) * (Number(this.servingQuantity) / (Number(this.selectedFood.baseQty) || 1)) * 10) / 10;
+                    return Math.round((Number(this.selectedFood[field]) || 0) * (Number(this.servingQuantity) / (Number(this.selectedFood.baseQty) || 1)) * 10) / 10;
                 },
 
                 async addSelectedFoodToLog() {
@@ -1023,9 +1195,14 @@
                         calories: this.calculatePortionCalories(),
                         servingQty: this.servingQuantity,
                         servingUnit: this.servingUnit,
-                        protein: this.calculatePortionMacro('protein'),
-                        carbs: this.calculatePortionMacro('carbs'),
-                        fat: this.calculatePortionMacro('fat'),
+                        protein: this.calculatePortionNutrient('protein'),
+                        carbs: this.calculatePortionNutrient('carbs'),
+                        fat: this.calculatePortionNutrient('fat'),
+                        sodium: this.calculatePortionNutrient('sodium'),
+                        potassium: this.calculatePortionNutrient('potassium'),
+                        calcium: this.calculatePortionNutrient('calcium'),
+                        iron: this.calculatePortionNutrient('iron'),
+                        vitaminC: this.calculatePortionNutrient('vitaminC'),
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     };
 
@@ -1046,6 +1223,11 @@
                         protein: Number(this.customFood.protein) || 0,
                         carbs: Number(this.customFood.carbs) || 0,
                         fat: Number(this.customFood.fat) || 0,
+                        sodium: Number(this.customFood.sodium) || 0,
+                        potassium: Number(this.customFood.potassium) || 0,
+                        calcium: Number(this.customFood.calcium) || 0,
+                        iron: Number(this.customFood.iron) || 0,
+                        vitaminC: Number(this.customFood.vitaminC) || 0,
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     };
 
@@ -1073,6 +1255,11 @@
                                     protein: Number(item.protein) || 0,
                                     carbs: Number(item.carbs) || 0,
                                     fat: Number(item.fat) || 0,
+                                    sodium: Number(item.sodium) || 0,
+                                    potassium: Number(item.potassium) || 0,
+                                    calcium: Number(item.calcium) || 0,
+                                    iron: Number(item.iron) || 0,
+                                    vitaminC: Number(item.vitaminC) || 0,
                                     timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Logged'
                                 }));
                                 self.calculateTotals();
@@ -1113,6 +1300,11 @@
                     this.totalCarbs = Math.round(this.foodEntries.reduce((s, i) => s + (Number(i.carbs) || 0), 0) * 10) / 10;
                     this.totalProtein = Math.round(this.foodEntries.reduce((s, i) => s + (Number(i.protein) || 0), 0) * 10) / 10;
                     this.totalFat = Math.round(this.foodEntries.reduce((s, i) => s + (Number(i.fat) || 0), 0) * 10) / 10;
+                    this.totalSodium = Math.round(this.foodEntries.reduce((s, i) => s + (Number(i.sodium) || 0), 0));
+                    this.totalPotassium = Math.round(this.foodEntries.reduce((s, i) => s + (Number(i.potassium) || 0), 0));
+                    this.totalCalcium = Math.round(this.foodEntries.reduce((s, i) => s + (Number(i.calcium) || 0), 0));
+                    this.totalIron = Math.round(this.foodEntries.reduce((s, i) => s + (Number(i.iron) || 0), 0) * 10) / 10;
+                    this.totalVitaminC = Math.round(this.foodEntries.reduce((s, i) => s + (Number(i.vitaminC) || 0), 0) * 10) / 10;
                 },
 
                 getProgressPercentage() {
