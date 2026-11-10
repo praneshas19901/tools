@@ -96,6 +96,7 @@ Below is an overview of the tools currently available in this repository:
 
 | Status | Tool Name | Category | Key Capabilities |
 | :---: | :--- | :--- | :--- |
+| 🟢 | 📋 **Project and Milestone Tracker with Gannt Chart view** | `Productivity` | Create projects with budgets, milestones and tasks and track progress in Gannt chart views. |
 | 🟢 | 📋 **Kanban Task Tracker** | `Productivity` | Priority lane management, visual task statuses, and workflow bottleneck tracking. |
 | 🟡 | 🥗 **Calorie Tracker v2** | `Nutrition` | Advanced macro logging powered by Supabase RLS with interactive calorie goal visualizations. |
 | 🟢 | 🍎 **Calorie Tracker** *(Std)* | `Nutrition` | Streamlined offline caloric intake logger to quickly record food items and daily totals. |
