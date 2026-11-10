@@ -65,13 +65,13 @@
         .progress-bar { background: var(--success); height: 100%; width: 0%; transition: width 0.3s; }
         .weight-warn { color: var(--warning); font-size: 0.75rem; margin-top: 4px; }
 
-        .milestone-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin-top: 16px; }
+        .milestone-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin-top: 16px; transition: all 0.3s ease; }
         .milestone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
         .milestone-title { font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .milestone-submeta { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; display: flex; gap: 16px; flex-wrap: wrap; }
 
         .task-list { list-style: none; margin-top: 8px; }
-        .task-item { display: flex; flex-direction: column; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; font-size: 0.875rem; gap: 6px; }
+        .task-item { display: flex; flex-direction: column; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; font-size: 0.875rem; gap: 6px; transition: all 0.3s ease; }
         .task-top-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
         .task-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px; }
         .task-meta { color: var(--text-muted); font-size: 0.75rem; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
@@ -114,19 +114,31 @@
         .gantt-scroll-wrapper { flex: 1; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; position: relative; margin-top: 10px; }
         .gantt-table { display: table; min-width: 1600px; width: 100%; border-collapse: collapse; }
         .gantt-header { display: flex; position: sticky; top: 0; z-index: 20; background: #111827; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.8rem; color: var(--text-muted); }
-        .gantt-header-label { width: 320px; min-width: 320px; padding: 10px 12px; position: sticky; left: 0; z-index: 30; background: #111827; border-right: 1px solid var(--border); box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
+        .gantt-header-label { width: 340px; min-width: 340px; padding: 10px 12px; position: sticky; left: 0; z-index: 30; background: #111827; border-right: 1px solid var(--border); box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
         .gantt-header-timeline { flex: 1; display: flex; justify-content: space-between; padding: 10px 16px; align-items: center; }
         
         .gantt-row { display: flex; align-items: center; font-size: 0.825rem; height: 42px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .gantt-label { width: 320px; min-width: 320px; padding: 0 12px; position: sticky; left: 0; z-index: 10; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; height: 100%; box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
+        .gantt-label { width: 340px; min-width: 340px; padding: 0 12px; position: sticky; left: 0; z-index: 10; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; height: 100%; box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
         .gantt-label-title { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .gantt-label-sub { font-size: 0.725rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .gantt-timeline { flex: 1; position: relative; height: 100%; display: flex; align-items: center; background: rgba(255,255,255,0.01); padding: 0 8px; }
+        
+        .gantt-clickable { cursor: pointer; transition: transform 0.15s, filter 0.15s; }
+        .gantt-clickable:hover { filter: brightness(1.25); transform: translateY(-1px); }
+
         .gantt-bar { position: absolute; height: 26px; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 0.75rem; color: white; white-space: nowrap; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.4); font-weight: 500; }
         .gantt-bar-proj { background: linear-gradient(90deg, #3b82f6, #1d4ed8); border: 1px solid #60a5fa; }
         .gantt-bar-ms { background: linear-gradient(90deg, #8b5cf6, #6d28d9); border: 1px solid #a78bfa; }
         .gantt-bar-task { background: linear-gradient(90deg, #10b981, #047857); border: 1px solid #34d399; }
         .gantt-bar-task.completed { background: linear-gradient(90deg, #475569, #334155); opacity: 0.75; text-decoration: line-through; }
+
+        /* Highlight Flash Animation for Gantt Navigation */
+        @keyframes highlightFlash {
+            0% { outline: 3px solid #3b82f6; box-shadow: 0 0 15px #3b82f6; }
+            50% { outline: 3px solid #8b5cf6; box-shadow: 0 0 25px #8b5cf6; }
+            100% { outline: 1px solid var(--border); box-shadow: none; }
+        }
+        .highlight-item { animation: highlightFlash 2s ease-in-out; }
 
         .help-body h3 { font-size: 0.95rem; color: var(--primary); margin: 14px 0 4px 0; }
         .help-body p, .help-body ul { font-size: 0.85rem; color: var(--text-muted); }
@@ -312,9 +324,10 @@
                 <span>How to Use Project Tracker</span>
             </div>
             <div class="help-body">
-                <h3>📊 Gantt Chart View</h3>
+                <h3>📊 Interactive Gantt Chart View</h3>
                 <ul>
-                    <li>Click the <code>📊 Gantt Chart</code> button on any project card to view an interactive visual timeline of the project, milestones, and individual tasks alongside their budgets.</li>
+                    <li>Click the <code>📊 Gantt Chart</code> button on any project card to view an interactive visual timeline.</li>
+                    <li><strong>Direct Board Navigation:</strong> Click any project, milestone, or task bar inside the Gantt chart to close the timeline, scroll straight to that item on the main board, and open its edit dialog instantly.</li>
                 </ul>
 
                 <h3>📝 3-Level Editable Note System</h3>
@@ -704,6 +717,50 @@
             `;
         }
 
+        /* --- GANTT CHART TO MAIN BOARD NAVIGATION --- */
+
+        async function navigateToAndEdit(type, projId, msId = null, taskId = null) {
+            closeModal('ganttModal');
+
+            const proj = appData.find(p => p.id === projId);
+            if (!proj) return;
+
+            // 1. Ensure project card is expanded so element exists in DOM
+            if (proj.minimized) {
+                proj.minimized = false;
+                await saveData();
+            }
+
+            // 2. Switch tab view if needed
+            const { progress } = calculateProjectMetrics(proj);
+            const isCompleted = progress === 100;
+            if (showCompletedView !== isCompleted) {
+                showCompletedView = isCompleted;
+                render();
+            }
+
+            // 3. Determine target DOM element ID
+            let targetElemId = `proj_${projId}`;
+            if (type === 'milestone') targetElemId = `ms_${msId}`;
+            if (type === 'task') targetElemId = `task_${taskId}`;
+
+            // 4. Scroll to target element with visual highlight flash
+            setTimeout(() => {
+                const targetElem = document.getElementById(targetElemId);
+                if (targetElem) {
+                    targetElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetElem.classList.remove('highlight-item');
+                    void targetElem.offsetWidth; // Trigger reflow
+                    targetElem.classList.add('highlight-item');
+                }
+
+                // 5. Open corresponding edit modal
+                if (type === 'project') openProjectModal(projId);
+                else if (type === 'milestone') openMilestoneModal(projId, msId);
+                else if (type === 'task') openTaskModal(projId, msId, taskId);
+            }, 100);
+        }
+
         /* --- GANTT CHART RENDERING LOGIC --- */
 
         function openGanttModal(projId) {
@@ -751,7 +808,6 @@
             const actualSpanMs = Math.max(rangeEnd - rangeStart, 86400000 * 14); // Min 2 weeks
             
             // Dynamically scale timeline container so 1 year = 100% of visible viewport area (~1200px)
-            // Long projects scroll horizontally proportionally without endless pixel bloating
             const yearRatio = actualSpanMs / ONE_YEAR_MS;
             const timelineWidthPx = Math.max(1000, Math.round(yearRatio * 1200));
 
@@ -774,10 +830,10 @@
             let html = `
                 <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                     <span>📅 Scope: <strong>${formatDateLabel(rawMinDate)}</strong> to <strong>${formatDateLabel(rawMaxDate)}</strong> ${isCapped ? '<span style="color: var(--warning);">(Timeline capped to 3-Year max view horizon)</span>' : ''}</span>
-                    <span>💰 Total Budget: <strong>₹${proj.budget || 0} Lakhs</strong></span>
+                    <span>💡 <em>Tip: Click any item or bar below to jump to board & edit</em></span>
                 </div>
                 <div class="gantt-scroll-wrapper">
-                    <div class="gantt-table" style="min-width: ${320 + timelineWidthPx}px;">
+                    <div class="gantt-table" style="min-width: ${340 + timelineWidthPx}px;">
                         <div class="gantt-header">
                             <div class="gantt-header-label">Item / Budget Breakdown</div>
                             <div class="gantt-header-timeline">
@@ -793,12 +849,12 @@
             const projWidth = calcWidth(proj.startDate, proj.deadline);
             html += `
                 <div class="gantt-row" style="background: rgba(59, 130, 246, 0.12);">
-                    <div class="gantt-label" style="background: #1e293b;">
+                    <div class="gantt-label gantt-clickable" style="background: #1e293b;" onclick="navigateToAndEdit('project', '${proj.id}')" title="Click to edit project on main board">
                         <span class="gantt-label-title">📁 ${escapeHtml(proj.name)}</span>
                         <span class="gantt-label-sub">Total Project Budget: ₹${proj.budget || 0}L</span>
                     </div>
                     <div class="gantt-timeline">
-                        <div class="gantt-bar gantt-bar-proj" style="left: ${projStart}%; width: ${projWidth}%;" title="Project: ${proj.startDate || 'N/A'} to ${proj.deadline || 'N/A'}">
+                        <div class="gantt-bar gantt-bar-proj gantt-clickable" style="left: ${projStart}%; width: ${projWidth}%;" onclick="navigateToAndEdit('project', '${proj.id}')" title="Click to edit project on main board">
                             📁 ${escapeHtml(proj.name)} (${proj.startDate || 'N/A'} - ${proj.deadline || 'N/A'}) [₹${proj.budget || 0}L]
                         </div>
                     </div>
@@ -811,12 +867,12 @@
                 const msWidth = calcWidth(ms.startDate, ms.deadline);
                 html += `
                     <div class="gantt-row" style="background: rgba(139, 92, 246, 0.08);">
-                        <div class="gantt-label" style="padding-left: 20px; background: #1e293b;">
+                        <div class="gantt-label gantt-clickable" style="padding-left: 20px; background: #1e293b;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="Click to edit milestone on main board">
                             <span class="gantt-label-title">🚩 ${escapeHtml(ms.title)}</span>
                             <span class="gantt-label-sub">Budget: ₹${ms.budget || 0}L | Weight: ${ms.weight}%</span>
                         </div>
                         <div class="gantt-timeline">
-                            <div class="gantt-bar gantt-bar-ms" style="left: ${msStart}%; width: ${msWidth}%;" title="Milestone: ${ms.startDate || 'N/A'} to ${ms.deadline || 'N/A'}">
+                            <div class="gantt-bar gantt-bar-ms gantt-clickable" style="left: ${msStart}%; width: ${msWidth}%;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="Click to edit milestone on main board">
                                 🚩 ${escapeHtml(ms.title)} (${ms.startDate || 'N/A'} - ${ms.deadline || 'N/A'}) [₹${ms.budget || 0}L]
                             </div>
                         </div>
@@ -828,12 +884,12 @@
                     const tWidth = calcWidth(t.startDate, t.deadline);
                     html += `
                         <div class="gantt-row">
-                            <div class="gantt-label" style="padding-left: 38px; background: #1e293b;">
+                            <div class="gantt-label gantt-clickable" style="padding-left: 38px; background: #1e293b;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="Click to edit task on main board">
                                 <span class="gantt-label-title" style="font-weight: normal; font-size: 0.8rem;">${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)}</span>
                                 <span class="gantt-label-sub">Budget: ₹${t.budget || 0}L</span>
                             </div>
                             <div class="gantt-timeline">
-                                <div class="gantt-bar gantt-bar-task ${t.completed ? 'completed' : ''}" style="left: ${tStart}%; width: ${tWidth}%;" title="Task: ${t.startDate || 'N/A'} to ${t.deadline || 'N/A'}">
+                                <div class="gantt-bar gantt-bar-task ${t.completed ? 'completed' : ''} gantt-clickable" style="left: ${tStart}%; width: ${tWidth}%;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="Click to edit task on main board">
                                     ${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)} (${t.startDate || 'N/A'} - ${t.deadline || 'N/A'}) [₹${t.budget || 0}L]
                                 </div>
                             </div>
@@ -891,7 +947,7 @@
                 const isMinimized = !!proj.minimized;
 
                 return `
-                <div class="project-card ${isMinimized ? 'minimized' : ''}">
+                <div class="project-card ${isMinimized ? 'minimized' : ''}" id="proj_${proj.id}">
                     <div class="project-header">
                         <div class="project-title-area">
                             <h2>
@@ -957,7 +1013,7 @@
                         const msBudgetWarn = msRemaining < 0 ? `<span style="color: var(--danger)"> (Exceeded by ₹${Math.abs(msRemaining).toFixed(2)}L)</span>` : '';
 
                         return `
-                        <div class="milestone-card">
+                        <div class="milestone-card" id="ms_${ms.id}">
                             <div class="milestone-header">
                                 <div class="milestone-title">
                                     <span>🚩 ${escapeHtml(ms.title)}</span>
@@ -980,7 +1036,7 @@
 
                             <ul class="task-list">
                                 ${msTasks.map(task => `
-                                    <li class="task-item">
+                                    <li class="task-item" id="task_${task.id}">
                                         <div class="task-top-row">
                                             <div class="task-left">
                                                 <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${proj.id}', '${ms.id}', '${task.id}')">
