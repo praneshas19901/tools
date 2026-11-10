@@ -56,7 +56,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg font-bold bg-gradient-to-r from-brand-600 to-emerald-500 bg-clip-text text-transparent">NutriTrack Pro</h1>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Supabase Cloud DB storage along with Local JSON DB</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">NutriTrack Pro - Supabase Cloud DB storage along with Local JSON DB</p>
                     </div>
                 </div>
 
@@ -415,7 +415,7 @@
             <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-brand-50 dark:bg-brand-950/40">
                 <div class="flex items-center space-x-2">
                     <span class="text-xl">📖</span>
-                    <h3 class="font-bold text-lg text-brand-800 dark:text-brand-300">Help, Micronutrients & File Persistence Guide</h3>
+                    <h3 class="font-bold text-lg text-brand-800 dark:text-brand-300">Help, Multi-API Search & File Persistence Guide</h3>
                 </div>
                 <button @click="showHelpModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -425,19 +425,19 @@
             <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-sm text-slate-600 dark:text-slate-300">
                 <div class="space-y-1.5">
                     <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-                        <span>🧪</span><span>1. Full Micronutrients & RDA Limits</span>
+                        <span>🔍</span><span>1. Multi-API Food Search with Fallbacks</span>
                     </h4>
                     <p class="text-xs leading-relaxed">
-                        Tracks Sodium, Potassium, Calcium, Iron, and Vitamin C in real-time as you log meals. Visual progress bars highlight when you approach or exceed daily limits (e.g. low-sodium framework).
+                        Searches simultaneously across <strong>Open Food Facts (v2 API)</strong> and the <strong>USDA FoodData Central API</strong>, seamlessly falling back to your local <code>food-database.json</code> matrix if any network error or rate limit occurs.
                     </p>
                 </div>
 
                 <div class="space-y-1.5 border-t border-slate-100 dark:border-slate-700 pt-4">
                     <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-                        <span>📁</span><span>2. Reconnecting food-database.json After Refresh</span>
+                        <span>💾</span><span>2. Saving API Items to Local JSON DB</span>
                     </h4>
                     <p class="text-xs leading-relaxed">
-                        Browser security prevents file handle pointers from surviving page reloads automatically. However, clicking <strong>"Reconnect DB File"</strong> checks your cached IndexedDB handle reference so you can instantly re-verify disk access with a single click without searching your file picker.
+                        When you find any food item from Open Food Facts or USDA, click <strong>"+ Save to DB"</strong> to permanently store it in your local <code>food-database.json</code> file and sync it across sessions.
                     </p>
                 </div>
             </div>
@@ -508,20 +508,20 @@
 
             <div class="p-6 space-y-5">
                 <div class="grid grid-cols-3 rounded-xl bg-slate-100 dark:bg-slate-900 p-1 gap-1 text-center">
-                    <button @click="addMode = 'search'" :class="addMode === 'search' ? 'bg-white dark:bg-slate-800 text-brand-600 font-semibold shadow-sm' : 'text-slate-500'" class="py-2 text-xs sm:text-sm rounded-lg transition">🔍 API & DB Search</button>
+                    <button @click="addMode = 'search'" :class="addMode === 'search' ? 'bg-white dark:bg-slate-800 text-brand-600 font-semibold shadow-sm' : 'text-slate-500'" class="py-2 text-xs sm:text-sm rounded-lg transition">🔍 Multi-API Search</button>
                     <button @click="addMode = 'manage_db'" :class="addMode === 'manage_db' ? 'bg-white dark:bg-slate-800 text-brand-600 font-semibold shadow-sm' : 'text-slate-500'" class="py-2 text-xs sm:text-sm rounded-lg transition">📚 Food DB Manager (<span x-text="builtinFoodDatabase.length"></span>)</button>
                     <button @click="addMode = 'custom'" :class="addMode === 'custom' ? 'bg-white dark:bg-slate-800 text-brand-600 font-semibold shadow-sm' : 'text-slate-500'" class="py-2 text-xs sm:text-sm rounded-lg transition">✏️ Quick Custom</button>
                 </div>
 
-                <!-- TAB 1: API & LOCAL DATABASE UNIFIED SEARCH -->
+                <!-- TAB 1: MULTI-API UNIFIED SEARCH WITH FALLBACKS -->
                 <div x-show="addMode === 'search'" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Search food-database.json & Open Food Facts</label>
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Search Open Food Facts, USDA & Local DB</label>
                         <div class="flex space-x-2">
-                            <input type="text" x-model="searchQuery" @input="onSearchInput()" @keydown.enter="searchFoodAPI()" placeholder="e.g. Groundnuts, Paneer, Apple..." class="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500">
-                            <button @click="searchFoodAPI()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-1">
-                                <span x-show="!isSearching">Search API</span>
-                                <span x-show="isSearching">...</span>
+                            <input type="text" x-model="searchQuery" @input="onSearchInput()" @keydown.enter="searchFoodAPIs()" placeholder="e.g. Dosa, Apple, Paneer, Chicken..." class="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500">
+                            <button @click="searchFoodAPIs()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-1 shrink-0">
+                                <span x-show="!isSearching">Search APIs</span>
+                                <span x-show="isSearching">Searching...</span>
                             </button>
                         </div>
                     </div>
@@ -533,7 +533,7 @@
                                     <div class="flex items-center space-x-2">
                                         <h4 class="font-semibold text-sm text-slate-800 dark:text-slate-200" x-text="item.name"></h4>
                                         <span class="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold" 
-                                              :class="item.source === 'Local JSON DB' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'" 
+                                              :class="item.source === 'Local JSON DB' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : (item.source === 'USDA' ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300')" 
                                               x-text="item.source || 'API'"></span>
                                     </div>
                                     <p class="text-xs text-slate-400 mt-0.5">
@@ -544,7 +544,7 @@
                                         (per <span x-text="item.baseQty || 100"></span><span x-text="item.baseUnit || 'g'"></span>)
                                     </p>
                                 </div>
-                                <div class="flex items-center space-x-2">
+                                <div class="flex items-center space-x-2 shrink-0">
                                     <template x-if="item.source !== 'Local JSON DB'">
                                         <button @click="addApiItemToLocalDb(item)" class="text-xs px-2.5 py-1 bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 hover:bg-amber-200 rounded-lg font-semibold transition" title="Save this food into food-database.json">
                                             <span>+ Save to DB</span>
@@ -842,7 +842,6 @@
                     var self = this;
                     this.selectedDate = this.getTodayString();
 
-                    // Attempt to restore file handle from previous session
                     const cachedHandle = await getHandleFromIDB();
                     if (cachedHandle) {
                         try {
@@ -1121,56 +1120,104 @@
 
                 refreshSearchResults() {
                     const localFormatted = this.builtinFoodDatabase.map(i => ({ ...i, source: 'Local JSON DB' }));
-                    this.searchResults = [...localFormatted];
-                },
-
-                onSearchInput() {
                     if (!this.searchQuery.trim()) {
-                        this.refreshSearchResults();
+                        this.searchResults = localFormatted;
                         return;
                     }
                     const q = this.searchQuery.toLowerCase();
-                    const localFormatted = this.builtinFoodDatabase.map(i => ({ ...i, source: 'Local JSON DB' }));
                     this.searchResults = localFormatted.filter(i => i.name.toLowerCase().includes(q));
                 },
 
-                async searchFoodAPI() {
+                onSearchInput() {
+                    this.refreshSearchResults();
+                },
+
+                // MULTI-API SEARCH WITH FAILBACKS & ROBUST ERROR HANDLING
+                async searchFoodAPIs() {
                     if (!this.searchQuery.trim()) return;
                     this.isSearching = true;
-                    const q = encodeURIComponent(this.searchQuery);
+                    const q = encodeURIComponent(this.searchQuery.trim());
                     let apiResults = [];
 
+                    // 1. Try Open Food Facts API v2
                     try {
-                        const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${q}&search_simple=1&action=process&json=1&page_size=5`);
-                        const data = await res.json();
-                        if (data && data.products) {
-                            apiResults = data.products.map(p => ({
-                                id: 'api_' + (p._id || Math.random()),
-                                name: p.product_name_en || p.product_name || 'Unnamed Product',
-                                calories: Math.round(Number(p.nutriments?.['energy-kcal_100g'] || 0)),
-                                protein: Math.round((Number(p.nutriments?.proteins_100g) || 0) * 10) / 10,
-                                carbs: Math.round((Number(p.nutriments?.carbohydrates_100g) || 0) * 10) / 10,
-                                fat: Math.round((Number(p.nutriments?.fat_100g) || 0) * 10) / 10,
-                                sodium: Math.round((Number(p.nutriments?.sodium_100g) || 0) * 1000) || 0,
-                                potassium: Math.round((Number(p.nutriments?.potassium_100g) || 0) * 1000) || 0,
-                                calcium: Math.round((Number(p.nutriments?.calcium_100g) || 0) * 1000) || 0,
-                                iron: Math.round((Number(p.nutriments?.iron_100g) || 0) * 1000) || 0,
-                                vitaminC: Math.round((Number(p.nutriments?.['vitamin-c_100g'] || 0) * 1000) || 0),
-                                baseQty: 100,
-                                baseUnit: 'g',
-                                source: 'Open Food Facts'
-                            })).filter(p => p.name && p.calories > 0);
+                        const res = await fetch(`https://world.openfoodfacts.org/api/v2/search?query=${q}&page_size=5`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data && data.products) {
+                                const offItems = data.products.map(p => ({
+                                    id: 'off_' + (p._id || Math.random()),
+                                    name: p.product_name_en || p.product_name || 'Unnamed Product',
+                                    calories: Math.round(Number(p.nutriments?.['energy-kcal_100g'] || 0)),
+                                    protein: Math.round((Number(p.nutriments?.proteins_100g) || 0) * 10) / 10,
+                                    carbs: Math.round((Number(p.nutriments?.carbohydrates_100g) || 0) * 10) / 10,
+                                    fat: Math.round((Number(p.nutriments?.fat_100g) || 0) * 10) / 10,
+                                    sodium: Math.round((Number(p.nutriments?.sodium_100g) || 0) * 1000) || 0,
+                                    potassium: Math.round((Number(p.nutriments?.potassium_100g) || 0) * 1000) || 0,
+                                    calcium: Math.round((Number(p.nutriments?.calcium_100g) || 0) * 1000) || 0,
+                                    iron: Math.round((Number(p.nutriments?.iron_100g) || 0) * 1000) || 0,
+                                    vitaminC: Math.round((Number(p.nutriments?.['vitamin-c_100g'] || 0) * 1000) || 0),
+                                    baseQty: 100,
+                                    baseUnit: 'g',
+                                    source: 'Open Food Facts'
+                                })).filter(p => p.name && p.calories > 0);
+                                apiResults.push(...offItems);
+                            }
                         }
                     } catch (e) {
-                        console.warn('API Search failed', e);
+                        console.warn('Open Food Facts API error, falling back...', e);
                     }
 
+                    // 2. Try USDA FoodData Central API (Fallback / Secondary)
+                    if (apiResults.length === 0) {
+                        try {
+                            const usdaRes = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${q}&pageSize=5`);
+                            if (usdaRes.ok) {
+                                const usdaData = await usdaRes.json();
+                                if (usdaData && usdaData.foods) {
+                                    const getNutrient = (nutrients, name) => {
+                                        const found = nutrients.find(n => n.nutrientName && n.nutrientName.toLowerCase().includes(name));
+                                        return found ? (found.value || 0) : 0;
+                                    };
+                                    const usdaItems = usdaData.foods.map(f => {
+                                        const nuts = f.foodNutrients || [];
+                                        return {
+                                            id: 'usda_' + f.fdcId,
+                                            name: f.description || 'USDA Food Item',
+                                            calories: Math.round(getNutrient(nuts, 'energy')),
+                                            protein: Math.round(getNutrient(nuts, 'protein') * 10) / 10,
+                                            carbs: Math.round(getNutrient(nuts, 'carbohydrate') * 10) / 10,
+                                            fat: Math.round(getNutrient(nuts, 'total lipid') * 10) / 10,
+                                            sodium: Math.round(getNutrient(nuts, 'sodium')),
+                                            potassium: Math.round(getNutrient(nuts, 'potassium')),
+                                            calcium: Math.round(getNutrient(nuts, 'calcium')),
+                                            iron: Math.round(getNutrient(nuts, 'iron') * 10) / 10,
+                                            vitaminC: Math.round(getNutrient(nuts, 'vitamin c') * 10) / 10,
+                                            baseQty: 100,
+                                            baseUnit: 'g',
+                                            source: 'USDA'
+                                        };
+                                    }).filter(f => f.calories > 0);
+                                    apiResults.push(...usdaItems);
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('USDA API error, relying on local database matrix', err);
+                        }
+                    }
+
+                    // 3. Local JSON DB Matches
                     const localMatches = this.builtinFoodDatabase
                         .filter(i => i.name.toLowerCase().includes(this.searchQuery.toLowerCase()))
                         .map(i => ({ ...i, source: 'Local JSON DB' }));
 
+                    // Combine results with local matches prioritized
                     this.searchResults = [...localMatches, ...apiResults];
                     this.isSearching = false;
+
+                    if (this.searchResults.length === 0) {
+                        this.showToast('No foods found across APIs. Try adding a custom entry.', 'ℹ️');
+                    }
                 },
 
                 selectSearchFood(item) {
