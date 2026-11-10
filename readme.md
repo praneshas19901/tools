@@ -81,14 +81,14 @@ You have total control over how and where you run these tools:
 
 ## 💻 Compatibility & Hardware Recommendations
 
-🔑 - File System Access API required to be supported by your browser. Should work fine on Firefox\Chrome\Edge\Brave. Check if your browser supports this - read more at [File System Access API](https://developer.chrome.com/docs/capabilities/web-apis/file-system-access).
+🔑 - **File System Access API** required to be supported by your browser. Should work fine on Firefox\Chrome\Edge\Brave. Check if your browser supports this - read more at [File System Access API](https://developer.chrome.com/docs/capabilities/web-apis/file-system-access).
 
 | Feature | Details | Status |
 | :--- | :--- | :---: |
 | 📱 **Mobile Responsiveness** | Fully responsive interface optimized for smartphones on the go. | ✅ Supported |
 | 🖥️ **Optimal Screen View** | Large display (laptop/desktop) recommended for maximum dashboard clarity. | 🌟 Recommended |
 | 🪟 **Tested Platform** | Extensively tested and verified for smooth performance on **Windows OS**. | ✅ Verified |
-| 🐧 **Cross-Platform** | These should work fine on any platform as they run in browsers - no extensive testing done - official support for Linux, macOS, and mobile OS versions. | ✅ Supported |
+| 🐧 **Cross-Platform** | These should work fine on any platform as they run in browsers - no extensive testing done - should work fine for Linux, macOS, and mobile OS versions. | ✅ Supported |
 
 ---
 
