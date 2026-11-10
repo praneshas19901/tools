@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriTrack Pro - Supabase Cloud DB storage along with Local JSON DB</title>
+    <title>NutriTrack Pro - Multi-API Cloud & Local JSON DB</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -56,7 +56,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg font-bold bg-gradient-to-r from-brand-600 to-emerald-500 bg-clip-text text-transparent">NutriTrack Pro</h1>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">NutriTrack Pro - Supabase Cloud DB storage along with Local JSON DB</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Multi-API Search & Supabase Cloud Sync</p>
                     </div>
                 </div>
 
@@ -92,7 +92,7 @@
                         <svg x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                     </button>
 
-                    <!-- Fixed Authorization Status Pill (Single Line Formatting) -->
+                    <!-- Fixed Authorization Status Pill -->
                     <template x-if="dbConnected">
                         <span class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center space-x-1.5 whitespace-nowrap flex-nowrap shrink-0"
                               :class="isUserApproved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'">
@@ -1238,12 +1238,14 @@
 
                 async addSelectedFoodToLog() {
                     if (!this.selectedFood) return;
-                    const newEntry = {
-                        id: 'log_' + Date.now(),
-                        name: this.selectedFood.name,
+                    
+                    const newEntryPayload = {
+                        log_date: this.selectedDate,
+                        entry_id: String(this.selectedFood.id || 'food_' + Date.now()),
+                        item_name: this.selectedFood.name,
                         calories: this.calculatePortionCalories(),
-                        servingQty: this.servingQuantity,
-                        servingUnit: this.servingUnit,
+                        serving_qty: Number(this.servingQuantity) || 1,
+                        serving_unit: this.servingUnit || 'g',
                         protein: this.calculatePortionNutrient('protein'),
                         carbs: this.calculatePortionNutrient('carbs'),
                         fat: this.calculatePortionNutrient('fat'),
@@ -1251,24 +1253,63 @@
                         potassium: this.calculatePortionNutrient('potassium'),
                         calcium: this.calculatePortionNutrient('calcium'),
                         iron: this.calculatePortionNutrient('iron'),
-                        vitaminC: this.calculatePortionNutrient('vitaminC'),
+                        vitamin_c: this.calculatePortionNutrient('vitaminC'),
+                        is_custom: false
+                    };
+
+                    if (this.dbConnected && this.supabaseClient && this.isUserApproved) {
+                        try {
+                            const { data, error } = await this.supabaseClient
+                                .from('daily_logs')
+                                .insert([newEntryPayload])
+                                .select();
+                            
+                            if (error) throw error;
+                            if (data && data.length > 0) {
+                                newEntryPayload.id = data[0].id;
+                            }
+                        } catch (err) {
+                            console.error('Supabase insert error:', err);
+                            this.showToast('Cloud save failed: ' + err.message, '❌');
+                            return;
+                        }
+                    } else {
+                        newEntryPayload.id = 'log_' + Date.now();
+                    }
+
+                    const uiEntry = {
+                        id: newEntryPayload.id,
+                        name: newEntryPayload.item_name,
+                        calories: newEntryPayload.calories,
+                        servingQty: newEntryPayload.serving_qty,
+                        servingUnit: newEntryPayload.serving_unit,
+                        protein: newEntryPayload.protein,
+                        carbs: newEntryPayload.carbs,
+                        fat: newEntryPayload.fat,
+                        sodium: newEntryPayload.sodium,
+                        potassium: newEntryPayload.potassium,
+                        calcium: newEntryPayload.calcium,
+                        iron: newEntryPayload.iron,
+                        vitaminC: newEntryPayload.vitamin_c,
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     };
 
-                    this.foodEntries.push(newEntry);
+                    this.foodEntries.push(uiEntry);
                     await this.saveDayData();
                     this.showAddModal = false;
-                    this.showToast(`Logged ${newEntry.name}`, '🍏');
+                    this.showToast(`Logged ${uiEntry.name}`, '🍏');
                 },
 
                 async saveCustomOrEditedEntry() {
                     if (!this.customFood.name || !this.customFood.calories) return;
-                    const newEntry = {
-                        id: 'custom_' + Date.now(),
-                        name: this.customFood.name,
+                    
+                    const newEntryPayload = {
+                        log_date: this.selectedDate,
+                        entry_id: 'custom_' + Date.now(),
+                        item_name: this.customFood.name,
                         calories: Number(this.customFood.calories),
-                        servingQty: 1,
-                        servingUnit: this.customFood.servingUnit || 'serving',
+                        serving_qty: 1,
+                        serving_unit: this.customFood.servingUnit || 'serving',
                         protein: Number(this.customFood.protein) || 0,
                         carbs: Number(this.customFood.carbs) || 0,
                         fat: Number(this.customFood.fat) || 0,
@@ -1276,14 +1317,51 @@
                         potassium: Number(this.customFood.potassium) || 0,
                         calcium: Number(this.customFood.calcium) || 0,
                         iron: Number(this.customFood.iron) || 0,
-                        vitaminC: Number(this.customFood.vitaminC) || 0,
+                        vitamin_c: Number(this.customFood.vitaminC) || 0,
+                        is_custom: true
+                    };
+
+                    if (this.dbConnected && this.supabaseClient && this.isUserApproved) {
+                        try {
+                            const { data, error } = await this.supabaseClient
+                                .from('daily_logs')
+                                .insert([newEntryPayload])
+                                .select();
+                            
+                            if (error) throw error;
+                            if (data && data.length > 0) {
+                                newEntryPayload.id = data[0].id;
+                            }
+                        } catch (err) {
+                            console.error('Supabase custom insert error:', err);
+                            this.showToast('Cloud save failed: ' + err.message, '❌');
+                            return;
+                        }
+                    } else {
+                        newEntryPayload.id = 'custom_' + Date.now();
+                    }
+
+                    const uiEntry = {
+                        id: newEntryPayload.id,
+                        name: newEntryPayload.item_name,
+                        calories: newEntryPayload.calories,
+                        servingQty: newEntryPayload.serving_qty,
+                        servingUnit: newEntryPayload.serving_unit,
+                        protein: newEntryPayload.protein,
+                        carbs: newEntryPayload.carbs,
+                        fat: newEntryPayload.fat,
+                        sodium: newEntryPayload.sodium,
+                        potassium: newEntryPayload.potassium,
+                        calcium: newEntryPayload.calcium,
+                        iron: newEntryPayload.iron,
+                        vitaminC: newEntryPayload.vitamin_c,
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     };
 
-                    this.foodEntries.push(newEntry);
+                    this.foodEntries.push(uiEntry);
                     await this.saveDayData();
                     this.showAddModal = false;
-                    this.showToast(`Logged ${newEntry.name}`, '✏️');
+                    this.showToast(`Logged ${uiEntry.name}`, '✏️');
                 },
 
                 async loadDayData() {
@@ -1308,7 +1386,7 @@
                                     potassium: Number(item.potassium) || 0,
                                     calcium: Number(item.calcium) || 0,
                                     iron: Number(item.iron) || 0,
-                                    vitaminC: Number(item.vitaminC) || 0,
+                                    vitaminC: Number(item.vitamin_c) || 0,
                                     timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Logged'
                                 }));
                                 self.calculateTotals();
