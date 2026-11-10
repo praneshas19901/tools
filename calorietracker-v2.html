@@ -161,8 +161,8 @@
                             </span>
                         </div>
 
-                        <!-- Daily Percentage Progress Bar -->
-                        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50 mb-4 space-y-2">
+                        <!-- Daily Percentage Progress Bar with Hover Tooltip -->
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50 mb-4 space-y-2 relative group cursor-pointer">
                             <div class="flex justify-between items-center text-xs font-semibold">
                                 <span class="text-slate-600 dark:text-slate-300">Calorie Intake Progress</span>
                                 <span class="font-mono font-bold text-sm" :class="getProgressPercentage() > 100 ? 'text-red-500' : 'text-brand-600 dark:text-brand-400'" x-text="`${getProgressPercentage()}%`"></span>
@@ -177,6 +177,21 @@
                                 <span>0 kcal</span>
                                 <span x-text="`${totalCalories} / ${dailyTarget} kcal`"></span>
                                 <span>100%</span>
+                            </div>
+                            <!-- Hover Tooltip for Calorie Progress -->
+                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block w-72 bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 p-3 rounded-xl shadow-xl text-xs z-50 border border-slate-700">
+                                <p class="font-bold mb-1 border-b border-slate-700 pb-1">Calorie Contributors:</p>
+                                <template x-if="foodEntries.length === 0">
+                                    <p class="text-slate-400 italic">No foods logged yet</p>
+                                </template>
+                                <ul class="space-y-1">
+                                    <template x-for="food in foodEntries">
+                                        <li class="flex justify-between">
+                                            <span class="truncate pr-2" x-text="food.name"></span>
+                                            <span class="font-semibold font-mono" x-text="food.calories + ' kcal'"></span>
+                                        </li>
+                                    </template>
+                                </ul>
                             </div>
                         </div>
 
@@ -220,7 +235,7 @@
                                 <template x-if="getContributingFoods('protein').length === 0">
                                     <p class="text-slate-400 italic">No foods logged yet</p>
                                 </template>
-                                <ul class="space-y-1 max-h-32 overflow-y-auto">
+                                <ul class="space-y-1">
                                     <template x-for="food in getContributingFoods('protein')">
                                         <li class="flex justify-between">
                                             <span class="truncate pr-2" x-text="food.name"></span>
@@ -245,7 +260,7 @@
                                 <template x-if="getContributingFoods('carbs').length === 0">
                                     <p class="text-slate-400 italic">No foods logged yet</p>
                                 </template>
-                                <ul class="space-y-1 max-h-32 overflow-y-auto">
+                                <ul class="space-y-1">
                                     <template x-for="food in getContributingFoods('carbs')">
                                         <li class="flex justify-between">
                                             <span class="truncate pr-2" x-text="food.name"></span>
@@ -270,7 +285,7 @@
                                 <template x-if="getContributingFoods('fat').length === 0">
                                     <p class="text-slate-400 italic">No foods logged yet</p>
                                 </template>
-                                <ul class="space-y-1 max-h-32 overflow-y-auto">
+                                <ul class="space-y-1">
                                     <template x-for="food in getContributingFoods('fat')">
                                         <li class="flex justify-between">
                                             <span class="truncate pr-2" x-text="food.name"></span>
@@ -304,7 +319,7 @@
                             <template x-if="getContributingFoods('sodium').length === 0">
                                 <p class="text-slate-400 italic">No foods logged yet</p>
                             </template>
-                            <ul class="space-y-1 max-h-32 overflow-y-auto">
+                            <ul class="space-y-1">
                                 <template x-for="food in getContributingFoods('sodium')">
                                     <li class="flex justify-between">
                                         <span class="truncate pr-2" x-text="food.name"></span>
@@ -330,7 +345,7 @@
                             <template x-if="getContributingFoods('potassium').length === 0">
                                 <p class="text-slate-400 italic">No foods logged yet</p>
                             </template>
-                            <ul class="space-y-1 max-h-32 overflow-y-auto">
+                            <ul class="space-y-1">
                                 <template x-for="food in getContributingFoods('potassium')">
                                     <li class="flex justify-between">
                                         <span class="truncate pr-2" x-text="food.name"></span>
@@ -356,7 +371,7 @@
                             <template x-if="getContributingFoods('calcium').length === 0">
                                 <p class="text-slate-400 italic">No foods logged yet</p>
                             </template>
-                            <ul class="space-y-1 max-h-32 overflow-y-auto">
+                            <ul class="space-y-1">
                                 <template x-for="food in getContributingFoods('calcium')">
                                     <li class="flex justify-between">
                                         <span class="truncate pr-2" x-text="food.name"></span>
@@ -382,7 +397,7 @@
                             <template x-if="getContributingFoods('iron').length === 0">
                                 <p class="text-slate-400 italic">No foods logged yet</p>
                             </template>
-                            <ul class="space-y-1 max-h-32 overflow-y-auto">
+                            <ul class="space-y-1">
                                 <template x-for="food in getContributingFoods('iron')">
                                     <li class="flex justify-between">
                                         <span class="truncate pr-2" x-text="food.name"></span>
@@ -408,7 +423,7 @@
                             <template x-if="getContributingFoods('vitaminC').length === 0">
                                 <p class="text-slate-400 italic">No foods logged yet</p>
                             </template>
-                            <ul class="space-y-1 max-h-32 overflow-y-auto">
+                            <ul class="space-y-1">
                                 <template x-for="food in getContributingFoods('vitaminC')">
                                     <li class="flex justify-between">
                                         <span class="truncate pr-2" x-text="food.name"></span>
