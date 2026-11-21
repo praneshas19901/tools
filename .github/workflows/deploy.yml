@@ -69,16 +69,22 @@ jobs:
 
       - name: Stage Pages Files
         run: |
+          rm -rf _site
           mkdir -p _site
-          cp calorietracker-v2.html _site/
-          # Add other HTML files to deploy, e.g.:
-          # cp project-tracker.html _site/
+          for f in index.html calorietracker-v2.html project-tracker.html; do
+            if [ -f "$f" ]; then
+              cp "$f" "_site/$f"
+            else
+              echo "Skipping missing file: $f"
+            fi
+          done
+          ls -la _site
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: "_site"
 
