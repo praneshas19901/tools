@@ -1281,92 +1281,186 @@
                 },
 
                 // MULTI-API SEARCH WITH FAILBACKS & ROBUST ERROR HANDLING
-                async searchFoodAPIs() {
-                    if (!this.searchQuery.trim()) return;
-                    this.isSearching = true;
-                    const q = encodeURIComponent(this.searchQuery.trim());
-                    let apiResults = [];
+async searchFoodAPIs() {
+    if (!this.searchQuery.trim()) return;
 
-                    // 1. Try Open Food Facts API v2
-                    try {
-                        const res = await fetch(`https://world.openfoodfacts.org/api/v2/search?query=${q}&page_size=5`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data && data.products) {
-                                const offItems = data.products.map(p => ({
-                                    id: 'off_' + (p._id || Math.random()),
-                                    name: p.product_name_en || p.product_name || 'Unnamed Product',
-                                    calories: Math.round(Number(p.nutriments?.['energy-kcal_100g'] || 0)),
-                                    protein: Math.round((Number(p.nutriments?.proteins_100g) || 0) * 10) / 10,
-                                    carbs: Math.round((Number(p.nutriments?.carbohydrates_100g) || 0) * 10) / 10,
-                                    fat: Math.round((Number(p.nutriments?.fat_100g) || 0) * 10) / 10,
-                                    sodium: Math.round((Number(p.nutriments?.sodium_100g) || 0) * 1000) || 0,
-                                    potassium: Math.round((Number(p.nutriments?.potassium_100g) || 0) * 1000) || 0,
-                                    calcium: Math.round((Number(p.nutriments?.calcium_100g) || 0) * 1000) || 0,
-                                    iron: Math.round((Number(p.nutriments?.iron_100g) || 0) * 1000) || 0,
-                                    vitaminC: Math.round((Number(p.nutriments?.['vitamin-c_100g'] || 0) * 1000) || 0),
-                                    baseQty: 100,
-                                    baseUnit: 'g',
-                                    source: 'Open Food Facts'
-                                })).filter(p => p.name && p.calories > 0);
-                                apiResults.push(...offItems);
-                            }
-                        }
-                    } catch (e) {
-                        console.warn('Open Food Facts API error, falling back...', e);
+    this.isSearching = true;
+
+    const q = encodeURIComponent(this.searchQuery.trim());
+    let apiResults = [];
+
+    try {
+
+        // 1. Try Open Food Facts API v2
+        try {
+            const res = await fetch(
+                `https://world.openfoodfacts.org/api/v2/search?query=${q}&page_size=5`
+            );
+
+            if (res.ok) {
+                const data = await res.json();
+
+                if (data && data.products) {
+                    const offItems = data.products.map(p => ({
+                        id: 'off_' + (p._id || Math.random()),
+                        name: p.product_name_en || p.product_name || 'Unnamed Product',
+                        calories: Math.round(Number(p.nutriments?.['energy-kcal_100g'] || 0)),
+                        protein: Math.round((Number(p.nutriments?.proteins_100g) || 0) * 10) / 10,
+                        carbs: Math.round((Number(p.nutriments?.carbohydrates_100g) || 0) * 10) / 10,
+                        fat: Math.round((Number(p.nutriments?.fat_100g) || 0) * 10) / 10,
+                        sodium: Math.round((Number(p.nutriments?.sodium_100g) || 0) * 1000) || 0,
+                        potassium: Math.round((Number(p.nutriments?.potassium_100g) || 0) * 1000) || 0,
+                        calcium: Math.round((Number(p.nutriments?.calcium_100g) || 0) * 1000) || 0,
+                        iron: Math.round((Number(p.nutriments?.iron_100g) || 0) * 1000) || 0,
+                        vitaminC: Math.round((Number(p.nutriments?.['vitamin-c_100g'] || 0) * 1000) || 0),
+                        baseQty: 100,
+                        baseUnit: 'g',
+                        source: 'Open Food Facts'
+                    })).filter(p => p.name && p.calories > 0);
+
+                    apiResults.push(...offItems);
+                }
+            }
+        } catch (e) {
+            console.warn('Open Food Facts API error, falling back...', e);
+        }
+
+        // 2. Try USDA FoodData Central API (Fallback / Secondary)
+        if (apiResults.length === 0) {
+            try {
+                const usdaRes = await fetch(
+                    `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${q}&pageSize=5`
+                );
+
+                if (usdaRes.ok) {
+                    const usdaData = await usdaRes.json();
+
+                    if (usdaData && usdaData.foods) {
+                        const getNutrient = (nutrients, name) => {
+                            const found = nutrients.find(n =>
+                                n.nutrientName &&
+                                n.nutrientName.toLowerCase().includes(name)
+                            );
+                            return found ? (found.value || 0) : 0;
+                        };
+
+                        const usdaItems = usdaData.foods.map(f => {
+                            const nuts = f.foodNutrients || [];
+
+                            return {
+                                id: 'usda_' + f.fdcId,
+                                name: f.description || 'USDA Food Item',
+                                calories: Math.round(getNutrient(nuts, 'energy')),
+                                protein: Math.round(getNutrient(nuts, 'protein') * 10) / 10,
+                                carbs: Math.round(getNutrient(nuts, 'carbohydrate') * 10) / 10,
+                                fat: Math.round(getNutrient(nuts, 'total lipid') * 10) / 10,
+                                sodium: Math.round(getNutrient(nuts, 'sodium')),
+                                potassium: Math.round(getNutrient(nuts, 'potassium')),
+                                calcium: Math.round(getNutrient(nuts, 'calcium')),
+                                iron: Math.round(getNutrient(nuts, 'iron') * 10) / 10,
+                                vitaminC: Math.round(getNutrient(nuts, 'vitamin c') * 10) / 10,
+                                baseQty: 100,
+                                baseUnit: 'g',
+                                source: 'USDA'
+                            };
+                        }).filter(f => f.calories > 0);
+
+                        apiResults.push(...usdaItems);
                     }
+                }
+            } catch (err) {
+                console.warn('USDA API error, relying on local database matrix', err);
+            }
+        }
 
-                    // 2. Try USDA FoodData Central API (Fallback / Secondary)
-                    if (apiResults.length === 0) {
-                        try {
-                            const usdaRes = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${q}&pageSize=5`);
-                            if (usdaRes.ok) {
-                                const usdaData = await usdaRes.json();
-                                if (usdaData && usdaData.foods) {
-                                    const getNutrient = (nutrients, name) => {
-                                        const found = nutrients.find(n => n.nutrientName && n.nutrientName.toLowerCase().includes(name));
-                                        return found ? (found.value || 0) : 0;
-                                    };
-                                    const usdaItems = usdaData.foods.map(f => {
-                                        const nuts = f.foodNutrients || [];
-                                        return {
-                                            id: 'usda_' + f.fdcId,
-                                            name: f.description || 'USDA Food Item',
-                                            calories: Math.round(getNutrient(nuts, 'energy')),
-                                            protein: Math.round(getNutrient(nuts, 'protein') * 10) / 10,
-                                            carbs: Math.round(getNutrient(nuts, 'carbohydrate') * 10) / 10,
-                                            fat: Math.round(getNutrient(nuts, 'total lipid') * 10) / 10,
-                                            sodium: Math.round(getNutrient(nuts, 'sodium')),
-                                            potassium: Math.round(getNutrient(nuts, 'potassium')),
-                                            calcium: Math.round(getNutrient(nuts, 'calcium')),
-                                            iron: Math.round(getNutrient(nuts, 'iron') * 10) / 10,
-                                            vitaminC: Math.round(getNutrient(nuts, 'vitamin c') * 10) / 10,
-                                            baseQty: 100,
-                                            baseUnit: 'g',
-                                            source: 'USDA'
-                                        };
-                                    }).filter(f => f.calories > 0);
-                                    apiResults.push(...usdaItems);
-                                }
-                            }
-                        } catch (err) {
-                            console.warn('USDA API error, relying on local database matrix', err);
-                        }
-                    }
+        // 3. Local JSON DB Matches
+        const localMatches = this.builtinFoodDatabase
+            .filter(i =>
+                i.name.toLowerCase().includes(this.searchQuery.trim().toLowerCase())
+            )
+            .map(i => ({
+                ...i,
+                source: 'Local JSON DB'
+            }));
 
-                    // 3. Local JSON DB Matches
-                    const localMatches = this.builtinFoodDatabase
-                        .filter(i => i.name.toLowerCase().includes(this.searchQuery.toLowerCase()))
-                        .map(i => ({ ...i, source: 'Local JSON DB' }));
+        // 4. Oracle Cloud Object Storage JSON DB
+        let cloudMatches = [];
 
-                    // Combine results with local matches prioritized
-                    this.searchResults = [...localMatches, ...apiResults];
-                    this.isSearching = false;
+        try {
+            const cloudDBUrl =
+                'https://objectstorage.us-ashburn-1.oraclecloud.com/n/id4qgzdynuqp/b/Food-database-calorie-tracker-app-v2-2026/o/food-database.json';
 
-                    if (this.searchResults.length === 0) {
-                        this.showToast('No foods found across APIs. Try adding a custom entry.', 'ℹ️');
-                    }
-                },
+            const cloudRes = await fetch(cloudDBUrl, {
+                method: 'GET',
+                cache: 'no-cache'
+            });
+
+            if (!cloudRes.ok) {
+                throw new Error(
+                    `Cloud DB HTTP error: ${cloudRes.status}`
+                );
+            }
+
+            const cloudData = await cloudRes.json();
+
+            if (!Array.isArray(cloudData)) {
+                throw new Error('Cloud DB response is not a valid JSON array');
+            }
+
+            cloudMatches = cloudData
+                .filter(i =>
+                    i &&
+                    typeof i.name === 'string' &&
+                    i.name.toLowerCase().includes(
+                        this.searchQuery.trim().toLowerCase()
+                    )
+                )
+                .map((i, index) => ({
+                    ...i,
+                    id: i.id
+                        ? 'cloud_' + i.id
+                        : 'cloud_' + index,
+                    source: 'Cloud DB'
+                }));
+
+            console.log(
+                `Oracle Cloud DB: ${cloudMatches.length} matching foods found`
+            );
+
+        } catch (cloudErr) {
+            console.warn(
+                'Oracle Cloud DB error. Continuing without cloud results...',
+                cloudErr
+            );
+        }
+
+        // 5. Combine all results with local and cloud DB prioritized
+        this.searchResults = [
+            ...localMatches,
+            ...cloudMatches,
+            ...apiResults
+        ];
+
+        if (this.searchResults.length === 0) {
+            this.showToast(
+                'No foods found across APIs. Try adding a custom entry.',
+                'ℹ️'
+            );
+        }
+
+    } catch (err) {
+        console.error('Food search error:', err);
+
+        this.showToast(
+            'An unexpected error occurred during food search.',
+            '⚠️'
+        );
+
+    } finally {
+        this.isSearching = false;
+    }
+},
+
 
                 selectSearchFood(item) {
                     this.selectedFood = item;
