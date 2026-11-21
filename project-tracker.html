@@ -22,13 +22,16 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 24px; line-height: 1.5; }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 16px; line-height: 1.5; }
+        @media (min-width: 768px) { body { padding: 24px; } }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 12px; }
-        .header h1 { font-size: 1.5rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .header h1 { font-size: 1.35rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+        @media (min-width: 768px) { .header h1 { font-size: 1.5rem; } }
         
-        .storage-status { font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+        .storage-status { font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; }
         .status-connected { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .status-mobile { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
         .status-disconnected { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
 
         button { background: var(--primary); color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.875rem; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -39,25 +42,26 @@
         button.btn-danger:hover { background: var(--danger-hover); }
         button.btn-purple { background: var(--purple); }
         button.btn-purple:hover { background: #7c3aed; }
-        button.btn-sm { padding: 4px 8px; font-size: 0.75rem; }
-        button.btn-xs { padding: 2px 6px; font-size: 0.7rem; }
+        button.btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+        button.btn-xs { padding: 3px 7px; font-size: 0.72rem; }
 
-        .view-banner { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: rgba(255, 255, 255, 0.03); padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); }
+        .view-banner { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: rgba(255, 255, 255, 0.03); padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
         .view-banner h2 { font-size: 1.1rem; font-weight: 600; }
 
-        .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; transition: all 0.2s ease; }
-        .project-card.minimized { padding: 14px 20px; }
+        .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px; transition: all 0.2s ease; }
+        @media (min-width: 768px) { .project-card { padding: 20px; } }
+        .project-card.minimized { padding: 14px 18px; }
         
         .project-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .project-card:not(.minimized) .project-header { margin-bottom: 16px; }
         
-        .project-title-area h2 { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .project-title-area h2 { font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .project-desc { color: var(--text-muted); font-size: 0.875rem; margin-top: 4px; }
         
-        .minimized-summary { display: flex; gap: 16px; align-items: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
+        .minimized-summary { display: flex; gap: 14px; align-items: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
         .minimized-summary span { display: inline-flex; align-items: center; gap: 4px; }
 
-        .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 14px; border-radius: 6px; font-size: 0.85rem; }
+        .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 14px; border-radius: 6px; font-size: 0.85rem; }
         .meta-item { display: flex; flex-direction: column; }
         .meta-label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
 
@@ -65,16 +69,17 @@
         .progress-bar { background: var(--success); height: 100%; width: 0%; transition: width 0.3s; }
         .weight-warn { color: var(--warning); font-size: 0.75rem; margin-top: 4px; }
 
-        .milestone-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin-top: 16px; transition: all 0.3s ease; }
+        .milestone-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-top: 16px; transition: all 0.3s ease; }
         .milestone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
         .milestone-title { font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .milestone-submeta { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; display: flex; gap: 16px; flex-wrap: wrap; }
+        .milestone-submeta { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px; display: flex; gap: 14px; flex-wrap: wrap; }
 
         .task-list { list-style: none; margin-top: 8px; }
         .task-item { display: flex; flex-direction: column; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; font-size: 0.875rem; gap: 6px; transition: all 0.3s ease; }
         .task-top-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-        .task-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px; }
-        .task-meta { color: var(--text-muted); font-size: 0.75rem; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .task-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 180px; }
+        .task-left input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; }
+        .task-meta { color: var(--text-muted); font-size: 0.78rem; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
         /* Notes Styling across Level 1, 2, 3 */
         .notes-section { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; width: 100%; }
@@ -83,45 +88,50 @@
         .note-item { display: flex; align-items: flex-start; justify-content: space-between; background: rgba(0, 0, 0, 0.2); padding: 6px 10px; border-radius: 4px; border-left: 3px solid var(--primary); gap: 8px; }
         .note-content { flex: 1; word-break: break-word; }
         .note-timestamp { color: var(--primary); font-size: 0.7rem; font-weight: 600; margin-right: 6px; display: inline-block; }
-        .note-actions { display: flex; gap: 4px; opacity: 0.8; }
-        .note-actions:hover { opacity: 1; }
+        .note-actions { display: flex; gap: 4px; opacity: 0.9; }
 
         .add-note-inline { display: flex; gap: 6px; width: 100%; }
         .add-note-inline input { flex: 1; font-size: 0.8rem; padding: 6px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
         .add-note-inline input:focus { outline: 1px solid var(--primary); border-color: var(--primary); }
 
         /* Modal Styles */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px); }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px); padding: 12px; }
         .modal.active { display: flex; }
-        .modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 100%; max-width: 600px; padding: 24px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .modal-content.modal-lg { max-width: 95vw; width: 95vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px; }
-        .modal-header { font-size: 1.15rem; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 100%; max-width: 600px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .modal-content.modal-lg { max-width: 96vw; width: 96vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 16px; }
+        .modal-header { font-size: 1.1rem; font-weight: 600; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         .form-group { margin-bottom: 14px; }
         .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 0.875rem; }
         .form-group input:focus, .form-group textarea:focus { border-color: var(--primary); outline: none; }
-        .form-row { display: flex; gap: 12px; }
-        .form-row .form-group { flex: 1; }
+        .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .form-row .form-group { flex: 1; min-width: 140px; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 
         .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
         .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
         .badge-completed { background: rgba(16, 185, 129, 0.2); color: var(--success); }
         
-        .empty-state { text-align: center; padding: 48px; color: var(--text-muted); background: var(--surface); border-radius: 8px; border: 1px dashed var(--border); }
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--surface); border-radius: 8px; border: 1px dashed var(--border); }
         
-        /* Gantt View Styles with Fixed Month-Unit Scale */
+        /* Gantt View Styles (Responsive sidebar width for mobile + desktop) */
         .gantt-scroll-wrapper { flex: 1; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; position: relative; margin-top: 10px; }
         .gantt-table { display: table; width: 100%; border-collapse: collapse; }
         .gantt-header { display: flex; position: sticky; top: 0; z-index: 20; background: #111827; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.8rem; color: var(--text-muted); }
-        .gantt-header-label { width: 340px; min-width: 340px; padding: 10px 12px; position: sticky; left: 0; z-index: 30; background: #111827; border-right: 1px solid var(--border); box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
+        
+        .gantt-header-label, .gantt-label { width: 180px; min-width: 180px; }
+        @media (min-width: 768px) {
+            .gantt-header-label, .gantt-label { width: 340px; min-width: 340px; }
+        }
+
+        .gantt-header-label { padding: 10px 12px; position: sticky; left: 0; z-index: 30; background: #111827; border-right: 1px solid var(--border); box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
         .gantt-header-months { flex: 1; display: flex; height: 38px; border-left: 1px solid var(--border); }
         .gantt-month-cell { min-width: 75px; max-width: 75px; width: 75px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 0.725rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; background: #111827; }
         
         .gantt-row { display: flex; align-items: center; font-size: 0.825rem; height: 42px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .gantt-label { width: 340px; min-width: 340px; padding: 0 12px; position: sticky; left: 0; z-index: 10; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; height: 100%; box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
+        .gantt-label { padding: 0 10px; position: sticky; left: 0; z-index: 10; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; height: 100%; box-shadow: 2px 0 5px rgba(0,0,0,0.3); }
         .gantt-label-title { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .gantt-label-sub { font-size: 0.725rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .gantt-label-sub { font-size: 0.7rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .gantt-timeline { flex: 1; position: relative; height: 100%; display: flex; align-items: center; background-image: repeating-linear-gradient(to right, transparent, transparent 74px, rgba(255,255,255,0.04) 74px, rgba(255,255,255,0.04) 75px); }
         
         .gantt-clickable { cursor: pointer; transition: transform 0.15s, filter 0.15s; }
@@ -133,7 +143,6 @@
         .gantt-bar-task { background: linear-gradient(90deg, #10b981, #047857); border: 1px solid #34d399; }
         .gantt-bar-task.completed { background: linear-gradient(90deg, #475569, #334155); opacity: 0.75; text-decoration: line-through; }
 
-        /* Highlight Flash Animation for Gantt Navigation */
         @keyframes highlightFlash {
             0% { outline: 3px solid #3b82f6; box-shadow: 0 0 15px #3b82f6; }
             50% { outline: 3px solid #8b5cf6; box-shadow: 0 0 25px #8b5cf6; }
@@ -152,12 +161,19 @@
     <div class="header">
         <div>
             <h1>📊 Project & Milestone Tracker</h1>
-            <span id="storageStatus" class="storage-status status-disconnected">● File Disconnected</span>
+            <span id="storageStatus" class="storage-status status-disconnected">● Initializing Storage...</span>
         </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button onclick="createNewFile()" class="btn-secondary">📁 Create New File</button>
-            <button onclick="openFile()" class="btn-secondary">📂 Connect Existing File</button>
-            <button onclick="toggleCompletedView()" class="btn-secondary" id="completedToggleBtn">🏆 Completed Projects (0)</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="toolbarButtons">
+            <!-- Desktop Native File System Buttons (Hidden automatically on Android/Mobile) -->
+            <button onclick="createNewFile()" class="btn-secondary desktop-fs-btn">📁 Create New File</button>
+            <button onclick="openFile()" class="btn-secondary desktop-fs-btn">📂 Connect File</button>
+            
+            <!-- Universal Import / Export Buttons (Works on Android Brave, Chrome, iOS & Desktop) -->
+            <button onclick="exportJSON()" class="btn-secondary" title="Download backup/sync JSON">⬇️ Export JSON</button>
+            <button onclick="document.getElementById('importFileInput').click()" class="btn-secondary" title="Load projects.json from device">⬆️ Import JSON</button>
+            <input type="file" id="importFileInput" accept=".json,application/json" style="display: none;" onchange="importJSON(event)">
+
+            <button onclick="toggleCompletedView()" class="btn-secondary" id="completedToggleBtn">🏆 Completed (0)</button>
             <button onclick="openHelpModal()" class="btn-secondary">❓ Help</button>
             <button onclick="openProjectModal()">+ New Project</button>
         </div>
@@ -292,7 +308,7 @@
                 <span id="ganttModalTitle">📊 Project Gantt Chart View</span>
                 <button class="btn-secondary btn-sm" onclick="closeModal('ganttModal')">✕ Close</button>
             </div>
-            <div id="ganttModalBody"></div>
+            <div id="ganttModalBody" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;"></div>
         </div>
     </div>
 
@@ -325,29 +341,22 @@
                 <span>How to Use Project Tracker</span>
             </div>
             <div class="help-body">
+                <h3>📱 Cross-Device Storage (Desktop + Android/Mobile)</h3>
+                <ul>
+                    <li><strong>Automatic Browser Persistence:</strong> Every edit is automatically saved inside your browser's local IndexedDB database, so your projects stay safe on Android Brave/Chrome even if you close the tab.</li>
+                    <li><strong>Transferring Between PC & Phone:</strong> Use <code>⬇️ Export JSON</code> to download your <code>projects.json</code> file and <code>⬆️ Import JSON</code> to load it on any device.</li>
+                    <li><strong>Desktop Direct File Sync:</strong> On supported desktop browsers, you can still link a live <code>projects.json</code> file directly on disk.</li>
+                </ul>
+
                 <h3>📊 Interactive Gantt Chart View</h3>
                 <ul>
-                    <li>Click the <code>📊 Gantt Chart</code> button on any project card to view an interactive visual timeline.</li>
-                    <li><strong>Month Unit Scale:</strong> Fixed month resolution (1 Month = 75px / ~2cm) scales for short-term and multi-decade projects.</li>
-                    <li><strong>Direct Board Navigation:</strong> Click any bar or label to scroll straight to the item on the main board and edit it.</li>
+                    <li>Click <code>📊 Gantt Chart</code> on any project card to view a month-scaled timeline (1 Month = 75px).</li>
+                    <li>Click any bar or item title in the Gantt view to jump straight to that item on the main board and edit it.</li>
                 </ul>
 
                 <h3>📝 3-Level Editable Note System</h3>
                 <ul>
-                    <li><strong>Project Level Notes:</strong> Keep macro-level status logs, strategy notes, or team updates.</li>
-                    <li><strong>Milestone Level Notes:</strong> Track phase deliverables, blockers, or milestone reviews.</li>
-                    <li><strong>Task Level Notes:</strong> Store granular developer notes, links, or technical details.</li>
-                    <li><strong>Edit & Delete:</strong> Click the edit (✏️) icon to update any note or the trash (🗑️) icon to remove it.</li>
-                </ul>
-
-                <h3>↕️ Minimizing Project Cards</h3>
-                <ul>
-                    <li>Click <code>Minimize</code> / <code>Expand</code> on any card to collapse its details.</li>
-                </ul>
-
-                <h3>🏆 Completed Projects Archive</h3>
-                <ul>
-                    <li>Projects reaching <strong>100% completion</strong> move into the Completed Projects view automatically.</li>
+                    <li>Add, edit (✏️), and delete (🗑️) timestamped notes at the <strong>Project</strong>, <strong>Milestone</strong>, and <strong>Task</strong> levels.</li>
                 </ul>
             </div>
             <div class="modal-actions">
@@ -361,58 +370,117 @@
         let fileHandle = null;
         let showCompletedView = false;
 
+        // Feature detection: Android browsers do not expose showSaveFilePicker / showOpenFilePicker
+        const supportsFileSystemAccess = ('showSaveFilePicker' in window) && ('showOpenFilePicker' in window);
+
         const DB_NAME = 'ProjectTrackerFSDB_v5';
-        const STORE_NAME = 'handles';
+        const STORE_HANDLES = 'handles';
+        const STORE_DATA = 'appState';
         const HANDLE_KEY = 'currentFileHandle';
+        const DATA_KEY = 'projectsData';
 
         function openDB() {
             return new Promise((resolve, reject) => {
-                const req = indexedDB.open(DB_NAME, 1);
-                req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+                const req = indexedDB.open(DB_NAME, 2);
+                req.onupgradeneeded = (e) => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(STORE_HANDLES)) {
+                        db.createObjectStore(STORE_HANDLES);
+                    }
+                    if (!db.objectStoreNames.contains(STORE_DATA)) {
+                        db.createObjectStore(STORE_DATA);
+                    }
+                };
                 req.onsuccess = () => resolve(req.result);
                 req.onerror = () => reject(req.error);
             });
         }
 
+        async function saveToIndexedDB(data) {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(STORE_DATA, 'readwrite');
+                tx.objectStore(STORE_DATA).put(data, DATA_KEY);
+                return new Promise((resolve) => {
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => resolve();
+                });
+            } catch (err) {
+                console.warn('IndexedDB data save error:', err);
+            }
+        }
+
+        async function loadFromIndexedDB() {
+            try {
+                const db = await openDB();
+                return new Promise((resolve) => {
+                    const tx = db.transaction(STORE_DATA, 'readonly');
+                    const req = tx.objectStore(STORE_DATA).get(DATA_KEY);
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (err) {
+                return null;
+            }
+        }
+
         async function storeHandle(handle) {
             const db = await openDB();
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            tx.objectStore(STORE_NAME).put(handle, HANDLE_KEY);
+            const tx = db.transaction(STORE_HANDLES, 'readwrite');
+            tx.objectStore(STORE_HANDLES).put(handle, HANDLE_KEY);
             return tx.complete;
         }
 
         async function getStoredHandle() {
             const db = await openDB();
             return new Promise((resolve) => {
-                const tx = db.transaction(STORE_NAME, 'readonly');
-                const req = tx.objectStore(STORE_NAME).get(HANDLE_KEY);
+                const tx = db.transaction(STORE_HANDLES, 'readonly');
+                const req = tx.objectStore(STORE_HANDLES).get(HANDLE_KEY);
                 req.onsuccess = () => resolve(req.result || null);
                 req.onerror = () => resolve(null);
             });
         }
 
-        async function autoLoadFile() {
-            try {
-                const storedHandle = await getStoredHandle();
-                if (storedHandle) {
-                    const permission = await storedHandle.queryPermission({ mode: 'readwrite' });
-                    if (permission === 'granted' || (await storedHandle.requestPermission({ mode: 'readwrite' })) === 'granted') {
-                        fileHandle = storedHandle;
-                        await readFileContent();
-                        updateStatus(true);
-                        return;
-                    }
-                }
-            } catch (err) {
-                console.warn('Auto-load failed:', err);
+        async function initApp() {
+            // Hide desktop-only File System Access API buttons if running on Android/iOS
+            if (!supportsFileSystemAccess) {
+                document.querySelectorAll('.desktop-fs-btn').forEach(btn => btn.style.display = 'none');
             }
-            updateStatus(false);
+
+            // 1. Always load cached IndexedDB data first so mobile & offline users have instant data
+            const cachedData = await loadFromIndexedDB();
+            if (Array.isArray(cachedData)) {
+                appData = cachedData;
+            }
+
+            // 2. If Desktop supports File System Access API, attempt to reconnect live file handle
+            if (supportsFileSystemAccess) {
+                try {
+                    const storedHandle = await getStoredHandle();
+                    if (storedHandle) {
+                        const permission = await storedHandle.queryPermission({ mode: 'readwrite' });
+                        if (permission === 'granted' || (await storedHandle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+                            fileHandle = storedHandle;
+                            await readFileContent();
+                            updateStatus('desktop-connected');
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Auto-load file handle skipped:', err);
+                }
+                updateStatus('desktop-disconnected');
+            } else {
+                // Running on Android Brave / Chrome / Mobile
+                updateStatus('mobile-saved');
+            }
+
             render();
         }
 
         async function createNewFile() {
-            if (!('showSaveFilePicker' in window)) {
-                return alert('File System Access API is not supported in this browser. Please use Chrome, Edge, or Opera.');
+            if (!supportsFileSystemAccess) {
+                return alert('Direct disk file creation is not supported on mobile browsers. Your data is auto-saved in browser storage—use "Export JSON" to download a file.');
             }
             try {
                 fileHandle = await window.showSaveFilePicker({
@@ -420,9 +488,8 @@
                     types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }]
                 });
                 await storeHandle(fileHandle);
-                appData = [];
                 await writeDataToFile();
-                updateStatus(true);
+                updateStatus('desktop-connected');
                 render();
             } catch (err) {
                 if (err.name !== 'AbortError') alert('Error creating file: ' + err.message);
@@ -430,8 +497,8 @@
         }
 
         async function openFile() {
-            if (!('showOpenFilePicker' in window)) {
-                return alert('File System Access API is not supported in this browser.');
+            if (!supportsFileSystemAccess) {
+                return document.getElementById('importFileInput').click();
             }
             try {
                 const [handle] = await window.showOpenFilePicker({
@@ -441,7 +508,7 @@
                 fileHandle = handle;
                 await storeHandle(fileHandle);
                 await readFileContent();
-                updateStatus(true);
+                updateStatus('desktop-connected');
             } catch (err) {
                 if (err.name !== 'AbortError') alert('Error opening file: ' + err.message);
             }
@@ -452,32 +519,79 @@
             const file = await fileHandle.getFile();
             const text = await file.text();
             appData = text.trim() ? JSON.parse(text) : [];
+            await saveToIndexedDB(appData);
             render();
         }
 
         async function writeDataToFile() {
-            if (!fileHandle) {
-                const userChoice = confirm('No local JSON file connected. Create or select a JSON file now?');
-                if (userChoice) await createNewFile();
-                return;
-            }
-            try {
-                const writable = await fileHandle.createWritable();
-                await writable.write(JSON.stringify(appData, null, 2));
-                await writable.close();
-            } catch (err) {
-                alert('Failed to write to file: ' + err.message);
+            // Always persist to IndexedDB on every save (works on both Android and Desktop)
+            await saveToIndexedDB(appData);
+
+            // If desktop file handle is connected, mirror changes directly to disk
+            if (supportsFileSystemAccess && fileHandle) {
+                try {
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(JSON.stringify(appData, null, 2));
+                    await writable.close();
+                } catch (err) {
+                    alert('Failed to write to local file: ' + err.message);
+                }
             }
         }
 
-        function updateStatus(connected) {
+        /* --- UNIVERSAL EXPORT / IMPORT FOR ANDROID & DESKTOP --- */
+
+        function exportJSON() {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'projects.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (!Array.isArray(parsed)) {
+                        return alert('Invalid projects.json format. Expected a JSON array of projects.');
+                    }
+                    if (appData.length > 0 && !confirm('Importing will replace your current workspace data with the uploaded file. Continue?')) {
+                        event.target.value = '';
+                        return;
+                    }
+                    appData = parsed;
+                    await saveData();
+                    alert(`Successfully imported ${appData.length} project(s)!`);
+                } catch (err) {
+                    alert('Failed to parse JSON file: ' + err.message);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function updateStatus(mode) {
             const el = document.getElementById('storageStatus');
-            if (connected && fileHandle) {
+            if (mode === 'desktop-connected' && fileHandle) {
                 el.className = 'storage-status status-connected';
-                el.innerText = `● Connected: ${fileHandle.name}`;
+                el.innerText = `● File Synced: ${fileHandle.name}`;
+            } else if (mode === 'mobile-saved') {
+                el.className = 'storage-status status-mobile';
+                el.innerText = '● Auto-Saved in Mobile Browser (Use Export/Import for JSON)';
             } else {
                 el.className = 'storage-status status-disconnected';
-                el.innerText = '● File Disconnected (Local Memory Only)';
+                el.innerText = '● Auto-Saved in Browser (No Disk File Linked)';
             }
         }
 
@@ -822,6 +936,7 @@
 
             const PX_PER_MONTH = 75;
             const timelineWidthPx = monthList.length * PX_PER_MONTH;
+            const sidebarWidthPx = window.innerWidth < 768 ? 180 : 340;
 
             const rangeStartTs = new Date(monthList[0].year, monthList[0].month, 1).getTime();
             const lastMonthIndex = monthList.length - 1;
@@ -848,14 +963,14 @@
             const formatDateLabel = (ts) => new Date(ts).toISOString().substring(0, 10);
 
             let html = `
-                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                    <span>📅 Schedule Range: <strong>${formatDateLabel(rawMinDate)}</strong> to <strong>${formatDateLabel(rawMaxDate)}</strong> (${monthList.length} Months Total)</span>
-                    <span>💡 <em>Click any item or bar to jump directly to board & edit</em></span>
+                <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                    <span>📅 <strong>${formatDateLabel(rawMinDate)}</strong> to <strong>${formatDateLabel(rawMaxDate)}</strong> (${monthList.length} Mos)</span>
+                    <span>💡 <em>Tap any bar to edit</em></span>
                 </div>
                 <div class="gantt-scroll-wrapper">
-                    <div class="gantt-table" style="min-width: ${340 + timelineWidthPx}px;">
+                    <div class="gantt-table" style="min-width: ${sidebarWidthPx + timelineWidthPx}px;">
                         <div class="gantt-header">
-                            <div class="gantt-header-label">Item / Budget Breakdown</div>
+                            <div class="gantt-header-label">Item / Budget</div>
                             <div class="gantt-header-months">
                                 ${monthList.map(m => `
                                     <div class="gantt-month-cell">${monthNames[m.month]} '${String(m.year).slice(-2)}</div>
@@ -869,12 +984,12 @@
             const projW = calcWidthPx(proj.startDate, proj.deadline);
             html += `
                 <div class="gantt-row" style="background: rgba(59, 130, 246, 0.12);">
-                    <div class="gantt-label gantt-clickable" style="background: #1e293b;" onclick="navigateToAndEdit('project', '${proj.id}')" title="Click to edit project on main board">
+                    <div class="gantt-label gantt-clickable" style="background: #1e293b;" onclick="navigateToAndEdit('project', '${proj.id}')" title="Tap to edit project">
                         <span class="gantt-label-title">📁 ${escapeHtml(proj.name)}</span>
-                        <span class="gantt-label-sub">Total Project Budget: ₹${proj.budget || 0}L</span>
+                        <span class="gantt-label-sub">Budget: ₹${proj.budget || 0}L</span>
                     </div>
                     <div class="gantt-timeline" style="width: ${timelineWidthPx}px;">
-                        <div class="gantt-bar gantt-bar-proj gantt-clickable" style="left: ${projLeft}px; width: ${projW}px;" onclick="navigateToAndEdit('project', '${proj.id}')" title="Click to edit project on main board">
+                        <div class="gantt-bar gantt-bar-proj gantt-clickable" style="left: ${projLeft}px; width: ${projW}px;" onclick="navigateToAndEdit('project', '${proj.id}')" title="Tap to edit project">
                             📁 ${escapeHtml(proj.name)} (${proj.startDate || 'N/A'} - ${proj.deadline || 'N/A'}) [₹${proj.budget || 0}L]
                         </div>
                     </div>
@@ -887,12 +1002,12 @@
                 const msW = calcWidthPx(ms.startDate, ms.deadline);
                 html += `
                     <div class="gantt-row" style="background: rgba(139, 92, 246, 0.08);">
-                        <div class="gantt-label gantt-clickable" style="padding-left: 20px; background: #1e293b;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="Click to edit milestone on main board">
+                        <div class="gantt-label gantt-clickable" style="padding-left: 16px; background: #1e293b;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="Tap to edit milestone">
                             <span class="gantt-label-title">🚩 ${escapeHtml(ms.title)}</span>
-                            <span class="gantt-label-sub">Budget: ₹${ms.budget || 0}L | Weight: ${ms.weight}%</span>
+                            <span class="gantt-label-sub">₹${ms.budget || 0}L | ${ms.weight}%</span>
                         </div>
                         <div class="gantt-timeline" style="width: ${timelineWidthPx}px;">
-                            <div class="gantt-bar gantt-bar-ms gantt-clickable" style="left: ${msLeft}px; width: ${msW}px;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="Click to edit milestone on main board">
+                            <div class="gantt-bar gantt-bar-ms gantt-clickable" style="left: ${msLeft}px; width: ${msW}px;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="Tap to edit milestone">
                                 🚩 ${escapeHtml(ms.title)} (${ms.startDate || 'N/A'} - ${ms.deadline || 'N/A'}) [₹${ms.budget || 0}L]
                             </div>
                         </div>
@@ -904,12 +1019,12 @@
                     const tW = calcWidthPx(t.startDate, t.deadline);
                     html += `
                         <div class="gantt-row">
-                            <div class="gantt-label gantt-clickable" style="padding-left: 38px; background: #1e293b;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="Click to edit task on main board">
-                                <span class="gantt-label-title" style="font-weight: normal; font-size: 0.8rem;">${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)}</span>
-                                <span class="gantt-label-sub">Budget: ₹${t.budget || 0}L</span>
+                            <div class="gantt-label gantt-clickable" style="padding-left: 28px; background: #1e293b;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="Tap to edit task">
+                                <span class="gantt-label-title" style="font-weight: normal; font-size: 0.78rem;">${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)}</span>
+                                <span class="gantt-label-sub">₹${t.budget || 0}L</span>
                             </div>
                             <div class="gantt-timeline" style="width: ${timelineWidthPx}px;">
-                                <div class="gantt-bar gantt-bar-task ${t.completed ? 'completed' : ''} gantt-clickable" style="left: ${tLeft}px; width: ${tW}px;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="Click to edit task on main board">
+                                <div class="gantt-bar gantt-bar-task ${t.completed ? 'completed' : ''} gantt-clickable" style="left: ${tLeft}px; width: ${tW}px;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="Tap to edit task">
                                     ${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)} (${t.startDate || 'N/A'} - ${t.deadline || 'N/A'}) [₹${t.budget || 0}L]
                                 </div>
                             </div>
@@ -929,17 +1044,17 @@
 
         function render() {
             const completedCount = appData.filter(p => calculateProjectMetrics(p).progress === 100).length;
-            document.getElementById('completedToggleBtn').innerText = `🏆 Completed Projects (${completedCount})`;
+            document.getElementById('completedToggleBtn').innerText = `🏆 Completed (${completedCount})`;
 
             const viewTitle = document.getElementById('viewTitle');
             const viewSubtitle = document.getElementById('viewSubtitle');
 
             if (showCompletedView) {
                 viewTitle.innerText = "🏆 Completed Projects Archive";
-                viewSubtitle.innerText = "Showing projects that reached 100% completion";
+                viewSubtitle.innerText = "Projects at 100% completion";
             } else {
                 viewTitle.innerText = "Active Projects";
-                viewSubtitle.innerText = "Showing currently active projects in progress";
+                viewSubtitle.innerText = "Currently active projects";
             }
 
             const filteredProjects = appData.filter(proj => {
@@ -952,7 +1067,7 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <p style="font-size: 1.1rem; margin-bottom: 8px;">No ${showCompletedView ? 'completed' : 'active'} projects found.</p>
-                        <p style="margin-bottom: 16px;">${showCompletedView ? 'Projects reaching 100% completion will automatically appear here.' : 'Create a new project to get started.'}</p>
+                        <p style="margin-bottom: 16px;">${showCompletedView ? 'Projects reaching 100% completion will automatically appear here.' : 'Create a new project or import your projects.json file.'}</p>
                         ${!showCompletedView ? '<button onclick="openProjectModal()">+ Create First Project</button>' : ''}
                     </div>`;
                 return;
@@ -992,7 +1107,7 @@
                             ${progress === 100 ? `<button class="btn-secondary btn-sm" style="color: var(--success); border-color: var(--success);" onclick="restoreProject('${proj.id}')">↩ Restore</button>` : ''}
                             <button class="btn-secondary btn-sm" onclick="openProjectModal('${proj.id}')">Edit</button>
                             <button class="btn-danger btn-sm" onclick="deleteProject('${proj.id}')">Delete</button>
-                            ${!isMinimized ? `<button class="btn-sm" onclick="openMilestoneModal('${proj.id}')">+ Add Milestone</button>` : ''}
+                            ${!isMinimized ? `<button class="btn-sm" onclick="openMilestoneModal('${proj.id}')">+ Milestone</button>` : ''}
                         </div>
                     </div>
 
@@ -1039,7 +1154,7 @@
                                     <span>🚩 ${escapeHtml(ms.title)}</span>
                                     <span class="badge ${msPercent === 100 ? 'badge-completed' : 'badge-pending'}">${ms.weight}% Weight (${msPercent}% Done)</span>
                                 </div>
-                                <div>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                                     <button class="btn-secondary btn-sm" onclick="openMilestoneModal('${proj.id}', '${ms.id}')">Edit</button>
                                     <button class="btn-danger btn-sm" onclick="deleteMilestone('${proj.id}', '${ms.id}')">Delete</button>
                                     <button class="btn-sm" onclick="openTaskModal('${proj.id}', '${ms.id}')">+ Task</button>
@@ -1334,7 +1449,7 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        autoLoadFile();
+        initApp();
     </script>
 </body>
 </html>
