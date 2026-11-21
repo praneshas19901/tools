@@ -67,24 +67,25 @@ jobs:
             print(f"Successfully injected secrets into {filename}")
           '
 
-      - name: Stage Pages Files
+      - name: Stage All Root HTML Files
+        shell: bash
         run: |
           rm -rf _site
           mkdir -p _site
-          for f in index.html calorietracker-v2.html project-tracker.html; do
-            if [ -f "$f" ]; then
-              cp "$f" "_site/$f"
-            else
-              echo "Skipping missing file: $f"
-            fi
-          done
+          shopt -s nullglob
+          html_files=(*.html)
+          if [ ${#html_files[@]} -eq 0 ]; then
+            echo "ERROR: No *.html files found in repository root."
+            exit 1
+          fi
+          cp -v "${html_files[@]}" _site/
           ls -la _site
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@v4
         with:
           path: "_site"
 
