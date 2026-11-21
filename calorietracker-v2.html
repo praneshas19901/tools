@@ -654,7 +654,7 @@
                 <!-- TAB 1: MULTI-API UNIFIED SEARCH WITH FALLBACKS -->
                 <div x-show="addMode === 'search'" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Search Open Food Facts, USDA & Local DB</label>
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Search Open Food Facts, USDA, Cloud DB & Local DB</label>
                         <div class="flex space-x-2">
                             <input type="text" x-model="searchQuery" @input="onSearchInput()" @keydown.enter="searchFoodAPIs()" placeholder="e.g. Dosa, Apple, Paneer, Chicken..." class="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500">
                             <button @click="searchFoodAPIs()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-1 shrink-0">
