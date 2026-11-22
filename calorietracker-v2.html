@@ -1071,54 +1071,59 @@
                 },
 
                 async handleEmailAuth() {
-                    var self = this;
-                    if (!this.authEmail || !this.authPassword) {
-                        this.showToast('Please provide email and password', '⚠️');
-                        return;
-                    }
+    var self = this;
+    if (!this.authEmail || !this.authPassword) {
+        this.showToast('Please provide email and password', '⚠️');
+        return;
+    }
 
-                    try {
-                        if (this.isSignUp) {
-                            const { error } = await self.supabaseClient.auth.signUp({
-                                email: self.authEmail,
-                                password: self.authPassword
-                            });
-                            if (error) throw error;
-                            self.showToast('Registration complete! Check your email to verify.', '✅');
-                        } else {
-                            const { data, error } = await self.supabaseClient.auth.signInWithPassword({
-                                email: self.authEmail,
-                                password: self.authPassword
-                            });
-                            if (error) throw error;
-                            self.dbConnected = true;
-                            self.userEmail = data.user.email;
-                            const { data: profileData } = await self.supabaseClient
-                                .from('user_profiles')
-                                .select('is_approved')
-                                .eq('id', data.user.id)
-                                .single();
-                            self.isUserApproved = profileData ? profileData.is_approved : false;
-                            self.showAuthModal = false;
-                            self.showToast('Successfully signed in!', '⚡');
-                            await self.loadDayData();
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        self.showToast(err.message || 'Authentication error', '❌');
-                    }
-                },
+    if (!this.supabaseClient) {
+        this.showToast('Supabase is not configured. Check SUPABASE_URL and SUPABASE_ANON_KEY.', '❌');
+        return;
+    }
 
-                async logoutUser() {
-                    if (this.supabaseClient) {
-                        await this.supabaseClient.auth.signOut();
-                        this.dbConnected = false;
-                        this.isUserApproved = false;
-                        this.userEmail = '';
-                        this.loadDayData();
-                        this.showToast('Signed out securely', '🔒');
-                    }
-                },
+    try {
+        if (this.isSignUp) {
+            const { error } = await self.supabaseClient.auth.signUp({
+                email: self.authEmail,
+                password: self.authPassword
+            });
+            if (error) throw error;
+            self.showToast('Registration complete! Check your email to verify.', '✅');
+        } else {
+            const { data, error } = await self.supabaseClient.auth.signInWithPassword({
+                email: self.authEmail,
+                password: self.authPassword
+            });
+            if (error) throw error;
+            self.dbConnected = true;
+            self.userEmail = data.user.email;
+            const { data: profileData } = await self.supabaseClient
+                .from('user_profiles')
+                .select('is_approved')
+                .eq('id', data.user.id)
+                .single();
+            self.isUserApproved = profileData ? profileData.is_approved : false;
+            self.showAuthModal = false;
+            self.showToast('Successfully signed in!', '⚡');
+            await self.loadDayData();
+        }
+    } catch (err) {
+        console.error(err);
+        self.showToast(err.message || 'Authentication error', '❌');
+    }
+},
+
+async logoutUser() {
+    if (this.supabaseClient) {
+        await this.supabaseClient.auth.signOut();
+    }
+    this.dbConnected = false;
+    this.isUserApproved = false;
+    this.userEmail = '';
+    await this.loadDayData();
+    this.showToast('Signed out securely', '🔒');
+},
 
                 async loadLocalFoodDbJson() {
                     const savedDb = localStorage.getItem('localFoodDatabaseJson');
