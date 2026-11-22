@@ -98,6 +98,7 @@ Below is an overview of the tools currently available in this repository:
 
 | Status | Tool Name | Category | Key Capabilities |
 | :---: | :--- | :--- | :--- |
+| 🟢 | ⏱️ **Progress Timers** | `Productivity` | Run multiple independent progress timers with labels, target durations, start/pause/stop/reset controls, ten color choices, and drag-and-drop ordering. Timer settings and progress are saved in browser IndexedDB and persist across refreshes. |
 | 🟢 | 📋 **Project and Milestone Tracker with Gannt Chart view** | `Productivity` | Create projects with budgets, milestones and tasks and track progress in Gannt chart views. |
 | 🟢 | 📋 **Kanban Task Tracker** | `Productivity` | Priority lane management, visual task statuses, and workflow bottleneck tracking. |
 | 🟡 | 🥗 **Calorie Tracker v2** | `Nutrition` | Advanced macro logging powered by Supabase RLS with interactive calorie goal visualizations. |
@@ -116,7 +117,7 @@ Below is an overview of the tools currently available in this repository:
 - **Frontend Core**: Standard HTML5 & Modern ES6+ JavaScript
 - **Styling**: Tailwind CSS (loaded via CDN for clean, utility-first styling)
 - **UI Assets**: FontAwesome icon library
-- **Persistence**: Browser `LocalStorage` API (Offline-first)
+- **Persistence**: Browser `LocalStorage` and `IndexedDB` APIs (offline-first; Progress Timers uses IndexedDB)
 - **Database / Auth**: Supabase PostgreSQL + RLS (*Calorie Tracker v2 only*)
 
 ---
