@@ -961,6 +961,10 @@
 
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             const formatDateLabel = (ts) => new Date(ts).toISOString().substring(0, 10);
+            const ganttItemTitle = (itemName, notes) => {
+                const noteLines = (notes || []).map(note => `• ${note.text}`).join('\n');
+                return escapeHtml(`${itemName}\n${noteLines || 'No notes'}`);
+            };
 
             let html = `
                 <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
@@ -1002,12 +1006,12 @@
                 const msW = calcWidthPx(ms.startDate, ms.deadline);
                 html += `
                     <div class="gantt-row" style="background: rgba(139, 92, 246, 0.08);">
-                        <div class="gantt-label gantt-clickable" style="padding-left: 16px; background: #1e293b;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="Tap to edit milestone">
+                        <div class="gantt-label gantt-clickable" style="padding-left: 16px; background: #1e293b;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="${ganttItemTitle(ms.title, ms.notes)}">
                             <span class="gantt-label-title">🚩 ${escapeHtml(ms.title)}</span>
                             <span class="gantt-label-sub">₹${ms.budget || 0}L | ${ms.weight}%</span>
                         </div>
                         <div class="gantt-timeline" style="width: ${timelineWidthPx}px;">
-                            <div class="gantt-bar gantt-bar-ms gantt-clickable" style="left: ${msLeft}px; width: ${msW}px;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="Tap to edit milestone">
+                            <div class="gantt-bar gantt-bar-ms gantt-clickable" style="left: ${msLeft}px; width: ${msW}px;" onclick="navigateToAndEdit('milestone', '${proj.id}', '${ms.id}')" title="${ganttItemTitle(ms.title, ms.notes)}">
                                 🚩 ${escapeHtml(ms.title)} (${ms.startDate || 'N/A'} - ${ms.deadline || 'N/A'}) [₹${ms.budget || 0}L]
                             </div>
                         </div>
@@ -1019,12 +1023,12 @@
                     const tW = calcWidthPx(t.startDate, t.deadline);
                     html += `
                         <div class="gantt-row">
-                            <div class="gantt-label gantt-clickable" style="padding-left: 28px; background: #1e293b;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="Tap to edit task">
+                            <div class="gantt-label gantt-clickable" style="padding-left: 28px; background: #1e293b;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="${ganttItemTitle(t.title, t.notes)}">
                                 <span class="gantt-label-title" style="font-weight: normal; font-size: 0.78rem;">${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)}</span>
                                 <span class="gantt-label-sub">₹${t.budget || 0}L</span>
                             </div>
                             <div class="gantt-timeline" style="width: ${timelineWidthPx}px;">
-                                <div class="gantt-bar gantt-bar-task ${t.completed ? 'completed' : ''} gantt-clickable" style="left: ${tLeft}px; width: ${tW}px;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="Tap to edit task">
+                                <div class="gantt-bar gantt-bar-task ${t.completed ? 'completed' : ''} gantt-clickable" style="left: ${tLeft}px; width: ${tW}px;" onclick="navigateToAndEdit('task', '${proj.id}', '${ms.id}', '${t.id}')" title="${ganttItemTitle(t.title, t.notes)}">
                                     ${t.completed ? '✅' : '🔹'} ${escapeHtml(t.title)} (${t.startDate || 'N/A'} - ${t.deadline || 'N/A'}) [₹${t.budget || 0}L]
                                 </div>
                             </div>
