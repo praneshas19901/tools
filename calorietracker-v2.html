@@ -547,43 +547,84 @@
         </div>
     </div>
 
-    <!-- MODAL: HELP & PERSISTENT FILE API GUIDE -->
+    <!-- MODAL: USER GUIDE & DATA NOTES -->
     <div x-show="showHelpModal" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200 dark:border-slate-700" @click.stop>
             <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-brand-50 dark:bg-brand-950/40">
                 <div class="flex items-center space-x-2">
                     <span class="text-xl">📖</span>
-                    <h3 class="font-bold text-lg text-brand-800 dark:text-brand-300">Help, Multi-API Search & File Persistence Guide</h3>
+                    <div>
+                        <h3 class="font-bold text-lg text-brand-800 dark:text-brand-300">NutriTrack Pro User Guide</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">A quick guide to logging food, reading your dashboard, and managing your data</p>
+                    </div>
                 </div>
-                <button @click="showHelpModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+                <button @click="showHelpModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg" aria-label="Close user guide" title="Close guide">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            
-            <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-sm text-slate-600 dark:text-slate-300">
-                <div class="space-y-1.5">
-                    <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-                        <span>🔍</span><span>1. Multi-API Food Search with Fallbacks</span>
-                    </h4>
-                    <p class="text-xs leading-relaxed">
-                        Searches simultaneously across <strong>Open Food Facts (v2 API)</strong> and the <strong>USDA FoodData Central API</strong>, seamlessly falling back to your local <code>food-database.json</code> matrix if any network error or rate limit occurs.
-                    </p>
+
+            <div class="p-5 sm:p-6 space-y-6 max-h-[75vh] overflow-y-auto text-sm text-slate-600 dark:text-slate-300">
+                <div class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-4">
+                    <h4 class="font-bold text-amber-900 dark:text-amber-200">⚠️ Development build: use test data only</h4>
+                    <p class="text-xs leading-relaxed mt-1">This app is still in development. Its on-screen notice says the Supabase database is accessible by the administrator. Do not enter real, sensitive, or health-critical information. Nutrition values are estimates and should not be used as medical advice.</p>
                 </div>
 
-                <div class="space-y-1.5 border-t border-slate-100 dark:border-slate-700 pt-4">
-                    <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-                        <span>💾</span><span>2. Saving API Items to Local JSON DB</span>
-                    </h4>
-                    <p class="text-xs leading-relaxed">
-                        When you find any food item from Open Food Facts or USDA, click <strong>"+ Save to DB"</strong> to permanently store it in your local <code>food-database.json</code> file and sync it across sessions.
-                    </p>
+                <section class="space-y-2">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">1. Start with a day</h4>
+                    <p class="text-xs leading-relaxed">The date selector controls which day you are viewing and logging. Use the arrows to move one day at a time, choose a date directly, or select <strong>Today</strong>. Food entries and totals belong to the selected date.</p>
+                </section>
+
+                <section class="space-y-2 border-t border-slate-100 dark:border-slate-700 pt-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">2. Find and log a food</h4>
+                    <ol class="list-decimal pl-5 space-y-1 text-xs leading-relaxed">
+                        <li>Select <strong>Add Food / Search</strong>, enter a food name, then press Enter or <strong>Search</strong>.</li>
+                        <li>Results can come from your local food list, the app's online food list, Open Food Facts, and USDA. Open Food Facts is tried first; USDA is queried when it returns no usable results. Online results may be unavailable or incomplete.</li>
+                        <li>Choose a result to see its nutrition basis (usually per 100 g). Enter the amount you ate and its unit; the app scales the listed nutrients proportionally. Check that the result and portion match your food.</li>
+                        <li>Select <strong>Add to Today's Log</strong>. The entry appears in the meal list and updates the dashboard for the selected date.</li>
+                    </ol>
+                    <p class="text-xs leading-relaxed">Search results are combined with local and online database matches. If search has no usable match, try a different term or use <strong>Quick Custom</strong>.</p>
+                </section>
+
+                <section class="space-y-2 border-t border-slate-100 dark:border-slate-700 pt-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">3. Add a custom meal or snack</h4>
+                    <p class="text-xs leading-relaxed">Open the <strong>Quick Custom</strong> tab to enter a name, calories, serving description, and any macro or nutrient values you know. Calories and name are required; omitted nutrients are treated as zero. This is useful for homemade meals, but the accuracy depends on the values you enter.</p>
+                </section>
+
+                <section class="space-y-2 border-t border-slate-100 dark:border-slate-700 pt-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">4. Read your dashboard</h4>
+                    <ul class="list-disc pl-5 space-y-1 text-xs leading-relaxed">
+                        <li><strong>Daily Calorie Progress</strong> compares logged calories with your calorie target and shows consumed, remaining/over target, and percentage progress. Hover over the progress area to see calorie contributors.</li>
+                        <li><strong>Macronutrient Targets</strong> shows protein, carbohydrates, and fat against the displayed targets. Hover over a macro to see which logged foods contribute to it.</li>
+                        <li><strong>Micronutrients &amp; Electrolytes</strong> summarizes sodium, potassium, calcium, iron, and vitamin C. Hover over a nutrient card to see contributors. The displayed reference values are general guideposts, not personalized recommendations.</li>
+                        <li><strong>Logged Meals &amp; Snacks</strong> lists the foods recorded for that day. Use the trash button on an entry to remove it.</li>
+                    </ul>
+                </section>
+
+                <section class="space-y-2 border-t border-slate-100 dark:border-slate-700 pt-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">5. Set your calorie target and theme</h4>
+                    <p class="text-xs leading-relaxed">Use the target control in the header to adjust the daily calorie goal. The app saves this setting in this browser. Use the sun/moon control to switch between light and dark themes.</p>
+                </section>
+
+                <section class="space-y-2 border-t border-slate-100 dark:border-slate-700 pt-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">6. Manage your local food list</h4>
+                    <p class="text-xs leading-relaxed">In <strong>Add Food / Search → Food DB Manager</strong>, add a food or edit and delete existing local entries. Nutrition values are stored against the entry's base quantity and unit (new entries default to 100 g). Search-result <strong>Save to DB</strong> adds that food to your local list for future use.</p>
+                    <p class="text-xs leading-relaxed">The folder control in the header lets you choose an existing <code>food-database.json</code> file. On supported browsers, changes can be written to that file after you grant access. The permission may need to be granted again. The adjacent ✨ control downloads a starter JSON file. If file access is unavailable, the app still keeps its local database in this browser's storage; export or back up your data yourself.</p>
+                </section>
+
+                <section class="space-y-2 border-t border-slate-100 dark:border-slate-700 pt-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">7. Saving, cloud sign-in, and privacy</h4>
+                    <p class="text-xs leading-relaxed">Without an approved cloud session, daily logs are saved in this browser's local storage. They are not automatically shared across browsers or devices and may be lost if browser site data is cleared. The app can also offer Supabase sign-in/cloud sync when configured and approved; cloud use sends log entries to the connected service. Browser and cloud records are separate stores, with no automatic migration between them. Sign out to leave the cloud session and return to browser-saved logs.</p>
+                    <p class="text-xs leading-relaxed">Food searches make requests to external food-data services and the app's hosted food database. Avoid entering personal details in search. The app also uses browser storage for settings, logs, and local food data. Review the development warning before use; this guide does not promise that data is private from the app administrator or connected services.</p>
+                </section>
+
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-900/60 p-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">If something does not work</h4>
+                    <p class="text-xs leading-relaxed mt-1">Check your connection for online search, try another search term, or use Quick Custom. If the JSON file cannot be linked, use the browser's local food list or download a starter file. If cloud sign-in is unavailable, continue in local mode; your local logs remain separate from cloud data.</p>
                 </div>
             </div>
 
             <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-right">
-                <button @click="showHelpModal = false" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition">
-                    Got It, Thanks!
-                </button>
+                <button @click="showHelpModal = false" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition">Close Guide</button>
             </div>
         </div>
     </div>
