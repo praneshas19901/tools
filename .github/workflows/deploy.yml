@@ -3,9 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: ["main"]
-    paths:
-      - "*.html"
-      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 env:
@@ -21,10 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -35,8 +29,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          python3 -c '
+          python3 - <<'EOF'
           import os
+
           url = os.environ.get("SUPABASE_URL", "")
           key = os.environ.get("SUPABASE_ANON_KEY", "")
 
@@ -44,31 +39,30 @@ jobs:
           print(f"DEBUG: Key length found: {len(key)}")
 
           if not url or not key:
-            raise ValueError("ERROR: One or both GitHub secrets are empty or not accessible to this job!")
+              raise ValueError("ERROR: One or both GitHub secrets are empty or not accessible to this job!")
 
           target_files = ["calorietracker-v2.html"]
 
           for filename in target_files:
-            if not os.path.exists(filename):
-              print(f"WARNING: {filename} does not exist, skipping.")
-              continue
+              if not os.path.exists(filename):
+                  print(f"WARNING: {filename} does not exist, skipping.")
+                  continue
 
-            with open(filename, "r", encoding="utf-8") as f:
-              content = f.read()
+              with open(filename, "r", encoding="utf-8") as f:
+                  content = f.read()
 
-            if "__SUPABASE_URL__" not in content:
-              print(f"WARNING: __SUPABASE_URL__ placeholder not found in {filename}!")
-            if "__SUPABASE_ANON_KEY__" not in content:
-              print(f"WARNING: __SUPABASE_ANON_KEY__ placeholder not found in {filename}!")
+              if "__SUPABASE_URL__" not in content:
+                  print(f"WARNING: __SUPABASE_URL__ placeholder not found in {filename}!")
+              if "__SUPABASE_ANON_KEY__" not in content:
+                  print(f"WARNING: __SUPABASE_ANON_KEY__ placeholder not found in {filename}!")
 
-            content = content.replace("__SUPABASE_URL__", url)
-            content = content.replace("__SUPABASE_ANON_KEY__", key)
+              content = content.replace("__SUPABASE_URL__", url).replace("__SUPABASE_ANON_KEY__", key)
 
-            with open(filename, "w", encoding="utf-8") as f:
-              f.write(content)
+              with open(filename, "w", encoding="utf-8") as f:
+                  f.write(content)
 
-            print(f"Successfully injected secrets into {filename}")
-          '
+              print(f"Successfully injected secrets into {filename}")
+          EOF
 
       - name: Stage All Root HTML Files
         shell: bash
@@ -84,13 +78,20 @@ jobs:
           cp -v "${html_files[@]}" _site/
           ls -la _site
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: "_site"
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Deploy to GitHub Pages
         id: deployment
