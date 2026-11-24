@@ -1,4 +1,4 @@
--- One private JSON workspace per authenticated Supabase user.
+-- One private JSON workspace per authenticated Neon Auth user.
 -- Run once against the Neon database before deploying the API.
 create table if not exists public.project_workspaces (
     user_id uuid primary key,

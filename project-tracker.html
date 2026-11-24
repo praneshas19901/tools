@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project & Milestone Tracker with Gantt Chart</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg: #0f172a;
@@ -347,7 +346,7 @@
                 <h3>📱 Cross-Device Storage (Desktop + Android/Mobile)</h3>
                 <ul>
                     <li><strong>Automatic Browser Persistence:</strong> Every edit is automatically saved inside your browser's local IndexedDB database, so your projects stay safe on Android Brave/Chrome even if you close the tab.</li>
-                    <li><strong>Private Cloud Sync:</strong> Sign in to sync your workspace across devices. Each account has a separate Neon workspace; cloud sync requires the project API and Supabase Auth to be configured by the site owner.</li>
+                    <li><strong>Private Cloud Sync:</strong> Sign in with Neon Auth to sync your workspace across devices. Each account has a separate Neon workspace; cloud sync requires Neon Auth and the project API to be configured by the site owner.</li>
                     <li><strong>Neon is authoritative after sign-in:</strong> Existing Neon data replaces local data; a new account workspace is seeded from this device once. Later saves go to Neon first, then update the local cache and linked JSON file.</li>
                     <li><strong>Transferring Between PC & Phone:</strong> Use <code>⬇️ Export JSON</code> to download your <code>projects.json</code> file and <code>⬆️ Import JSON</code> to load it on any device.</li>
                     <li><strong>Desktop Direct File Sync:</strong> On supported desktop browsers, you can still link a live <code>projects.json</code> file directly on disk.</li>
@@ -373,7 +372,7 @@
     <div class="modal" id="cloudAuthModal">
         <div class="modal-content">
             <div class="modal-header"><span>Sign in for cross-device sync</span></div>
-            <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">Use your tracker account. Your projects sync to your private Neon workspace.</p>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">Use your Neon Auth account. Your projects sync to your private Neon workspace.</p>
             <div class="form-group"><label>Email</label><input type="email" id="cloudEmail" autocomplete="email"></div>
             <div class="form-group"><label>Password</label><input type="password" id="cloudPassword" autocomplete="current-password"></div>
             <p id="cloudAuthMessage" style="font-size:0.8rem;color:var(--warning);"></p>
@@ -386,13 +385,12 @@
     </div>
 
     <script>
-        const ENV_SUPABASE_URL = "__SUPABASE_URL__";
-        const ENV_SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
-        const ENV_PROJECT_API_URL = "__PROJECT_API_URL__";
-        const SUPABASE_URL = ENV_SUPABASE_URL.startsWith('__') ? '' : ENV_SUPABASE_URL;
-        const SUPABASE_ANON_KEY = ENV_SUPABASE_ANON_KEY.startsWith('__') ? '' : ENV_SUPABASE_ANON_KEY;
-        const PROJECT_API_URL = ENV_PROJECT_API_URL.startsWith('__') ? '' : ENV_PROJECT_API_URL;
-        let supabaseClient = null;
+        const ENV_NEON_AUTH_URL = "__NEON_AUTH_URL__";
+        const ENV_NEON_PROJECT_API_URL = "__NEON_PROJECT_API_URL__";
+        const NEON_AUTH_URL = ENV_NEON_AUTH_URL.startsWith('__') ? '' : ENV_NEON_AUTH_URL;
+        const NEON_PROJECT_API_URL = ENV_NEON_PROJECT_API_URL.startsWith('__') ? '' : ENV_NEON_PROJECT_API_URL;
+        let neonAuthClient = null;
+        let neonAuthClientPromise = null;
         let cloudSession = null;
         let cloudReady = false;
         let lastCloudData = null;
@@ -512,23 +510,43 @@
         }
 
         function openCloudAuth() {
-            if (!supabaseClient || !PROJECT_API_URL) {
-                alert('Cloud sync is not configured yet. Configure the Supabase public settings and Project API URL in the deployment workflow.');
+            if (!NEON_AUTH_URL || !NEON_PROJECT_API_URL) {
+                alert('Neon Auth and the Project Tracker API are not configured. Set NEON_AUTH_URL and NEON_PROJECT_API_URL for the Pages deployment.');
                 return;
             }
             document.getElementById('cloudAuthMessage').innerText = '';
             document.getElementById('cloudAuthModal').classList.add('active');
         }
 
+        async function getNeonAuthClient() {
+            if (!NEON_AUTH_URL) throw new Error('Neon Auth is not configured.');
+            if (!neonAuthClientPromise) {
+                neonAuthClientPromise = import('https://esm.sh/@neondatabase/auth@0.7.0-beta?bundle')
+                    .then(({ createAuthClient }) => {
+                        neonAuthClient = createAuthClient(NEON_AUTH_URL);
+                        return neonAuthClient;
+                    });
+            }
+            return neonAuthClientPromise;
+        }
+
+        async function refreshNeonAuthSession() {
+            const auth = await getNeonAuthClient();
+            const result = await auth.getSession();
+            if (result.error) throw result.error;
+            const user = result.data?.user || result.data?.session?.user || null;
+            await handleCloudSession(user ? { user } : null);
+        }
+
         async function initCloudSync() {
-            if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !PROJECT_API_URL || !window.supabase) return;
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) await handleCloudSession(session);
-            supabaseClient.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_OUT') handleCloudSession(null);
-                else if (session) handleCloudSession(session);
-            });
+            if (!NEON_AUTH_URL || !NEON_PROJECT_API_URL) return;
+            try {
+                await refreshNeonAuthSession();
+                window.addEventListener('focus', () => refreshNeonAuthSession().catch(err => console.warn('Neon session refresh failed:', err)));
+            } catch (err) {
+                updateStatus('cloud-error');
+                console.error('Neon Auth initialization failed:', err);
+            }
         }
 
         async function handleCloudSession(session) {
@@ -576,10 +594,14 @@
 
         async function cloudRequest(method, projects) {
             if (!cloudSession?.access_token) throw new Error('Please sign in again.');
-            const response = await fetch(PROJECT_API_URL, {
+            const auth = await getNeonAuthClient();
+            const tokenResult = await auth.token();
+            const accessToken = tokenResult.data?.token;
+            if (tokenResult.error || !accessToken) throw tokenResult.error || new Error('Please sign in again.');
+            const response = await fetch(NEON_PROJECT_API_URL, {
                 method,
                 headers: {
-                    'Authorization': `Bearer ${cloudSession.access_token}`,
+                    'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json'
                 },
                 ...(method === 'PUT' ? { body: JSON.stringify({ projects }) } : {})
@@ -596,13 +618,15 @@
         async function signInCloud() {
             const email = document.getElementById('cloudEmail').value.trim();
             const password = document.getElementById('cloudPassword').value;
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                document.getElementById('cloudAuthMessage').innerText = error.message;
-                return;
+            try {
+                const auth = await getNeonAuthClient();
+                const result = await auth.signIn.email({ email, password });
+                if (result.error) throw result.error;
+                closeModal('cloudAuthModal');
+                await refreshNeonAuthSession();
+            } catch (err) {
+                document.getElementById('cloudAuthMessage').innerText = err.message || 'Sign-in failed.';
             }
-            closeModal('cloudAuthModal');
-            await handleCloudSession(data.session);
         }
 
         async function registerCloudUser() {
@@ -612,21 +636,25 @@
                 document.getElementById('cloudAuthMessage').innerText = 'Use a password with at least 8 characters.';
                 return;
             }
-            const { data, error } = await supabaseClient.auth.signUp({ email, password });
-            if (error) {
-                document.getElementById('cloudAuthMessage').innerText = error.message;
-                return;
-            }
-            if (data.session) {
-                closeModal('cloudAuthModal');
-                await handleCloudSession(data.session);
-            } else {
-                document.getElementById('cloudAuthMessage').innerText = 'Account created. Verify your email, then sign in.';
+            try {
+                const auth = await getNeonAuthClient();
+                const result = await auth.signUp.email({ email, password, name: email.split('@')[0] });
+                if (result.error) throw result.error;
+                const sessionResult = await auth.getSession();
+                const user = sessionResult.data?.user || sessionResult.data?.session?.user || null;
+                if (user) {
+                    closeModal('cloudAuthModal');
+                    await handleCloudSession({ user });
+                } else {
+                    document.getElementById('cloudAuthMessage').innerText = 'Account created. Complete Neon Auth email verification, then sign in.';
+                }
+            } catch (err) {
+                document.getElementById('cloudAuthMessage').innerText = err.message || 'Account creation failed.';
             }
         }
 
         async function signOutCloud() {
-            if (supabaseClient) await supabaseClient.auth.signOut();
+            if (neonAuthClient) await neonAuthClient.signOut();
             await handleCloudSession(null);
         }
 

@@ -1,6 +1,9 @@
 import { neon } from '@neondatabase/serverless';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const MAX_PROJECTS_BYTES = 2 * 1024 * 1024;
+const jwksUrl = process.env.NEON_AUTH_JWKS_URL;
+const jwks = jwksUrl ? createRemoteJWKSet(new URL(jwksUrl)) : null;
 
 function send(res, status, body) {
   res.status(status).json(body);
@@ -16,9 +19,8 @@ export default async function handler(req, res) {
   if (!['GET', 'PUT'].includes(req.method)) return send(res, 405, { error: 'Method not allowed.' });
 
   const databaseUrl = process.env.NEON_DATABASE_URL;
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-  if (!databaseUrl || !supabaseUrl || !supabaseAnonKey) {
+  const neonAuthBaseUrl = process.env.NEON_AUTH_BASE_URL;
+  if (!databaseUrl || !neonAuthBaseUrl || !jwks) {
     return send(res, 503, { error: 'Project sync API is not configured.' });
   }
 
@@ -26,26 +28,24 @@ export default async function handler(req, res) {
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return send(res, 401, { error: 'Sign in is required.' });
 
-  let user;
+  let userId;
   try {
-    const authResponse = await fetch(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/user`, {
-      headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${match[1]}` }
-    });
-    if (!authResponse.ok) return send(res, 401, { error: 'Your session is invalid or expired. Please sign in again.' });
-    user = await authResponse.json();
+    const issuer = new URL(neonAuthBaseUrl).origin;
+    const { payload } = await jwtVerify(match[1], jwks, { issuer });
+    userId = payload.sub;
   } catch {
-    return send(res, 503, { error: 'Unable to verify the sign-in session.' });
+    return send(res, 401, { error: 'Your Neon Auth session is invalid or expired. Please sign in again.' });
   }
-  if (!user?.id) return send(res, 401, { error: 'Sign in is required.' });
+  if (typeof userId !== 'string') return send(res, 401, { error: 'Sign in is required.' });
 
   const sql = neon(databaseUrl);
   try {
-    // RLS reads this transaction-local identity. It comes only from Supabase Auth,
+    // RLS reads this transaction-local identity. It comes only from a verified Neon Auth JWT,
     // never from a client-supplied user id.
     if (req.method === 'GET') {
       const results = await sql.transaction([
-        sql`select set_config('app.user_id', ${user.id}, true)`,
-        sql`select projects from project_workspaces where user_id = ${user.id}::uuid`
+        sql`select set_config('app.user_id', ${userId}, true)`,
+        sql`select projects from project_workspaces where user_id = ${userId}::uuid`
       ]);
       const row = results[1][0];
       return send(res, 200, { exists: Boolean(row), projects: row?.projects ?? [] });
@@ -58,9 +58,9 @@ export default async function handler(req, res) {
     }
 
     await sql.transaction([
-      sql`select set_config('app.user_id', ${user.id}, true)`,
+      sql`select set_config('app.user_id', ${userId}, true)`,
       sql`insert into project_workspaces (user_id, projects, updated_at)
-          values (${user.id}::uuid, ${JSON.stringify(projects)}::jsonb, now())
+          values (${userId}::uuid, ${JSON.stringify(projects)}::jsonb, now())
           on conflict (user_id) do update
           set projects = excluded.projects, updated_at = now()`
     ]);
