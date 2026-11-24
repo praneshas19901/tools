@@ -24,10 +24,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -38,63 +37,45 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          python3 -c '
+          python3 - <<'EOF'
           import os
+
           url = os.environ.get("SUPABASE_URL", "")
           key = os.environ.get("SUPABASE_ANON_KEY", "")
-
-          print(f"DEBUG: URL length found: {len(url)}")
-          print(f"DEBUG: Key length found: {len(key)}")
-
           if not url or not key:
-            raise ValueError("ERROR: SUPABASE_URL and SUPABASE_ANON_KEY GitHub secrets must be configured.")
+              raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY GitHub secrets must be configured.")
 
-          target_files = ["calorietracker-v2.html"]
-
-          for filename in target_files:
-            if not os.path.exists(filename):
-              print(f"WARNING: {filename} does not exist, skipping.")
-              continue
-
-            with open(filename, "r", encoding="utf-8") as f:
+          filename = "calorietracker-v2.html"
+          with open(filename, "r", encoding="utf-8") as f:
               content = f.read()
-
-            if "__SUPABASE_URL__" not in content:
-              print(f"WARNING: __SUPABASE_URL__ placeholder not found in {filename}!")
-            if "__SUPABASE_ANON_KEY__" not in content:
-              print(f"WARNING: __SUPABASE_ANON_KEY__ placeholder not found in {filename}!")
-
-            content = content.replace("__SUPABASE_URL__", url)
-            content = content.replace("__SUPABASE_ANON_KEY__", key)
-
-            with open(filename, "w", encoding="utf-8") as f:
+          content = content.replace("__SUPABASE_URL__", url)
+          content = content.replace("__SUPABASE_ANON_KEY__", key)
+          with open(filename, "w", encoding="utf-8") as f:
               f.write(content)
+          print("Injected Supabase settings into Calorie Tracker")
+          EOF
 
-            print(f"Successfully injected secrets into {filename}")
-          '
-
-      - name: Inject project tracker auth and sync endpoint
+      - name: Inject Neon settings into Project Tracker
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          PROJECT_API_URL: ${{ secrets.PROJECT_API_URL }}
+          NEON_AUTH_URL: ${{ secrets.NEON_AUTH_URL }}
+          NEON_PROJECT_API_URL: ${{ secrets.NEON_PROJECT_API_URL }}
         run: |
-          python3 -c '
+          python3 - <<'EOF'
           import os
+
           replacements = {
-            "__SUPABASE_URL__": os.environ.get("SUPABASE_URL", ""),
-            "__SUPABASE_ANON_KEY__": os.environ.get("SUPABASE_ANON_KEY", ""),
-            "__PROJECT_API_URL__": os.environ.get("PROJECT_API_URL", "")
+              "__NEON_AUTH_URL__": os.environ.get("NEON_AUTH_URL", ""),
+              "__NEON_PROJECT_API_URL__": os.environ.get("NEON_PROJECT_API_URL", ""),
           }
           filename = "project-tracker.html"
           with open(filename, "r", encoding="utf-8") as f:
-            content = f.read()
+              content = f.read()
           for placeholder, value in replacements.items():
-            content = content.replace(placeholder, value)
+              content = content.replace(placeholder, value)
           with open(filename, "w", encoding="utf-8") as f:
-            f.write(content)
-          print("Injected project tracker configuration")
-          '
+              f.write(content)
+          print("Injected Neon settings into Project Tracker")
+          EOF
 
       - name: Stage All Root HTML Files
         shell: bash
@@ -110,13 +91,20 @@ jobs:
           cp -v "${html_files[@]}" _site/
           ls -la _site
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: "_site"
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Deploy to GitHub Pages
         id: deployment
