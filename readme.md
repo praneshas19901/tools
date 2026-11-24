@@ -27,7 +27,7 @@ Access these tools and trackers live directly in your browser:
 
 ## Project Tracker cloud sync
 
-The Project Tracker can sync signed-in users' workspaces to Neon while retaining local IndexedDB and `projects.json` saves. Neon Auth provides account identity, separate from the Supabase-backed Calorie Tracker. See the [cloud sync setup guide](docs/project-tracker-cloud-sync.md) for configuration.
+The Project Tracker can sync signed-in users' workspaces to Neon while retaining local IndexedDB and `projects.json` saves. It uses Neon Auth and Neon Data API directly from GitHub Pages, with PostgreSQL row-level security; this is separate from the Supabase-backed Calorie Tracker. See the [cloud sync setup guide](docs/project-tracker-cloud-sync.md) for configuration.
 
 ---
 

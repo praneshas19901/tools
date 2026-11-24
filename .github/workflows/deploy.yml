@@ -5,9 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "*.html"
-      - "api/**"
       - "db/**"
-      - "package.json"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
@@ -58,14 +56,14 @@ jobs:
       - name: Inject Neon settings into Project Tracker
         env:
           NEON_AUTH_URL: ${{ secrets.NEON_AUTH_URL }}
-          NEON_PROJECT_API_URL: ${{ secrets.NEON_PROJECT_API_URL }}
+          NEON_DATA_API_URL: ${{ secrets.NEON_DATA_API_URL }}
         run: |
           python3 - <<'EOF'
           import os
 
           replacements = {
               "__NEON_AUTH_URL__": os.environ.get("NEON_AUTH_URL", ""),
-              "__NEON_PROJECT_API_URL__": os.environ.get("NEON_PROJECT_API_URL", ""),
+              "__NEON_DATA_API_URL__": os.environ.get("NEON_DATA_API_URL", ""),
           }
           filename = "project-tracker.html"
           with open(filename, "r", encoding="utf-8") as f:
