@@ -27,7 +27,20 @@ Access these tools and trackers live directly in your browser:
 
 ## Project Tracker cloud sync
 
-The Project Tracker can sync signed-in users' workspaces to Neon while retaining local IndexedDB and `projects.json` saves. It uses Neon Auth and Neon Data API directly from GitHub Pages, with PostgreSQL row-level security; this is separate from the Supabase-backed Calorie Tracker. See the [cloud sync setup guide](docs/project-tracker-cloud-sync.md) for configuration.
+**[Open the live Project Tracker](https://praneshas19901.github.io/tools/project-tracker.html).** Its optional cloud sync uses Neon Auth with email/password sign-in and stores each account's workspace in a Neon PostgreSQL database. Neon is the source of truth for signed-in cloud users; each user's workspace is protected by database row-level security.
+
+Sign-up is currently disabled in Neon Auth for the hosted demo. You cannot create a new cloud account there. Please use the live site only to explore the app, and do not save personal or sensitive project information to the demo's cloud database.
+
+To use cloud sync, deploy your own copy and connect it to your own Neon project. Enable Neon Auth and the Data API, create the workspace table with [`db/project-workspaces.sql`](db/project-workspaces.sql), then configure these deployment values:
+
+| Variable | Value |
+| --- | --- |
+| `NEON_AUTH_URL` | The Auth URL from your Neon project/branch. |
+| `NEON_DATA_API_URL` | The Data API URL from your Neon project/branch. |
+
+For GitHub Pages, add them as Actions secrets and the workflow injects them into `project-tracker.html`. On Vercel or another host, configure the build/deployment process to replace the same HTML placeholders with your own URLs. These are public endpoint URLs, not database passwords or secret keys. See the [cloud sync setup guide](docs/project-tracker-cloud-sync.md) for details.
+
+These variables configure Neon only. Supabase or another database requires an integration supported by the particular app; the Project Tracker's current cloud adapter is Neon, while Calorie Tracker has its separate Supabase integration.
 
 ---
 
