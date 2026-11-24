@@ -25,6 +25,10 @@ Access these tools and trackers live directly in your browser:
 
 </div>
 
+## Project Tracker cloud sync
+
+The Project Tracker can sync signed-in users' workspaces to Neon while retaining local IndexedDB and `projects.json` saves. Supabase Auth provides the account identity, and a server-side API protects the Neon connection string. See the [cloud sync setup guide](docs/project-tracker-cloud-sync.md) for the database, Vercel, Supabase, and GitHub Pages configuration.
+
 ---
 
 ## 💡 Core Philosophy

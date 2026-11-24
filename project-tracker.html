@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project & Milestone Tracker with Gantt Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg: #0f172a;
@@ -172,6 +173,8 @@
             <button onclick="exportJSON()" class="btn-secondary" title="Download backup/sync JSON">⬇️ Export JSON</button>
             <button onclick="document.getElementById('importFileInput').click()" class="btn-secondary" title="Load projects.json from device">⬆️ Import JSON</button>
             <input type="file" id="importFileInput" accept=".json,application/json" style="display: none;" onchange="importJSON(event)">
+            <button onclick="openCloudAuth()" class="btn-secondary" id="cloudSignInBtn">Cloud Sign in</button>
+            <button onclick="signOutCloud()" class="btn-secondary" id="cloudSignOutBtn" style="display:none;"></button>
 
             <button onclick="toggleCompletedView()" class="btn-secondary" id="completedToggleBtn">🏆 Completed (0)</button>
             <button onclick="openHelpModal()" class="btn-secondary">❓ Help</button>
@@ -344,6 +347,8 @@
                 <h3>📱 Cross-Device Storage (Desktop + Android/Mobile)</h3>
                 <ul>
                     <li><strong>Automatic Browser Persistence:</strong> Every edit is automatically saved inside your browser's local IndexedDB database, so your projects stay safe on Android Brave/Chrome even if you close the tab.</li>
+                    <li><strong>Private Cloud Sync:</strong> Sign in to sync your workspace across devices. Each account has a separate Neon workspace; cloud sync requires the project API and Supabase Auth to be configured by the site owner.</li>
+                    <li><strong>Neon is authoritative after sign-in:</strong> Existing Neon data replaces local data; a new account workspace is seeded from this device once. Later saves go to Neon first, then update the local cache and linked JSON file.</li>
                     <li><strong>Transferring Between PC & Phone:</strong> Use <code>⬇️ Export JSON</code> to download your <code>projects.json</code> file and <code>⬆️ Import JSON</code> to load it on any device.</li>
                     <li><strong>Desktop Direct File Sync:</strong> On supported desktop browsers, you can still link a live <code>projects.json</code> file directly on disk.</li>
                 </ul>
@@ -365,7 +370,35 @@
         </div>
     </div>
 
+    <div class="modal" id="cloudAuthModal">
+        <div class="modal-content">
+            <div class="modal-header"><span>Sign in for cross-device sync</span></div>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">Use your tracker account. Your projects sync to your private Neon workspace.</p>
+            <div class="form-group"><label>Email</label><input type="email" id="cloudEmail" autocomplete="email"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="cloudPassword" autocomplete="current-password"></div>
+            <p id="cloudAuthMessage" style="font-size:0.8rem;color:var(--warning);"></p>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('cloudAuthModal')">Cancel</button>
+                <button class="btn-secondary" onclick="registerCloudUser()">Create account</button>
+                <button onclick="signInCloud()">Sign in</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        const ENV_SUPABASE_URL = "__SUPABASE_URL__";
+        const ENV_SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
+        const ENV_PROJECT_API_URL = "__PROJECT_API_URL__";
+        const SUPABASE_URL = ENV_SUPABASE_URL.startsWith('__') ? '' : ENV_SUPABASE_URL;
+        const SUPABASE_ANON_KEY = ENV_SUPABASE_ANON_KEY.startsWith('__') ? '' : ENV_SUPABASE_ANON_KEY;
+        const PROJECT_API_URL = ENV_PROJECT_API_URL.startsWith('__') ? '' : ENV_PROJECT_API_URL;
+        let supabaseClient = null;
+        let cloudSession = null;
+        let cloudReady = false;
+        let lastCloudData = null;
+        let syncingUserId = null;
+        let saveQueue = Promise.resolve();
+
         let appData = [];
         let fileHandle = null;
         let showCompletedView = false;
@@ -463,24 +496,146 @@
                             fileHandle = storedHandle;
                             await readFileContent();
                             updateStatus('desktop-connected');
-                            return;
                         }
                     }
                 } catch (err) {
                     console.warn('Auto-load file handle skipped:', err);
                 }
-                updateStatus('desktop-disconnected');
+                if (!fileHandle) updateStatus('desktop-disconnected');
             } else {
                 // Running on Android Brave / Chrome / Mobile
                 updateStatus('mobile-saved');
             }
 
             render();
+            initCloudSync();
+        }
+
+        function openCloudAuth() {
+            if (!supabaseClient || !PROJECT_API_URL) {
+                alert('Cloud sync is not configured yet. Configure the Supabase public settings and Project API URL in the deployment workflow.');
+                return;
+            }
+            document.getElementById('cloudAuthMessage').innerText = '';
+            document.getElementById('cloudAuthModal').classList.add('active');
+        }
+
+        async function initCloudSync() {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !PROJECT_API_URL || !window.supabase) return;
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) await handleCloudSession(session);
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT') handleCloudSession(null);
+                else if (session) handleCloudSession(session);
+            });
+        }
+
+        async function handleCloudSession(session) {
+            if (!session) {
+                cloudSession = null;
+                cloudReady = false;
+                lastCloudData = null;
+                syncingUserId = null;
+                document.getElementById('cloudSignInBtn').style.display = '';
+                document.getElementById('cloudSignOutBtn').style.display = 'none';
+                updateStatus(supportsFileSystemAccess && fileHandle ? 'desktop-connected' : (supportsFileSystemAccess ? 'desktop-disconnected' : 'mobile-saved'));
+                return;
+            }
+            if (cloudSession?.user?.id === session.user.id && (cloudReady || syncingUserId === session.user.id)) return;
+            cloudSession = session;
+            syncingUserId = session.user.id;
+            document.getElementById('cloudSignInBtn').style.display = 'none';
+            const signOut = document.getElementById('cloudSignOutBtn');
+            signOut.textContent = `${session.user.email} · Sign out`;
+            signOut.style.display = '';
+            try {
+                const result = await cloudRequest('GET');
+                const remote = result.projects;
+                if (result.exists && Array.isArray(remote)) {
+                    // Neon is authoritative whenever this account already has a workspace.
+                    appData = remote;
+                } else {
+                    // First sign-in seeds a new Neon workspace from this device's saved data.
+                    await cloudRequest('PUT', appData);
+                }
+                lastCloudData = JSON.parse(JSON.stringify(appData));
+                await mirrorCloudDataToFile();
+                cloudReady = true;
+                updateStatus('cloud-connected');
+                render();
+            } catch (err) {
+                cloudReady = false;
+                updateStatus('cloud-error');
+                document.getElementById('cloudAuthMessage').innerText = `Cloud sync unavailable: ${err.message}`;
+                console.error('Cloud sync error:', err);
+            } finally {
+                syncingUserId = null;
+            }
+        }
+
+        async function cloudRequest(method, projects) {
+            if (!cloudSession?.access_token) throw new Error('Please sign in again.');
+            const response = await fetch(PROJECT_API_URL, {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${cloudSession.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                ...(method === 'PUT' ? { body: JSON.stringify({ projects }) } : {})
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
+            return payload;
+        }
+
+        async function mirrorCloudDataToFile() {
+            await writeDataToFile(appData);
+        }
+
+        async function signInCloud() {
+            const email = document.getElementById('cloudEmail').value.trim();
+            const password = document.getElementById('cloudPassword').value;
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                document.getElementById('cloudAuthMessage').innerText = error.message;
+                return;
+            }
+            closeModal('cloudAuthModal');
+            await handleCloudSession(data.session);
+        }
+
+        async function registerCloudUser() {
+            const email = document.getElementById('cloudEmail').value.trim();
+            const password = document.getElementById('cloudPassword').value;
+            if (password.length < 8) {
+                document.getElementById('cloudAuthMessage').innerText = 'Use a password with at least 8 characters.';
+                return;
+            }
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+                document.getElementById('cloudAuthMessage').innerText = error.message;
+                return;
+            }
+            if (data.session) {
+                closeModal('cloudAuthModal');
+                await handleCloudSession(data.session);
+            } else {
+                document.getElementById('cloudAuthMessage').innerText = 'Account created. Verify your email, then sign in.';
+            }
+        }
+
+        async function signOutCloud() {
+            if (supabaseClient) await supabaseClient.auth.signOut();
+            await handleCloudSession(null);
         }
 
         async function createNewFile() {
             if (!supportsFileSystemAccess) {
                 return alert('Direct disk file creation is not supported on mobile browsers. Your data is auto-saved in browser storage—use "Export JSON" to download a file.');
+            }
+            if (cloudSession && !cloudReady) {
+                return alert('Wait for Neon to load before creating a local mirror file.');
             }
             try {
                 fileHandle = await window.showSaveFilePicker({
@@ -488,7 +643,7 @@
                     types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }]
                 });
                 await storeHandle(fileHandle);
-                await writeDataToFile();
+                await writeDataToFile(cloudReady && lastCloudData ? lastCloudData : appData);
                 updateStatus('desktop-connected');
                 render();
             } catch (err) {
@@ -519,19 +674,23 @@
             const file = await fileHandle.getFile();
             const text = await file.text();
             appData = text.trim() ? JSON.parse(text) : [];
-            await saveToIndexedDB(appData);
             render();
+            if (cloudReady) {
+                await saveData();
+            } else if (!cloudSession) {
+                await saveToIndexedDB(appData);
+            }
         }
 
-        async function writeDataToFile() {
+        async function writeDataToFile(data = appData) {
             // Always persist to IndexedDB on every save (works on both Android and Desktop)
-            await saveToIndexedDB(appData);
+            await saveToIndexedDB(data);
 
             // If desktop file handle is connected, mirror changes directly to disk
             if (supportsFileSystemAccess && fileHandle) {
                 try {
                     const writable = await fileHandle.createWritable();
-                    await writable.write(JSON.stringify(appData, null, 2));
+                    await writable.write(JSON.stringify(data, null, 2));
                     await writable.close();
                 } catch (err) {
                     alert('Failed to write to local file: ' + err.message);
@@ -583,7 +742,16 @@
 
         function updateStatus(mode) {
             const el = document.getElementById('storageStatus');
-            if (mode === 'desktop-connected' && fileHandle) {
+            if (mode === 'cloud-connected') {
+                el.className = 'storage-status status-connected';
+                el.innerText = '● Synced to private Neon workspace';
+            } else if (mode === 'cloud-paused') {
+                el.className = 'storage-status status-mobile';
+                el.innerText = '● Cloud signed in; sync paused';
+            } else if (mode === 'cloud-error') {
+                el.className = 'storage-status status-disconnected';
+                el.innerText = '● Cloud sync failed; saved locally';
+            } else if (mode === 'desktop-connected' && fileHandle) {
                 el.className = 'storage-status status-connected';
                 el.innerText = `● File Synced: ${fileHandle.name}`;
             } else if (mode === 'mobile-saved') {
@@ -597,7 +765,39 @@
 
         async function saveData() {
             render();
-            await writeDataToFile();
+            const snapshot = JSON.parse(JSON.stringify(appData));
+            const syncToCloud = cloudReady;
+            const savingUserId = cloudSession?.user?.id || null;
+            if (cloudSession && !cloudReady) {
+                alert('Cloud sync is not ready. This change was not saved; wait for Neon sync to reconnect, then try again.');
+                return;
+            }
+
+            const saveOperation = saveQueue.then(async () => {
+                if (syncToCloud) {
+                    if (!cloudReady || cloudSession?.user?.id !== savingUserId) {
+                        throw new Error('Cloud session changed before the save completed. Please retry.');
+                    }
+                    await cloudRequest('PUT', snapshot);
+                    lastCloudData = snapshot;
+                    updateStatus('cloud-connected');
+                }
+                // The local cache and linked JSON file mirror only confirmed cloud saves.
+                await writeDataToFile(snapshot);
+            });
+            saveQueue = saveOperation.catch(() => {});
+
+            try {
+                await saveOperation;
+            } catch (err) {
+                if (syncToCloud || cloudSession) {
+                    updateStatus('cloud-error');
+                }
+                console.error('Project save failed:', err);
+                alert(syncToCloud || cloudSession
+                    ? `Neon did not confirm this save, so the local JSON file was not changed. Please retry: ${err.message}`
+                    : `Could not save locally: ${err.message}`);
+            }
         }
 
         function getTimestamp() {

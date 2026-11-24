@@ -5,6 +5,9 @@ on:
     branches: ["main"]
     paths:
       - "*.html"
+      - "api/**"
+      - "db/**"
+      - "package.json"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
@@ -30,7 +33,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Debug and Inject Supabase Secrets
+      - name: Inject Supabase settings into Calorie Tracker
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -44,7 +47,7 @@ jobs:
           print(f"DEBUG: Key length found: {len(key)}")
 
           if not url or not key:
-            raise ValueError("ERROR: One or both GitHub secrets are empty or not accessible to this job!")
+            raise ValueError("ERROR: SUPABASE_URL and SUPABASE_ANON_KEY GitHub secrets must be configured.")
 
           target_files = ["calorietracker-v2.html"]
 
@@ -68,6 +71,29 @@ jobs:
               f.write(content)
 
             print(f"Successfully injected secrets into {filename}")
+          '
+
+      - name: Inject project tracker auth and sync endpoint
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          PROJECT_API_URL: ${{ secrets.PROJECT_API_URL }}
+        run: |
+          python3 -c '
+          import os
+          replacements = {
+            "__SUPABASE_URL__": os.environ.get("SUPABASE_URL", ""),
+            "__SUPABASE_ANON_KEY__": os.environ.get("SUPABASE_ANON_KEY", ""),
+            "__PROJECT_API_URL__": os.environ.get("PROJECT_API_URL", "")
+          }
+          filename = "project-tracker.html"
+          with open(filename, "r", encoding="utf-8") as f:
+            content = f.read()
+          for placeholder, value in replacements.items():
+            content = content.replace(placeholder, value)
+          with open(filename, "w", encoding="utf-8") as f:
+            f.write(content)
+          print("Injected project tracker configuration")
           '
 
       - name: Stage All Root HTML Files
