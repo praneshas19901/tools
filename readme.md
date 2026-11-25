@@ -71,8 +71,8 @@ You have total control over how and where you run these tools:
                        [ External Servers / Trackers ]
 ```
 
-- 🛡️ **100% Client-Side Storage**: Unless explicitly stated otherwise, **no user data is tracked, transmitted, or stored on external servers**. All your logs, notes, and metrics remain entirely within your browser's `LocalStorage`.
-- 🔑 **Complete Data Ownership**: Your data belongs solely to you. Managing local JSON file exports might carry a minor learning curve, but it guarantees full control over your sensitive information. In the case of DB based application use your own database connection  -supabase or neon DB.
+- 🛡️ **100% Client-Side Storage**: Unless explicitly stated otherwise, **no user data is tracked, transmitted, or stored on external servers**. All your logs, notes, and metrics remain entirely within your browser's `LocalStorage`. Note - Some apps store data in external DB services like Supabase or neon DB.
+- 🔑 **Complete Data Ownership**: Your data belongs solely to you. Managing local JSON file exports might carry a minor learning curve, but it guarantees full control over your sensitive information. In the case of DB based application use your own database connection  -supabase or neon DB. The DB based connections handle unnecessary management of JSON file with export and import aross all your devices - Desktop/Laptop/Smartphones/Tablets.
 - 🔓 **Open & Unrestricted**: You are free to inspect, clone, fork, or adapt these files locally on your own machine.
 
 ---
@@ -83,10 +83,10 @@ You have total control over how and where you run these tools:
 
 | Feature | Details | Status |
 | :--- | :--- | :---: |
-| 📱 **Mobile Responsiveness** | Fully responsive interface optimized for smartphones on the go. | ✅ Supported |
+| 📱 **Mobile Responsiveness** | Fully responsive interface optimized for smartphones on the go. Note - File System Access API not supported on Brave Browser (Android) but works fine on Google Chrome - Apps are being re-developed to store data in Supabase or Neon DB, apps work best for larger screens - not extensively tested on small screens. | ✅ Supported |
 | 🖥️ **Optimal Screen View** | Large display (laptop/desktop) recommended for maximum dashboard clarity. | 🌟 Recommended |
 | 🪟 **Tested Platform** | Extensively tested and verified for smooth performance on **Windows OS**. | ✅ Verified |
-| 🐧 **Cross-Platform** | These should work fine on any platform as they run in browsers - no extensive testing done - should work fine for Linux, macOS, and mobile OS versions. | ✅ Supported |
+| 🐧 **Cross-Platform** | These should work fine on any platform as they run in browsers - no extensive testing done - should work fine for Linux, macOS, and mobile OS versions. Note - use chromium based browsers on Linux to have proper File System Access API support  | ✅ Supported |
 
 ---
 
