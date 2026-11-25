@@ -71,7 +71,7 @@ You have total control over how and where you run these tools:
                        [ External Servers / Trackers ]
 ```
 
-- 🛡️ **100% Client-Side Storage**: Unless explicitly stated otherwise, **no user data is tracked, transmitted, or stored on external servers**. All your logs, notes, and metrics remain entirely within your browser's `LocalStorage`. Note - Some apps store data in external DB services like Supabase or neon DB.
+- 🛡️ **100% Client-Side Storage**: Unless explicitly stated otherwise, **no user data is tracked, transmitted, or stored on external servers**. All your logs, notes, and metrics remain entirely within your browser's `LocalStorage`. * Note - Some apps store data in external DB services like Supabase or neon DB.
 - 🔑 **Complete Data Ownership**: Your data belongs solely to you. Managing local JSON file exports might carry a minor learning curve, but it guarantees full control over your sensitive information. In the case of DB based application use your own database connection  -supabase or neon DB. The DB based connections handle unnecessary management of JSON file with export and import aross all your devices - Desktop/Laptop/Smartphones/Tablets.
 - 🔓 **Open & Unrestricted**: You are free to inspect, clone, fork, or adapt these files locally on your own machine.
 
