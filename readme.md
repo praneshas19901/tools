@@ -124,7 +124,7 @@ Below is an overview of the tools currently available in this repository:
 
 `dailytracker.html` loads its Tailwind JavaScript, Font Awesome, Inter stylesheet and font files, and favicon from the repository's local `assets/` directory. The GitHub Pages deployment workflow publishes that directory alongside the HTML files, so the app does not need external URLs to load these assets.
 
-Values loaded from the task and tracker JSON files are HTML-escaped before rendering, and values passed through generated event handlers are encoded for both JavaScript and HTML contexts to reduce XSS risk. The app also waits for the user to click **Connect Data Folder** or **Restore Folder Access** before accessing the saved folder; visiting the page alone does not read or create files.
+Security Tightening - XSS and CSRF : Values loaded from the task and tracker JSON files are HTML-escaped before rendering, and values passed through generated event handlers are encoded for both JavaScript and HTML contexts to reduce XSS risk. The app also waits for the user to click **Connect Data Folder** or **Restore Folder Access** before accessing the saved folder; visiting the page alone does not read or create files.
 
 This is a static, client-side app with no backend endpoint, cookies, or network requests, so conventional server-side CSRF tokens do not apply. Folder access and file changes happen through the app after user interaction.
 
