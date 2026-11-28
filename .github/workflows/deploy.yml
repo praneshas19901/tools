@@ -6,6 +6,7 @@ on:
     paths:
       - "*.html"
       - "db/**"
+      - "assets/**"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
@@ -87,6 +88,9 @@ jobs:
             exit 1
           fi
           cp -v "${html_files[@]}" _site/
+          if [ -d assets ]; then
+            cp -Rv assets _site/
+          fi
           ls -la _site
 
       - name: Upload Artifact
