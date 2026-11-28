@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20HTML5-brightgreen.svg)](#-compatibility--recommended-hardware)
-[![Privacy](https://img.shields.io/badge/Data%20Privacy-100%25%20Local-success.svg)](#-privacy--safety-first)
+[![Privacy](https://img.shields.io/badge/Data%20Privacy-100%25%20Local*-success.svg)](#-privacy--safety-first)
 [![License: Open Source & Free](https://img.shields.io/badge/License-Open%20Source%20%26%20Free-brightgreen.svg)](https://opensource.org/licenses)
 
 Welcome to the **Tools Portal** repository! This is a collection of lightweight, single-page web applications and trackers built with modern HTML5, Tailwind CSS, and vanilla JavaScript libraries.
@@ -71,13 +71,9 @@ You have total control over how and where you run these tools:
                        [ External Servers / Trackers ]
 ```
 
-- 🛡️ **100% Client-Side Storage**: Unless explicitly stated otherwise, **no user data is tracked, transmitted, or stored on external servers**. All your logs, notes, and metrics remain entirely within your browser's `LocalStorage`.
-- 🔑 **Complete Data Ownership**: Your data belongs solely to you. Managing local JSON file exports might carry a minor learning curve, but it guarantees full control over your sensitive information.
+- 🛡️ **100% Client-Side Storage**: Unless explicitly stated otherwise, **no user data is tracked, transmitted, or stored on external servers**. All your logs, notes, and metrics remain entirely within your browser's `LocalStorage`. * Note - Some apps store data in external DB services like Supabase or neon DB.
+- 🔑 **Complete Data Ownership**: Your data belongs solely to you. Managing local JSON file exports might carry a minor learning curve, but it guarantees full control over your sensitive information. In the case of DB based application use your own database connection  -supabase or neon DB. The DB based connections handle unnecessary management of JSON file with export and import aross all your devices - Desktop/Laptop/Smartphones/Tablets.
 - 🔓 **Open & Unrestricted**: You are free to inspect, clone, fork, or adapt these files locally on your own machine.
-
-> [!IMPORTANT]
-> **Note on Calorie Tracker v2**:
-> Unlike the local-first applications, **Calorie Tracker v2** utilizes [Supabase](https://supabase.com/) for backend data synchronization across devices. Your data remains strictly privatized using **Row Level Security (RLS)**—ensuring only authenticated owners can access their records. If you use the Calorie Tracker v2 application on the demo site directly - **please it use only for DEMO or TESTING HOW IT WORKS - DO NOT PUT YOUR PERSONAL or ACTUAL DATA here** - this gets saved to **supabase** where i have access to see your data. Those trying to clone this app and managing it change the ENV_SUPABASE_URL in the app code to your specific supabase project URL . I use a github workflow action to replace these variables with actual values for github pages deployment.  *This specific tool is currently in active development.*
 
 ---
 
@@ -87,10 +83,10 @@ You have total control over how and where you run these tools:
 
 | Feature | Details | Status |
 | :--- | :--- | :---: |
-| 📱 **Mobile Responsiveness** | Fully responsive interface optimized for smartphones on the go. | ✅ Supported |
+| 📱 **Mobile Responsiveness** | Fully responsive interface optimized for smartphones on the go. Note - File System Access API not supported on Brave Browser (Android) but works fine on Google Chrome - Apps are being re-developed to store data in Supabase or Neon DB, apps work best for larger screens - not extensively tested on small screens. | ✅ Supported |
 | 🖥️ **Optimal Screen View** | Large display (laptop/desktop) recommended for maximum dashboard clarity. | 🌟 Recommended |
 | 🪟 **Tested Platform** | Extensively tested and verified for smooth performance on **Windows OS**. | ✅ Verified |
-| 🐧 **Cross-Platform** | These should work fine on any platform as they run in browsers - no extensive testing done - should work fine for Linux, macOS, and mobile OS versions. | ✅ Supported |
+| 🐧 **Cross-Platform** | These should work fine on any platform as they run in browsers - no extensive testing done - should work fine for Linux, macOS, and mobile OS versions. Note - use chromium based browsers on Linux to have proper File System Access API support  | ✅ Supported |
 
 ---
 
@@ -101,9 +97,9 @@ Below is an overview of the tools currently available in this repository:
 | Status | Tool Name | Category | Key Capabilities |
 | :---: | :--- | :--- | :--- |
 | 🟢 | ⏱️ **Progress Timers** | `Productivity` | Run multiple independent progress timers with labels, target durations, start/pause/stop/reset controls, ten color choices, and drag-and-drop ordering. Timer settings and progress are saved in browser IndexedDB and persist across refreshes. |
-| 🟢 | 📋 **Project and Milestone Tracker with Gannt Chart view** | `Productivity` | Create projects with budgets, milestones and tasks and track progress in Gannt chart views. |
+| 🟢 | 📋 **Project and Milestone Tracker with Gannt Chart view** | `Productivity` | Create projects with budgets, milestones and tasks and track progress in Gannt chart views. - Note: This requires your own neon DB or supabase DB connection - please provision your own. |
 | 🟢 | 📋 **Kanban Task Tracker** | `Productivity` | Priority lane management, visual task statuses, and workflow bottleneck tracking. |
-| 🟡 | 🥗 **Calorie Tracker v2** | `Nutrition` | Advanced macro logging powered by Supabase RLS with interactive calorie goal visualizations. |
+| 🟢 | 🥗 **Calorie Tracker v2 - DB Storage Based** | `Nutrition` | Advanced macro logging powered by Supabase RLS with interactive calorie goal visualizations. - Note: This requires your own neon DB or supabase DB connection - please provision your own.|
 | 🟢 | 🍎 **Calorie Tracker** *(Std)* | `Nutrition` | Streamlined offline caloric intake logger to quickly record food items and daily totals. |
 | 🟢 | 📅 **Daily Tracker** | `Routines` | Task checklists, habit streak tracking, sleep logs, and day-to-day wellness goals. |
 | 🟢 | 🩺 **Health Tracker** | `Clinical` | Monitor vital metrics (blood pressure, pulse rate, blood glucose) with clinical ranges. |
@@ -119,8 +115,8 @@ Below is an overview of the tools currently available in this repository:
 - **Frontend Core**: Standard HTML5 & Modern ES6+ JavaScript
 - **Styling**: Tailwind CSS (loaded via CDN for clean, utility-first styling)
 - **UI Assets**: FontAwesome icon library
-- **Persistence**: Browser `LocalStorage` and `IndexedDB` APIs (offline-first; Progress Timers uses IndexedDB)
-- **Database / Auth**: Supabase PostgreSQL + RLS (*Calorie Tracker v2 only*)
+- **Persistence**: Local JSON file through File system access API \ Browser `LocalStorage` and `IndexedDB` APIs (offline-first; Progress Timers uses IndexedDB)
+- **Database / Auth**: Supabase PostgreSQL with RLS / or Neon DB with RLS - Calorie Tracker v2  and Project and Milestone Tracker 
 
 ---
 
@@ -140,6 +136,10 @@ To use cloud sync, deploy your own copy and connect it to your own Neon project.
 For GitHub Pages, add them as Actions secrets and the workflow injects them into `project-tracker.html`. On Vercel or another host, configure the build/deployment process to replace the same HTML placeholders with your own URLs. These are public endpoint URLs, not database passwords or secret keys. See the [cloud sync setup guide](docs/project-tracker-cloud-sync.md) for details.
 
 These variables configure Neon only. Supabase or another database requires an integration supported by the particular app; the Project Tracker's current cloud adapter is Neon, while Calorie Tracker V2 has its separate Supabase integration.
+
+## Calorie Tracker V2 App
+
+Unlike the local-first applications, **Calorie Tracker v2** utilizes [Supabase](https://supabase.com/) for backend data synchronization across devices. Your data remains strictly privatized using **Row Level Security (RLS)**—ensuring only authenticated owners can access their records. If you use the Calorie Tracker v2 application on the demo site directly - signup has been disabled at supabase , so use your own supabase connection -    - Those trying to clone this app and managing it change the ENV_SUPABASE_URL in the app code to your specific supabase project URL . SUPABASE_ANON_KEY is optional - always use RLS with authenticated users only in RLS policies,   I use a GitHub workflow action to replace these variables with actual values for github pages deployment.
 
 ## 🤝 Feedback, Feature Requests & Contact
 
