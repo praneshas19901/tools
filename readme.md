@@ -101,7 +101,7 @@ Below is an overview of the tools currently available in this repository:
 | 🟢 | 📋 **Kanban Task Tracker** | `Productivity` | Priority lane management, visual task statuses, and workflow bottleneck tracking. |
 | 🟢 | 🥗 **Calorie Tracker v2 - DB Storage Based** | `Nutrition` | Advanced macro logging powered by Supabase RLS with interactive calorie goal visualizations. - Note: This requires your own neon DB or supabase DB connection - please provision your own.|
 | 🟢 | 🍎 **Calorie Tracker** *(Std)* | `Nutrition` | Streamlined offline caloric intake logger to quickly record food items and daily totals. |
-| 🟢 | 📅 **Daily Tracker** | `Routines` | Task checklists, habit streak tracking, sleep logs, and day-to-day wellness goals. |
+| 🟢 | 📅 **Daily Tracker** | `Routines` | Daily routine scheduling, task checklists, notes, and date-based completion history. |
 | 🟢 | 🩺 **Health Tracker** | `Clinical` | Monitor vital metrics (blood pressure, pulse rate, blood glucose) with clinical ranges. |
 | 🟢 | 🏋️ **Workout Tracker** | `Fitness` | Log strength sessions, set rep/weight targets, and track progressive overload. |
 | 🟢 | 🎓 **Certifications Tracker** | `Education` | Milestone tracking for degrees and professional credentials with custom notes and reset options. |
@@ -113,12 +113,20 @@ Below is an overview of the tools currently available in this repository:
 ## 🛠️ Tech Stack & Architecture
 
 - **Frontend Core**: Standard HTML5 & Modern ES6+ JavaScript
-- **Styling**: Tailwind CSS (loaded via CDN for clean, utility-first styling)
-- **UI Assets**: FontAwesome icon library
+- **Styling**: Tailwind CSS (CDN-loaded in some tools; Daily Tracker uses local assets)
+- **UI Assets**: FontAwesome icon library (Daily Tracker loads it locally)
 - **Persistence**: Local JSON file through File system access API \ Browser `LocalStorage` and `IndexedDB` APIs (offline-first; Progress Timers uses IndexedDB)
 - **Database / Auth**: Supabase PostgreSQL with RLS / or Neon DB with RLS - Calorie Tracker v2  and Project and Milestone Tracker 
 
 ---
+
+## Daily Tracker
+
+`dailytracker.html` loads its Tailwind JavaScript, Font Awesome, Inter stylesheet and font files, and favicon from the repository's local `assets/` directory. The GitHub Pages deployment workflow publishes that directory alongside the HTML files, so the app does not need external URLs to load these assets.
+
+Values loaded from the task and tracker JSON files are HTML-escaped before rendering, and values passed through generated event handlers are encoded for both JavaScript and HTML contexts to reduce XSS risk. The app also waits for the user to click **Connect Data Folder** or **Restore Folder Access** before accessing the saved folder; visiting the page alone does not read or create files.
+
+This is a static, client-side app with no backend endpoint, cookies, or network requests, so conventional server-side CSRF tokens do not apply. Folder access and file changes happen through the app after user interaction.
 
 ## Project Tracker cloud sync
 
